@@ -6,7 +6,6 @@ tap "sanemat/font"                  # カスタムフォントリポジトリ
 # ---------------------------------------
 # Casks: GUI アプリケーション
 # ---------------------------------------
-cask "alt-tab"                      # macOS のウィンドウ操作補助
 cask "aws-vault"                    # AWS 認証管理ツール
 cask "bitwarden"                    # パスワードマネージャ
 cask "cleanshot"                    # スクリーンショットツール
@@ -19,7 +18,9 @@ cask "google-japanese-ime"          # 日本語入力
 cask "logi-options+"                # ロジクール製品の設定ツール
 cask "raycast"                      # 生産性向上ツール
 cask "visual-studio-code"           # コードエディタ
-cask "vmware-fusion"                # 仮想化ツール
+cask "raycast"
+cask "ente-auth"
+cask "parallels"
 
 # ---------------------------------------
 # Formulae: CLI ツール
