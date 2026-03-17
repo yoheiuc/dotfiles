@@ -9,6 +9,4 @@ command = /bin/zsh --login
 # Keep reasonable scrollback without eating memory
 scrollback-limit = 10000
 
-# Close window only when all surfaces (tabs/splits) exit
-window-close-confirmation = always
 quit-after-last-window-closed = true

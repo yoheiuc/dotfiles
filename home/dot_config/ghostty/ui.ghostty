@@ -4,7 +4,7 @@ font-family = "JetBrains Mono"
 font-size    = 14
 
 # Catppuccin Mocha (bundled theme name in Ghostty)
-theme = catppuccin-mocha
+theme = Catppuccin Mocha
 
 # Window
 window-padding-x     = 8
@@ -12,6 +12,5 @@ window-padding-y     = 6
 macos-titlebar-style = hidden
 
 # Cursor
-cursor-style           = block
-cursor-style-blink     = true
-cursor-blink-interval  = 500
+cursor-style       = block
+cursor-style-blink = true
