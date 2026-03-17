@@ -1,0 +1,46 @@
+# starship.toml — prompt configuration
+# Docs: https://starship.rs/config/
+
+# Top-level format: left side of prompt
+format = """
+$directory\
+$git_branch\
+$git_status\
+$python\
+$nodejs\
+$rust\
+$cmd_duration\
+$line_break\
+$character"""
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol   = "[❯](bold red)"
+
+[directory]
+truncation_length    = 4
+truncate_to_repo     = true
+style                = "bold blue"
+
+[git_branch]
+symbol = " "
+style  = "bold purple"
+
+[git_status]
+style = "bold red"
+
+[cmd_duration]
+min_time           = 2_000
+format             = "[$duration]($style) "
+style              = "yellow"
+show_milliseconds  = false
+
+# ---------- Language modules (only shown when relevant) ----------
+[python]
+symbol = " "
+
+[nodejs]
+symbol = " "
+
+[rust]
+symbol = " "

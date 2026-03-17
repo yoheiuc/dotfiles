@@ -1,0 +1,10 @@
+# Ghostty config — entry point
+# Split into focused modules; add/remove config-file lines to toggle features.
+
+config-file = core.ghostty
+config-file = ui.ghostty
+config-file = keybinds.ghostty
+
+# Machine-local overrides (not tracked by dotfiles).
+# Create ~/.config/ghostty/local.ghostty to apply per-machine settings.
+config-file = local.ghostty

@@ -1,0 +1,11 @@
+# keybinds.ghostty — keyboard shortcuts
+# Ghostty ships sensible macOS defaults; only add overrides here.
+# See: https://ghostty.org/docs/config/reference#keybind
+
+# Reload config without restarting
+keybind = cmd+shift+comma=reload_config
+
+# ---------- Future expansion ----------
+# keybind = cmd+t=new_tab
+# keybind = cmd+w=close_surface
+# keybind = cmd+shift+enter=new_split:right

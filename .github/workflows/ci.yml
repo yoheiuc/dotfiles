@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-bundle:
+    name: Shellcheck + Brewfile
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update Homebrew
+        run: brew update
+
+      - name: Install Brewfile dependencies
+        run: brew bundle --file=Brewfile
+
+      - name: Run shellcheck on scripts
+        run: |
+          # shellcheck is installed via Brewfile
+          shellcheck --severity=warning scripts/*.sh
