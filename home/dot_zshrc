@@ -1,0 +1,13 @@
+# ~/.zshrc — entry point (keep this file minimal)
+# All logic lives in ~/.config/zsh/*.zsh modules.
+
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+
+ZSH_CONFIG="${XDG_CONFIG_HOME}/zsh"
+
+for _module in env aliases tools completion; do
+  [[ -f "${ZSH_CONFIG}/${_module}.zsh" ]] && source "${ZSH_CONFIG}/${_module}.zsh"
+done
+unset _module ZSH_CONFIG
