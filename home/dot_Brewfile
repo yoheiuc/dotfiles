@@ -6,7 +6,6 @@
 # ---------- Taps ----------
 tap "homebrew/bundle"
 tap "laishulu/homebrew"
-tap "sanemat/font"
 
 # ---------- Core CLI ----------
 brew "chezmoi"            # dotfiles manager
@@ -26,7 +25,6 @@ brew "zsh-syntax-highlighting"
 brew "zsh-you-should-use"
 brew "starship"           # cross-shell prompt
 brew "atuin"              # shell history (sync + search)
-brew "hstr"               # history search
 brew "direnv"             # per-directory env vars
 brew "zoxide"             # smart cd
 brew "navi"               # interactive cheatsheet
@@ -45,31 +43,21 @@ brew "tmux"
 brew "sesh"               # tmux session manager
 
 # ---------- Runtimes / package managers ----------
-brew "node"
-brew "python@3.12"
-brew "pipx"               # isolated Python apps
 brew "uv"                 # fast Python package manager
 
 # ---------- Infrastructure / cloud ----------
 brew "awscli"
 brew "azure-cli"
 brew "tfenv"              # Terraform version manager
-brew "qemu"               # virtualisation
 
 # ---------- Misc CLI ----------
-brew "autojump"
-brew "cdrtools"
 brew "hugo"               # static site generator
-brew "luacheck"           # Lua linter
 brew "mas"                # Mac App Store CLI
-brew "transmission-cli"
-brew "wimlib"
 brew "shellcheck"         # shell script linter (used in CI)
 brew "laishulu/homebrew/macism"  # input method switcher
 
 # ---------- Casks: terminals / editors ----------
 cask "ghostty"            # GPU-accelerated terminal
-cask "wezterm"            # GPU-accelerated terminal (legacy)
 cask "visual-studio-code", args: { appdir: "/Applications" }
 cask "cursor"             # AI editor
 
@@ -80,18 +68,15 @@ cask "claude-code"        # Claude Code CLI
 # ---------- Casks: browsers ----------
 cask "firefox", args: { appdir: "/Applications" }
 cask "google-chrome"
-cask "min"                # minimal browser
 
 # ---------- Casks: cloud / infra ----------
 cask "gcloud-cli", args: { appdir: "/Applications" }
 cask "aws-vault-binary", args: { appdir: "/Applications" }
-cask "vmware-fusion"
 
 # ---------- Casks: productivity ----------
 cask "raycast"            # launcher
 cask "alt-tab", args: { appdir: "/Applications" }  # window switcher
 cask "cleanshot"          # screenshot, args: { appdir: "/Applications" }
-cask "drawio", args: { appdir: "/Applications" }
 cask "bitwarden", args: { appdir: "/Applications" }
 cask "ente-auth"          # 2FA
 
@@ -104,15 +89,9 @@ cask "transmission-remote-gui"
 cask "font-meslo-lg-nerd-font"
 cask "google-japanese-ime"
 cask "logi-options+"
-cask "microsoft-auto-update"
 
 # ---------- Mac App Store ----------
-mas "EasyRes",              id: 688211836
-mas "GarageBand",           id: 682658836
-mas "Genki Arcade",         id: 1555925018
 mas "Hidden Bar",           id: 1452453066
-mas "HP Smart",             id: 1474276998
-mas "iMovie",               id: 408981434
 mas "Keynote",              id: 409183694
 mas "Kindle",               id: 302584613
 mas "LINE",                 id: 539883307
@@ -127,5 +106,3 @@ vscode "cocopon.iceberg-theme"
 vscode "esbenp.prettier-vscode"
 vscode "ms-ceintl.vscode-language-pack-ja"
 vscode "ms-python.vscode-python-envs"
-vscode "ms-vscode.powershell"
-vscode "openai.chatgpt"
