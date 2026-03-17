@@ -1,6 +1,7 @@
-# Brewfile — managed via `brew bundle`
-# Run: brew bundle  (install)
-#      brew bundle check  (verify)
+# ~/.Brewfile — managed by chezmoi (source: home/dot_Brewfile)
+# Initial install:  brew bundle --file=<repo>/home/dot_Brewfile
+# After apply:      brew bundle --global
+# Verify:           brew bundle check --global
 
 # ---------- Taps ----------
 tap "homebrew/bundle"

@@ -1,5 +1,5 @@
-# ~/.zshrc — entry point (keep this file minimal)
-# All logic lives in ~/.config/zsh/*.zsh modules.
+# ~/.zshrc — entry point only; keep this file minimal.
+# All shell logic lives in ~/.config/zsh/*.zsh modules.
 
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
@@ -7,7 +7,21 @@ export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 
 ZSH_CONFIG="${XDG_CONFIG_HOME}/zsh"
 
+# Loading order — intentional, do not reorder:
+#   1. env.zsh        PATH, brew shellenv, EDITOR, LANG
+#                     Must be first: PATH must be set before any tool is invoked.
+#   2. aliases.zsh    Shell aliases (e.g. ls → eza)
+#                     Depends on PATH from env.zsh.
+#   3. tools.zsh      direnv / starship / fzf eval hooks
+#                     Must come after env so $HOMEBREW_PREFIX is set;
+#                     must come before completion so hooks can register completions.
+#   4. completion.zsh compinit
+#                     Must be last: compinit picks up completions added by all
+#                     previous modules. Running it earlier would miss some.
+
 for _module in env aliases tools completion; do
-  [[ -f "${ZSH_CONFIG}/${_module}.zsh" ]] && source "${ZSH_CONFIG}/${_module}.zsh"
+  _file="${ZSH_CONFIG}/${_module}.zsh"
+  # Skip silently if module is missing — avoids hard failure on partial installs.
+  [[ -f "$_file" ]] && source "$_file"
 done
-unset _module ZSH_CONFIG
+unset _module _file ZSH_CONFIG

@@ -18,7 +18,7 @@ jobs:
         run: brew update
 
       - name: Install Brewfile dependencies
-        run: brew bundle --file=Brewfile
+        run: brew bundle --file=home/dot_Brewfile
 
       - name: Run shellcheck on scripts
         run: |
