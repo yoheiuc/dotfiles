@@ -37,7 +37,7 @@ bash scripts/doctor.sh
 
 | Script | What it does | Re-runnable? |
 |--------|-------------|--------------|
-| `bootstrap.sh` | brew check → install chezmoi → `brew bundle` → `chezmoi apply` | Yes (idempotent) |
+| `bootstrap.sh` | brew check → install chezmoi → `brew bundle` → `chezmoi init --apply` | Yes (idempotent) |
 | `post-setup.sh` | Registers Serena MCP into Claude Code | Yes (skips if already registered) |
 
 `bootstrap.sh` is intentionally minimal — it only ensures the machine has the right packages and dotfiles applied.
@@ -46,6 +46,9 @@ bash scripts/doctor.sh
 ---
 
 ## Day-to-day: Updating dotfiles
+
+After `bootstrap.sh` has been run once, chezmoi knows its source directory
+(`~/.local/share/chezmoi` → `~/dotfiles`). No `--source` flag is needed.
 
 ```bash
 cd ~/dotfiles

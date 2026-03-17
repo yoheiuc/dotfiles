@@ -7,8 +7,6 @@
 # Usage: bash scripts/doctor.sh
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-
 ok()      { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn()    { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 fail()    { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=1; }
@@ -39,12 +37,12 @@ if chezmoi --version &>/dev/null; then
   chezmoi doctor 2>&1 | sed 's/^/    /'
 
   # Pending diff (warn only — user may intentionally defer apply)
-  diff_out=$(chezmoi diff --source="${REPO_ROOT}/home" 2>&1 || true)
+  diff_out=$(chezmoi diff 2>&1 || true)
   if [[ -z "$diff_out" ]]; then
     ok "chezmoi diff: clean (no pending changes)"
   else
     warn "chezmoi diff: unapplied changes detected"
-    warn "  Preview: chezmoi apply -n -v --source=${REPO_ROOT}/home"
+    warn "  Preview: chezmoi apply -n -v"
   fi
 else
   fail "chezmoi not found — run: brew install chezmoi"

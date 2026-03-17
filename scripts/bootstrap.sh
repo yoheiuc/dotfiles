@@ -32,9 +32,14 @@ fi
 log "Installing packages (brew bundle)..."
 brew bundle --file="${BREWFILE}"
 
-# ---- 4. Apply dotfiles -----------------------------------------------------
-log "Applying dotfiles (chezmoi apply)..."
-chezmoi apply --source="${REPO_ROOT}/home"
+# ---- 4. Init chezmoi source and apply dotfiles -----------------------------
+# chezmoi init with a local path creates a symlink:
+#   ~/.local/share/chezmoi -> ~/dotfiles
+# .chezmoiroot tells chezmoi the actual source is home/ inside that repo.
+# --force: overwrites the existing symlink on re-runs (makes this idempotent).
+# After this step `chezmoi apply / diff / edit` all work without --source.
+log "Initialising chezmoi and applying dotfiles..."
+chezmoi init --apply --force "${REPO_ROOT}"
 
 log "Bootstrap complete."
 printf '\nNext:\n'
