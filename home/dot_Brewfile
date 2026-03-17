@@ -52,7 +52,6 @@ brew "tfenv"              # Terraform version manager
 
 # ---------- Misc CLI ----------
 brew "hugo"               # static site generator
-brew "mas"                # Mac App Store CLI
 brew "shellcheck"         # shell script linter (used in CI)
 brew "laishulu/homebrew/macism"  # input method switcher
 
@@ -89,20 +88,3 @@ cask "transmission-remote-gui"
 cask "font-meslo-lg-nerd-font"
 cask "google-japanese-ime"
 cask "logi-options+"
-
-# ---------- Mac App Store ----------
-mas "Hidden Bar",           id: 1452453066
-mas "Keynote",              id: 409183694
-mas "Kindle",               id: 302584613
-mas "LINE",                 id: 539883307
-mas "Numbers",              id: 409203825
-mas "Pages",                id: 409201541
-mas "Pasty",                id: 1544620654
-mas "The Unarchiver",       id: 425424353
-mas "Windows App",          id: 1295203466
-
-# ---------- VS Code extensions ----------
-vscode "cocopon.iceberg-theme"
-vscode "esbenp.prettier-vscode"
-vscode "ms-ceintl.vscode-language-pack-ja"
-vscode "ms-python.vscode-python-envs"
