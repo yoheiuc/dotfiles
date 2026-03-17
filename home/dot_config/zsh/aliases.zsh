@@ -17,3 +17,6 @@ alias gl='git log --oneline --graph --decorate'
 alias rm='rm -i'
 alias cp='cp -i'
 alias mv='mv -i'
+
+# AI session launcher
+alias ai="bash ~/dotfiles/scripts/ai-tmux.sh"
