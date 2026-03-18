@@ -19,4 +19,4 @@ alias cp='cp -i'
 alias mv='mv -i'
 
 # AI session launcher
-alias ai="bash ~/dotfiles/scripts/ai-tmux.sh"
+alias ai='bash "${XDG_DATA_HOME:-$HOME/.local/share}/chezmoi/scripts/ai-tmux.sh"'
