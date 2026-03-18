@@ -36,6 +36,7 @@ brew "fzf"                # fuzzy finder
 brew "bat"                # cat with syntax highlight
 brew "eza"                # modern ls
 brew "yazi"               # TUI file manager
+brew "poppler"            # PDF utilities (pdftoppm, pdfinfo, etc.)
 brew "vim"
 
 # ---------- Terminal multiplexer ----------
