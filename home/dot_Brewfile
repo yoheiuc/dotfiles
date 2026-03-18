@@ -75,7 +75,7 @@ cask "aws-vault-binary", args: { appdir: "/Applications" }
 # ---------- Casks: productivity ----------
 cask "raycast"            # launcher
 cask "alt-tab", args: { appdir: "/Applications" }  # window switcher
-cask "cleanshot"          # screenshot, args: { appdir: "/Applications" }
+cask "cleanshot", args: { appdir: "/Applications" }  # screenshot tool
 cask "bitwarden", args: { appdir: "/Applications" }
 cask "ente-auth"          # 2FA
 
@@ -85,6 +85,7 @@ cask "discord", args: { appdir: "/Applications" }
 cask "transmission-remote-gui"
 
 # ---------- Casks: system / drivers ----------
+cask "font-jetbrains-mono-nerd-font"
 cask "font-meslo-lg-nerd-font"
 cask "google-japanese-ime"
 cask "logi-options+"
