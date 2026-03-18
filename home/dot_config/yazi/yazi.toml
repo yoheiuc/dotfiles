@@ -1,0 +1,3 @@
+[manager]
+# Two-pane layout: hide parent column (ratio = parent:current:preview)
+ratio = [0, 1, 1]
