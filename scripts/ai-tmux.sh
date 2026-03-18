@@ -10,13 +10,12 @@ fi
 
 tmux new-session -d -s "$SESSION"
 
-# 左=claude (全高), 右=codex+gemini
+# 左=claude (全高), 右上=gemini, 右下=terminal
 RIGHT=$(tmux split-window -h -t "$SESSION":0.0 -P -F '#{pane_id}')
-GEMINI=$(tmux split-window -v -t "$RIGHT" -P -F '#{pane_id}')
+TERM_PANE=$(tmux split-window -v -t "$RIGHT" -P -F '#{pane_id}')
 
 tmux send-keys -t "$SESSION":0.0 "claude" C-m
-tmux send-keys -t "$RIGHT"       "codex"  C-m
-tmux send-keys -t "$GEMINI"      "gemini" C-m
+tmux send-keys -t "$RIGHT"       "gemini" C-m
 
 tmux select-pane -t "$SESSION":0.0
 
