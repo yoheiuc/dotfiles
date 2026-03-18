@@ -25,7 +25,7 @@ fi
 
 if ! command -v uvx &>/dev/null; then
   warn "uvx not found — install uv via Brewfile first."
-  exit 1
+  exit 0
 fi
 
 # Idempotency: skip if already registered
