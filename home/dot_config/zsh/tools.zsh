@@ -10,6 +10,16 @@ if command -v starship &>/dev/null; then
   eval "$(starship init zsh)"
 fi
 
+# zoxide — smart cd
+if command -v zoxide &>/dev/null; then
+  eval "$(zoxide init zsh)"
+fi
+
+# atuin — shell history
+if command -v atuin &>/dev/null; then
+  eval "$(atuin init zsh)"
+fi
+
 # fzf — fuzzy finder
 if command -v fzf &>/dev/null; then
   # Shell completions
