@@ -84,6 +84,13 @@ else
 fi
 unset _ghostty
 
+section "ghq (optional)"
+if ghq --version &>/dev/null; then
+  ok "$(ghq --version 2>&1 | head -1)"
+else
+  warn "ghq not found — install via Brewfile (brew \"ghq\")"
+fi
+
 section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
   ok "$(claude --version 2>&1 | head -1)"
