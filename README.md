@@ -75,8 +75,20 @@ bash scripts/doctor.sh
 | `ghostty --version` | Optional | Ghostty installed |
 | `claude --version` | Optional | Claude Code CLI available |
 | `claude mcp list` (Serena) | Optional | Serena MCP registered |
+| `ghq --version` | Optional | ghq installed |
 
 Exit code is 0 only when all **required** checks pass.
+
+### ghq (repository management)
+
+```bash
+# Find and jump to a managed repository
+qcd
+
+# Clone through ghq (stored under $(ghq root))
+ghq get git@github.com:owner/repo.git
+```
+
 
 ---
 
