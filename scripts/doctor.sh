@@ -84,6 +84,14 @@ else
 fi
 unset _ghostty
 
+
+section "zellij (optional)"
+if zellij --version &>/dev/null; then
+  ok "$(zellij --version 2>&1 | head -1)"
+else
+  warn "zellij not found — install via Brewfile (brew 'zellij')"
+fi
+
 section "ghq (optional)"
 if ghq --version &>/dev/null; then
   ok "$(ghq --version 2>&1 | head -1)"
