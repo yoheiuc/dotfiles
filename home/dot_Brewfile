@@ -62,7 +62,7 @@ cask "cursor"             # AI editor
 
 # ---------- Casks: AI ----------
 cask "claude"             # Claude desktop
-cask "claude-code"        # Claude Code CLI
+# claude-code: installed via curl -fsSL https://claude.ai/install.sh | bash (see scripts/post-setup.sh)
 
 # ---------- Casks: browsers ----------
 cask "firefox", args: { appdir: "/Applications" }
