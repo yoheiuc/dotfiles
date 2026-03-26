@@ -37,7 +37,7 @@ bash scripts/doctor.sh
 
 | Script | What it does | Re-runnable? |
 |--------|-------------|--------------|
-| `bootstrap.sh` | brew check → install chezmoi → `brew bundle` → `chezmoi init --apply` | Yes (idempotent) |
+| `bootstrap.sh` | brew check → install chezmoi → `brew bundle` + `brew bundle cleanup --force` → `chezmoi init --apply` | Yes (idempotent) |
 | `post-setup.sh` | Registers Serena MCP into Claude Code | Yes (skips if already registered) |
 
 `bootstrap.sh` is intentionally minimal — it only ensures the machine has the right packages and dotfiles applied.
@@ -54,7 +54,8 @@ After `bootstrap.sh` has been run once, chezmoi knows its source directory
 cd ~/dotfiles
 git pull
 chezmoi apply             # apply changes to $HOME
-brew bundle --global      # sync any new packages in ~/.Brewfile
+brew bundle --global      # install/update to match ~/.Brewfile
+brew bundle cleanup --global --force  # remove packages not in ~/.Brewfile
 ```
 
 ---
@@ -76,6 +77,7 @@ bash scripts/doctor.sh
 | `claude --version` | Optional | Claude Code CLI available |
 | `claude mcp list` (Serena) | Optional | Serena MCP registered |
 | `ghq --version` | Optional | ghq installed |
+| `zellij --version` | Optional | zellij installed |
 
 Exit code is 0 only when all **required** checks pass.
 
@@ -89,6 +91,50 @@ qcd
 ghq get git@github.com:owner/repo.git
 ```
 
+
+---
+
+
+## AI Session (zellij) — 使い方イメージ
+
+```bash
+# AI セッション起動（レイアウトは固定しない）
+bash ~/.local/share/chezmoi/scripts/ai-session.sh
+```
+
+起動直後（プレーン）イメージ:
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ zellij (single pane)                                        │
+│                                                              │
+│ ここから必要に応じて使い方を決める                            │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- レイアウトやキーバインドを固定しない、プレーンな起動のみ
+
+---
+
+## chezmoi の基本的な使い方
+
+```bash
+# 1) dotfiles リポジトリ側を編集
+cd ~/dotfiles
+$EDITOR home/dot_config/zsh/aliases.zsh
+
+# 2) 変更を自分の HOME に反映
+chezmoi apply
+
+# 3) 反映前に差分だけ見たいとき
+chezmoi diff
+chezmoi apply -n -v
+
+# 4) すでに HOME 側で編集したファイルを管理下に取り込むとき
+chezmoi add ~/.zshrc
+```
+
+よく使う流れは「`~/dotfiles` を編集 → `chezmoi apply` で反映」です。
 
 ---
 
@@ -113,10 +159,12 @@ Full restore on a new machine: clone the reverted state and re-run `bootstrap.sh
 `home/dot_Brewfile` is managed by chezmoi and deploys to `~/.Brewfile`.
 Homebrew natively reads `~/.Brewfile` via `brew bundle --global`.
 
+Homebrew is run in strict mode in this repo: after install/update, `brew bundle cleanup --force` is also run to remove packages not in the Brewfile.
+
 | Context | Command |
 |---------|---------|
 | Initial install (before `chezmoi apply`) | `brew bundle --file=~/dotfiles/home/dot_Brewfile` |
-| After first apply | `brew bundle --global` |
+| After first apply | `brew bundle --global` + `brew bundle cleanup --global --force` |
 | Verify | `brew bundle check --global` |
 
 ---
@@ -180,7 +228,7 @@ dotfiles/
 ├── .chezmoiroot                    # "home" — chezmoi source root
 ├── .gitignore
 ├── home/                           # chezmoi source state → $HOME
-│   ├── dot_Brewfile                # → ~/.Brewfile  (brew bundle --global)
+│   ├── dot_Brewfile                # → ~/.Brewfile  (bundle + cleanup)
 │   ├── dot_zshrc                   # → ~/.zshrc     (entry point only)
 │   ├── dot_claude/
 │   │   └── settings.json           # → ~/.claude/settings.json

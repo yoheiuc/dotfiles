@@ -18,8 +18,6 @@ alias rm='rm -i'
 alias cp='cp -i'
 alias mv='mv -i'
 
-# AI session launcher
-alias ai='bash "${XDG_DATA_HOME:-$HOME/.local/share}/chezmoi/scripts/ai-tmux.sh"'
 
 # Repository navigation
 alias qcd='cd "$(ghq root)/$(ghq list | fzf)"'
