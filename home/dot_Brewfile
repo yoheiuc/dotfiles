@@ -4,7 +4,6 @@
 # Verify:           brew bundle check --global
 
 # ---------- Taps ----------
-tap "homebrew/bundle"
 tap "laishulu/homebrew"
 
 # ---------- Core CLI ----------
