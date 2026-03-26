@@ -1,11 +1,7 @@
 # keybinds.ghostty — keyboard shortcuts
 #
-# tmux integration notes:
-# - tmux is the session/pane manager; Ghostty is the display layer only
-# - Do NOT bind Ctrl-a or Ctrl-b in Ghostty (tmux prefix keys)
-# - Pane splitting/navigation is handled by tmux, not Ghostty
-# - Ghostty responsibilities: rendering, scrollback, font, theme
-# Ghostty ships sensible macOS defaults; only add overrides here.
+# Keep this file minimal. Ghostty handles rendering/UI concerns,
+# while terminal workflow (tabs/panes) is managed outside this config.
 # See: https://ghostty.org/docs/config/reference#keybind
 
 # Reload config without restarting
