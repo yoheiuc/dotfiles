@@ -4,7 +4,7 @@
 # Responsibility (nothing more):
 #   1. Verify Homebrew is present
 #   2. Install chezmoi if missing
-#   3. Install Homebrew packages (Brewfile)
+#   3. Enforce Homebrew packages to match Brewfile strictly
 #   4. Apply dotfiles via chezmoi
 #
 # Post-dotfiles setup (Serena MCP, etc.) → scripts/post-setup.sh
@@ -28,9 +28,11 @@ if ! command -v chezmoi &>/dev/null; then
   brew install chezmoi
 fi
 
-# ---- 3. Homebrew packages --------------------------------------------------
+# ---- 3. Homebrew packages (strict match) ----------------------------------
 log "Installing packages (brew bundle)..."
 brew bundle --file="${BREWFILE}"
+log "Removing packages not declared in Brewfile (strict mode)..."
+brew bundle cleanup --file="${BREWFILE}" --force
 
 # ---- 4. Init chezmoi source and apply dotfiles -----------------------------
 # chezmoi init with a local path creates a symlink:

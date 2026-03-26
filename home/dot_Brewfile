@@ -41,8 +41,7 @@ brew "poppler"            # PDF utilities (pdftoppm, pdfinfo, etc.)
 brew "vim"
 
 # ---------- Terminal multiplexer ----------
-brew "tmux"
-brew "sesh"               # tmux session manager
+brew "zellij"            # terminal multiplexer
 
 # ---------- Runtimes / package managers ----------
 brew "uv"                 # fast Python package manager
