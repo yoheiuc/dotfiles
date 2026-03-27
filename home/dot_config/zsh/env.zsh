@@ -14,5 +14,5 @@ export PATH="${HOME}/.local/bin:${PATH}"
 export LANG="en_US.UTF-8"
 
 # Default to a beginner-friendly terminal editor
-export EDITOR="nano"
+export EDITOR="micro"
 export VISUAL="${EDITOR}"
