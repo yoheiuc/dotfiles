@@ -241,7 +241,7 @@ dotfiles/
 │       ├── zsh/
 │       │   ├── env.zsh             # PATH, brew shellenv, exports
 │       │   ├── aliases.zsh         # eza, bat, fd, rg shortcuts
-│       │   ├── tools.zsh           # direnv / starship / fzf hooks
+│       │   ├── tools.zsh           # starship / zoxide / atuin / fzf hooks
 │       │   └── completion.zsh      # compinit (must load last)
 │       └── starship.toml           # prompt config
 ├── scripts/
