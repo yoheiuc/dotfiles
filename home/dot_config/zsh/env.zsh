@@ -12,4 +12,7 @@ export PATH="${HOME}/.local/bin:${PATH}"
 
 # Language defaults
 export LANG="en_US.UTF-8"
-export EDITOR="vim"
+
+# Default to a beginner-friendly terminal editor
+export EDITOR="micro"
+export VISUAL="${EDITOR}"
