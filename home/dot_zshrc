@@ -12,7 +12,7 @@ ZSH_CONFIG="${XDG_CONFIG_HOME}/zsh"
 #                     Must be first: PATH must be set before any tool is invoked.
 #   2. aliases.zsh    Shell aliases (e.g. ls → eza)
 #                     Depends on PATH from env.zsh.
-#   3. tools.zsh      direnv / starship / fzf eval hooks
+#   3. tools.zsh      starship / zoxide / atuin / fzf eval hooks
 #                     Must come after env so $HOMEBREW_PREFIX is set;
 #                     must come before completion so hooks can register completions.
 #   4. completion.zsh compinit
