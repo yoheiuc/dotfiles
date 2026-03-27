@@ -25,7 +25,6 @@ brew "zsh-syntax-highlighting"
 brew "zsh-you-should-use"
 brew "starship"           # cross-shell prompt
 brew "atuin"              # shell history (sync + search)
-brew "direnv"             # per-directory env vars
 brew "zoxide"             # smart cd
 brew "navi"               # interactive cheatsheet
 

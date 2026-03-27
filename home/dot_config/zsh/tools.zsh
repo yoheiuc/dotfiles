@@ -1,10 +1,5 @@
 # tools.zsh — third-party tool hooks (existence-checked)
 
-# direnv
-if command -v direnv &>/dev/null; then
-  eval "$(direnv hook zsh)"
-fi
-
 # starship prompt
 if command -v starship &>/dev/null; then
   eval "$(starship init zsh)"
