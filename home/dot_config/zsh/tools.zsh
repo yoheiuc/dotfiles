@@ -13,6 +13,7 @@ fi
 # atuin — shell history
 if command -v atuin &>/dev/null; then
   eval "$(atuin init zsh)"
+  bindkey '?' self-insert
 fi
 
 # fzf — fuzzy finder

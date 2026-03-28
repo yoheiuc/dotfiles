@@ -1,7 +1,7 @@
 # ~/.Brewfile.work — managed by chezmoi (source: home/dot_Brewfile.work)
 # Optional work/dev layer on top of the core profile.
-# Sync core + work:  bash ~/.local/share/chezmoi/scripts/brew-bundle.sh sync work
-# Verify core + work: bash ~/.local/share/chezmoi/scripts/brew-bundle.sh check work
+# Sync core + work:  ~/.local/share/chezmoi/scripts/brew-bundle.sh sync work
+# Verify core + work: ~/.local/share/chezmoi/scripts/brew-bundle.sh check work
 
 # ---------- Infra / cloud ----------
 brew "awscli"

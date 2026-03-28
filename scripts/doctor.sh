@@ -4,7 +4,7 @@
 # Exit code: 0 = all required checks passed, 1 = at least one required check failed
 # Optional (warn-only) items never affect the exit code.
 #
-# Usage: bash scripts/doctor.sh
+# Usage: ./scripts/doctor.sh
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -59,7 +59,7 @@ section "Core Brew profile (required)"
 if bash "${REPO_ROOT}/scripts/brew-bundle.sh" check core &>/dev/null; then
   ok "core Brew profile: all packages present"
 else
-  fail "core Brew profile: missing packages — run: bash scripts/brew-bundle.sh sync core"
+  fail "core Brew profile: missing packages — run: ./scripts/brew-bundle.sh sync core"
   bash "${REPO_ROOT}/scripts/brew-bundle.sh" check core 2>&1 | grep -v '^Using ' | sed 's/^/    /' || true
 fi
 
@@ -133,7 +133,7 @@ if command -v claude &>/dev/null; then
   if claude mcp list 2>/dev/null | grep -q '^serena'; then
     ok "serena MCP: registered"
   else
-    warn "serena MCP: not registered — run: bash scripts/post-setup.sh"
+    warn "serena MCP: not registered — run: ./scripts/post-setup.sh"
   fi
 else
   warn "claude not found — install via Brewfile (cask \"claude\")"
@@ -154,7 +154,7 @@ if command -v codex &>/dev/null; then
   if codex mcp get serena --json >/dev/null 2>&1; then
     ok "serena MCP: registered"
   else
-    warn "serena MCP: not registered for Codex — run: bash scripts/post-setup.sh"
+    warn "serena MCP: not registered for Codex — run: ./scripts/post-setup.sh"
   fi
 else
   warn "codex not found — install Codex CLI separately"

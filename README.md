@@ -25,23 +25,23 @@ git clone https://github.com/<your-username>/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
 # 2. Bootstrap: installs packages + applies dotfiles
-bash scripts/bootstrap.sh
+./scripts/bootstrap.sh
 
 # 3. Optional: install extra app layers
-bash scripts/brew-bundle.sh sync work
+./scripts/brew-bundle.sh sync work
 # or
-bash scripts/brew-bundle.sh sync personal
+./scripts/brew-bundle.sh sync personal
 # or
-bash scripts/brew-bundle.sh sync all
+./scripts/brew-bundle.sh sync all
 
 # 4. Open a new terminal to load the zsh config, then run post-setup
-bash scripts/post-setup.sh   # installs Codex CLI and registers Serena MCP
+./scripts/post-setup.sh      # installs Codex CLI and registers Serena MCP
 
 # 4.5 Authenticate Codex once
 codex login
 
 # 5. Verify
-bash scripts/doctor.sh
+./scripts/doctor.sh
 ```
 
 ### bootstrap.sh vs post-setup.sh
@@ -69,13 +69,13 @@ After `bootstrap.sh` has been run once, chezmoi knows its source directory
 cd ~/dotfiles
 git pull
 chezmoi apply             # apply changes to $HOME
-bash scripts/brew-bundle.sh sync core   # baseline machine
+./scripts/brew-bundle.sh sync core      # baseline machine
 # or
-bash scripts/brew-bundle.sh sync work   # baseline + work/dev apps
+./scripts/brew-bundle.sh sync work      # baseline + work/dev apps
 # or
-bash scripts/brew-bundle.sh sync personal  # baseline + personal/local apps
+./scripts/brew-bundle.sh sync personal  # baseline + personal/local apps
 # or
-bash scripts/brew-bundle.sh sync all    # baseline + every optional layer
+./scripts/brew-bundle.sh sync all       # baseline + every optional layer
 ```
 
 ---
@@ -83,7 +83,7 @@ bash scripts/brew-bundle.sh sync all    # baseline + every optional layer
 ## Health Check
 
 ```bash
-bash scripts/doctor.sh
+./scripts/doctor.sh
 ```
 
 | Check | Type | Pass condition |
@@ -91,7 +91,7 @@ bash scripts/doctor.sh
 | `brew --version` | Required | Homebrew is installed |
 | `chezmoi --version` | Required | chezmoi is installed |
 | `chezmoi doctor` | Required | Runs and prints built-in health results (`failed` rows are shown as warnings) |
-| `bash scripts/brew-bundle.sh check core` | Required | All core Brew profile packages present |
+| `./scripts/brew-bundle.sh check core` | Required | All core Brew profile packages present |
 | `node --version` | Optional | node/npm runtime available for Codex CLI installs |
 | `uv --version` | Optional | uv installed (needed by Serena MCP) |
 | `ghostty --version` | Optional | Ghostty CLI exists and returns a valid version |
@@ -185,18 +185,18 @@ Full restore on a new machine: clone the reverted state and re-run `bootstrap.sh
 `home/dot_Brewfile.personal` is an optional personal/local layer.
 
 Homebrew is still run in strict mode, but cleanup must happen against the effective combined profile.
-Because of that, use `bash scripts/brew-bundle.sh ...` instead of raw `brew bundle --global` commands.
+Because of that, use `./scripts/brew-bundle.sh ...` instead of raw `brew bundle --global` commands.
 
 | Context | Command |
 |---------|---------|
-| Initial install (core only) | `bash ~/dotfiles/scripts/brew-bundle.sh sync core` |
-| Add work apps too | `bash ~/dotfiles/scripts/brew-bundle.sh sync work` |
-| Add personal apps too | `bash ~/dotfiles/scripts/brew-bundle.sh sync personal` |
-| Add every optional layer | `bash ~/dotfiles/scripts/brew-bundle.sh sync all` |
-| Verify core | `bash ~/dotfiles/scripts/brew-bundle.sh check core` |
-| Verify core + work | `bash ~/dotfiles/scripts/brew-bundle.sh check work` |
-| Verify core + personal | `bash ~/dotfiles/scripts/brew-bundle.sh check personal` |
-| Verify core + work + personal | `bash ~/dotfiles/scripts/brew-bundle.sh check all` |
+| Initial install (core only) | `~/dotfiles/scripts/brew-bundle.sh sync core` |
+| Add work apps too | `~/dotfiles/scripts/brew-bundle.sh sync work` |
+| Add personal apps too | `~/dotfiles/scripts/brew-bundle.sh sync personal` |
+| Add every optional layer | `~/dotfiles/scripts/brew-bundle.sh sync all` |
+| Verify core | `~/dotfiles/scripts/brew-bundle.sh check core` |
+| Verify core + work | `~/dotfiles/scripts/brew-bundle.sh check work` |
+| Verify core + personal | `~/dotfiles/scripts/brew-bundle.sh check personal` |
+| Verify core + work + personal | `~/dotfiles/scripts/brew-bundle.sh check all` |
 
 Use the same profile consistently on later runs. For example, running `sync core` after `sync work` will clean up work-only apps.
 
@@ -252,10 +252,20 @@ theme = nord
 **Serena MCP** is configured for both tools, so it is active in every project. The launch args also disable Serena's browser auto-open behavior:
 
 ```bash
-bash scripts/post-setup.sh    # idempotent — safe to re-run
+./scripts/post-setup.sh       # idempotent — safe to re-run
 codex login                   # one-time auth
 claude mcp list               # verify for Claude Code
 codex mcp list                # verify for Codex
+```
+
+Setup scripts are invoked with `bash` explicitly because the repository scripts are written for Bash. Day-to-day usage can stay in your normal `zsh` shell.
+
+Bundled Codex skills are available under `~/.codex/skills`. For example, from `zsh`:
+
+```zsh
+~/.codex/skills/playwright/scripts/playwright_cli.sh open https://example.com
+~/.codex/skills/playwright/scripts/playwright_cli.sh snapshot
+python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp --active-window
 ```
 
 **Superpowers plugin** (manual, inside a Claude Code session):
