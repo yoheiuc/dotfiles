@@ -244,6 +244,7 @@ theme = nord
 - Default model / reasoning / personality
 - OpenAI curated `github` and `google-calendar` plugins enabled
 - `serena` as a shared Codex MCP server
+- Curated local skills such as `playwright` and `screenshot`
 - Existing local `projects.*` trust overrides are preserved on `chezmoi apply`
 
 **Codex CLI** is installed by `post-setup.sh` using the official npm package. `node` is included in the core Brew profile so new machines have the runtime needed for that install path.
@@ -278,7 +279,8 @@ dotfiles/
 │   ├── dot_claude/
 │   │   └── settings.json           # → ~/.claude/settings.json
 │   ├── dot_codex/
-│   │   └── config.toml.tmpl        # → ~/.codex/config.toml
+│   │   ├── config.toml.tmpl        # → ~/.codex/config.toml
+│   │   └── skills/                 # → ~/.codex/skills/*
 │   └── dot_config/
 │       ├── ghostty/
 │       │   ├── config.ghostty      # entry point (loads modules)
