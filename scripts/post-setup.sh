@@ -3,6 +3,7 @@
 #
 # Responsibility:
 #   - Install Claude Code CLI (via https://claude.ai/install.sh)
+#   - Install Codex CLI (via npm install -g @openai/codex)
 #   - Register Serena MCP server into Claude Code and Codex (idempotent)
 #   - Any future "first-time only" configuration that is not a dotfile
 #
@@ -33,6 +34,27 @@ else
   fi
 fi
 
+# ---- Codex CLI -------------------------------------------------------------
+log "Codex CLI..."
+
+if command -v codex &>/dev/null; then
+  ok "Codex already installed: $(codex --version 2>/dev/null | tail -1 || true)"
+else
+  if ! command -v npm &>/dev/null; then
+    warn "npm not found — install the core Brew profile first."
+    exit 1
+  fi
+
+  log "Installing Codex via npm..."
+  npm install -g @openai/codex
+  if command -v codex &>/dev/null; then
+    ok "Codex installed: $(codex --version 2>/dev/null | tail -1 || true)"
+  else
+    warn "codex CLI still not found after install — open a new terminal and re-run."
+    exit 1
+  fi
+fi
+
 # ---- Serena MCP (Claude Code / Codex) -------------------------------------
 log "Serena MCP registration..."
 
@@ -41,29 +63,54 @@ if ! command -v uvx &>/dev/null; then
   exit 0
 fi
 
-if claude mcp list 2>/dev/null | grep -q '^serena'; then
-  ok "Claude Code: Serena already registered"
+if claude mcp get serena >/dev/null 2>&1; then
+  if claude mcp get serena 2>/dev/null | grep -Fq -- '--open-web-dashboard False'; then
+    ok "Claude Code: Serena already registered"
+  else
+    log "Claude Code: updating Serena to disable browser auto-open..."
+    claude mcp remove serena -s user
+    claude mcp add --scope user serena -- \
+      uvx \
+      --from git+https://github.com/oraios/serena \
+      serena start-mcp-server --context=claude-code --project-from-cwd \
+      --open-web-dashboard False
+  fi
 else
   log "Registering Serena for Claude Code (user scope)..."
   claude mcp add --scope user serena -- \
-    uvx --from git+https://github.com/oraios/serena \
-    serena start-mcp-server --context=claude-code --project-from-cwd
-  ok "Claude Code: Serena registered"
+    uvx \
+    --from git+https://github.com/oraios/serena \
+    serena start-mcp-server --context=claude-code --project-from-cwd \
+    --open-web-dashboard False
 fi
+ok "Claude Code: Serena registered"
 
 if command -v codex &>/dev/null; then
   if codex mcp get serena --json >/dev/null 2>&1; then
-    ok "Codex: Serena already registered"
+    if codex mcp get serena --json 2>/dev/null | grep -Fq -- '"--open-web-dashboard"'; then
+      ok "Codex: Serena already registered"
+    else
+      log "Codex: updating Serena to disable browser auto-open..."
+      codex mcp remove serena
+      codex mcp add serena -- \
+        uvx \
+        --from git+https://github.com/oraios/serena \
+        serena start-mcp-server --context=codex --project-from-cwd \
+        --open-web-dashboard False
+    fi
   else
     log "Registering Serena for Codex..."
     codex mcp add serena -- \
-      uvx --from git+https://github.com/oraios/serena \
-      serena start-mcp-server --context=codex --project-from-cwd
-    ok "Codex: Serena registered"
+      uvx \
+      --from git+https://github.com/oraios/serena \
+      serena start-mcp-server --context=codex --project-from-cwd \
+      --open-web-dashboard False
   fi
+  ok "Codex: Serena registered"
 else
   warn "codex not found — Serena for Codex skipped"
 fi
 
 printf '\nVerify with: claude mcp list\n'
 printf '             codex mcp list\n'
+printf '             codex login\n'

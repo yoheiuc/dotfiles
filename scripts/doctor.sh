@@ -67,6 +67,13 @@ fi
 # OPTIONAL checks — warn only, never fail the script
 # ===========================================================================
 
+section "node (optional)"
+if node --version &>/dev/null; then
+  ok "node $(node --version)"
+else
+  warn "node not found — needed for Codex CLI installs via npm"
+fi
+
 section "uv (optional)"
 if uv --version &>/dev/null; then
   ok "$(uv --version)"

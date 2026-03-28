@@ -42,6 +42,7 @@ brew "vim"
 brew "zellij"             # terminal multiplexer
 
 # ---------- Runtimes / package managers ----------
+brew "node"               # npm runtime for Codex CLI
 brew "uv"                 # fast Python package manager
 
 # ---------- Misc CLI ----------
