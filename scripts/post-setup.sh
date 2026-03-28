@@ -3,7 +3,7 @@
 #
 # Responsibility:
 #   - Install Claude Code CLI (via https://claude.ai/install.sh)
-#   - Register Serena MCP server into Claude Code (idempotent)
+#   - Register Serena MCP server into Claude Code and Codex (idempotent)
 #   - Any future "first-time only" configuration that is not a dotfile
 #
 # Safe to re-run: already-configured items are skipped.
@@ -33,7 +33,7 @@ else
   fi
 fi
 
-# ---- Serena MCP (Claude Code) ---------------------------------------------
+# ---- Serena MCP (Claude Code / Codex) -------------------------------------
 log "Serena MCP registration..."
 
 if ! command -v uvx &>/dev/null; then
@@ -41,15 +41,29 @@ if ! command -v uvx &>/dev/null; then
   exit 0
 fi
 
-# Idempotency: skip if already registered
 if claude mcp list 2>/dev/null | grep -q '^serena'; then
-  ok "Serena already registered — nothing to do."
+  ok "Claude Code: Serena already registered"
 else
-  log "Registering Serena (user scope)..."
+  log "Registering Serena for Claude Code (user scope)..."
   claude mcp add --scope user serena -- \
     uvx --from git+https://github.com/oraios/serena \
     serena start-mcp-server --context=claude-code --project-from-cwd
-  ok "Serena registered."
+  ok "Claude Code: Serena registered"
+fi
+
+if command -v codex &>/dev/null; then
+  if codex mcp get serena --json >/dev/null 2>&1; then
+    ok "Codex: Serena already registered"
+  else
+    log "Registering Serena for Codex..."
+    codex mcp add serena -- \
+      uvx --from git+https://github.com/oraios/serena \
+      serena start-mcp-server --context=codex --project-from-cwd
+    ok "Codex: Serena registered"
+  fi
+else
+  warn "codex not found — Serena for Codex skipped"
 fi
 
 printf '\nVerify with: claude mcp list\n'
+printf '             codex mcp list\n'

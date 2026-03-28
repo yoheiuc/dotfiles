@@ -35,7 +35,7 @@ bash scripts/brew-bundle.sh sync personal
 bash scripts/brew-bundle.sh sync all
 
 # 4. Open a new terminal to load the zsh config, then run post-setup
-bash scripts/post-setup.sh   # registers Serena MCP into Claude Code
+bash scripts/post-setup.sh   # registers Serena MCP into Claude Code / Codex
 
 # 5. Verify
 bash scripts/doctor.sh
@@ -49,7 +49,7 @@ bash scripts/doctor.sh
 | `brew-bundle.sh sync work` | Syncs `core + work` Brew profiles and cleans up against that combined set | Yes (idempotent) |
 | `brew-bundle.sh sync personal` | Syncs `core + personal` Brew profiles and cleans up against that combined set | Yes (idempotent) |
 | `brew-bundle.sh sync all` | Syncs `core + work + personal` Brew profiles and cleans up against the combined set | Yes (idempotent) |
-| `post-setup.sh` | Registers Serena MCP into Claude Code | Yes (skips if already registered) |
+| `post-setup.sh` | Registers Serena MCP into Claude Code / Codex | Yes (skips if already registered) |
 
 `bootstrap.sh` is intentionally minimal — it only ensures the machine has the right packages and dotfiles applied.
 `brew-bundle.sh` is the supported way to keep Homebrew in strict sync after the split.
@@ -93,6 +93,8 @@ bash scripts/doctor.sh
 | `ghostty --version` | Optional | Ghostty CLI exists and returns a valid version |
 | `claude --version` | Optional | Claude Code CLI available |
 | `claude mcp list` (Serena) | Optional | Serena MCP registered |
+| `codex --version` | Optional | Codex CLI available |
+| `codex mcp list` (Serena) | Optional | Serena MCP registered for Codex |
 | `ghq --version` | Optional | ghq installed |
 | `zellij --version` | Optional | zellij installed |
 
@@ -226,7 +228,7 @@ theme = nord
 
 ---
 
-## Claude Code & MCP
+## Claude Code / Codex / MCP
 
 `~/.claude/settings.json` (managed by chezmoi) sets:
 - Default deny for destructive shell commands (`curl`, `wget`, `rm`, `sudo`, `chmod`, `chown`)
@@ -234,11 +236,18 @@ theme = nord
 - Ask-before-run for `git push` and `WebFetch`
 - Auto-allow for read-only git commands and `--version`/`--help`
 
-**Serena MCP** is registered at user scope, so it is active in every project:
+`~/.codex/config.toml` (managed by chezmoi) sets:
+- Default model / reasoning / personality
+- OpenAI curated `github` and `google-calendar` plugins enabled
+- `serena` as a shared Codex MCP server
+- Existing local `projects.*` trust overrides are preserved on `chezmoi apply`
+
+**Serena MCP** is configured for both tools, so it is active in every project:
 
 ```bash
 bash scripts/post-setup.sh    # idempotent — safe to re-run
-claude mcp list               # verify
+claude mcp list               # verify for Claude Code
+codex mcp list                # verify for Codex
 ```
 
 **Superpowers plugin** (manual, inside a Claude Code session):
@@ -261,6 +270,8 @@ dotfiles/
 │   ├── dot_zshrc                   # → ~/.zshrc     (entry point only)
 │   ├── dot_claude/
 │   │   └── settings.json           # → ~/.claude/settings.json
+│   ├── dot_codex/
+│   │   └── config.toml.tmpl        # → ~/.codex/config.toml
 │   └── dot_config/
 │       ├── ghostty/
 │       │   ├── config.ghostty      # entry point (loads modules)
