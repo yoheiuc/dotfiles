@@ -13,6 +13,7 @@ ok()      { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn()    { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 fail()    { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=1; }
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
+strip_codex_path_warning() { sed '/^WARNING: proceeding, even though we could not update PATH:/d'; }
 
 REQUIRED_FAILED=0
 
@@ -129,6 +130,27 @@ if command -v claude &>/dev/null; then
   fi
 else
   warn "claude not found — install via Brewfile (cask \"claude\")"
+fi
+
+section "Codex (optional)"
+if command -v codex &>/dev/null; then
+  codex_version_line="$(codex --version 2>&1 | strip_codex_path_warning | head -1)"
+  if [[ -n "$codex_version_line" ]]; then
+    ok "$codex_version_line"
+  else
+    warn "codex found but --version returned no usable output"
+  fi
+
+  printf '  MCP servers registered:\n'
+  codex_mcp_list_out="$(codex mcp list 2>&1 | strip_codex_path_warning || true)"
+  printf '%s\n' "$codex_mcp_list_out" | sed 's/^/    /'
+  if codex mcp get serena --json >/dev/null 2>&1; then
+    ok "serena MCP: registered"
+  else
+    warn "serena MCP: not registered for Codex — run: bash scripts/post-setup.sh"
+  fi
+else
+  warn "codex not found — install Codex CLI separately"
 fi
 
 # ===========================================================================
