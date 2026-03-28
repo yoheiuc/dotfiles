@@ -26,7 +26,7 @@ enabled = true
 
 [mcp_servers.serena]
 command = "uvx"
-args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context=codex", "--project-from-cwd"]
+args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context=codex", "--project-from-cwd", "--open-web-dashboard", "False"]
 
 {{- $configPath := joinPath .chezmoi.homeDir ".codex/config.toml" -}}
 {{- $preservedProjects := output "sh" "-c" (printf "if [ -f %q ]; then awk '/^\\[projects\\./{keep=1} /^\\[/{if ($0 !~ /^\\[projects\\./) keep=0} keep{print}' %q; fi" $configPath $configPath) | trim -}}
