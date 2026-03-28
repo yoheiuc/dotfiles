@@ -6,12 +6,6 @@
 # ---------- Local productivity ----------
 brew "laishulu/homebrew/macism"  # input method switcher
 cask "raycast"                   # launcher
-cask "alt-tab", args: { appdir: "/Applications" }  # window switcher
-cask "cleanshot", args: { appdir: "/Applications" }  # screenshot tool
-
-# ---------- Browsers ----------
-cask "firefox", args: { appdir: "/Applications" }
-cask "google-chrome"
 
 # ---------- Accounts / auth ----------
 cask "bitwarden", args: { appdir: "/Applications" }
