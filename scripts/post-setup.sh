@@ -9,7 +9,7 @@
 #
 # Safe to re-run: already-configured items are skipped.
 #
-# Usage: bash scripts/post-setup.sh
+# Usage: ./scripts/post-setup.sh
 set -euo pipefail
 
 log()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
