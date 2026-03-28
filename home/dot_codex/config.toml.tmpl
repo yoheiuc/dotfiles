@@ -1,0 +1,37 @@
+# ~/.codex/config.toml — managed by chezmoi (source: home/dot_codex/config.toml.tmpl)
+#
+# Shared Codex defaults live here.
+# Machine/project-specific trust overrides are preserved from any existing
+# ~/.codex/config.toml during `chezmoi apply`.
+
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+personality = "pragmatic"
+
+[notice]
+hide_rate_limit_model_nudge = true
+
+[notice.model_migrations]
+"gpt-5.1-codex-max" = "gpt-5.4"
+"gpt-5.3-codex" = "gpt-5.4"
+
+[features]
+multi_agent = true
+
+[plugins."google-calendar@openai-curated"]
+enabled = true
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[mcp_servers.serena]
+command = "uvx"
+args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context=codex", "--project-from-cwd"]
+
+{{- $configPath := joinPath .chezmoi.homeDir ".codex/config.toml" -}}
+{{- $preservedProjects := output "sh" "-c" (printf "if [ -f %q ]; then awk '/^\\[projects\\./{keep=1} /^\\[/{if ($0 !~ /^\\[projects\\./) keep=0} keep{print}' %q; fi" $configPath $configPath) | trim -}}
+{{ if $preservedProjects }}
+
+# Preserved local project overrides from the previous ~/.codex/config.toml
+{{ $preservedProjects }}
+{{ end }}
