@@ -1,0 +1,56 @@
+# ~/.Brewfile.core — managed by chezmoi (source: home/dot_Brewfile.core)
+# Minimal machine baseline used by bootstrap / doctor.
+# Sync core only:  bash ~/.local/share/chezmoi/scripts/brew-bundle.sh sync core
+# Verify core:     bash ~/.local/share/chezmoi/scripts/brew-bundle.sh check core
+
+# ---------- Taps ----------
+tap "laishulu/homebrew"
+
+# ---------- Core CLI ----------
+brew "chezmoi"            # dotfiles manager
+brew "git"
+brew "git-delta"          # better git diff
+brew "git-lfs"            # large file storage
+brew "gh"                 # GitHub CLI
+brew "ghq"                # Manage local clones
+brew "lazygit"            # TUI git client
+brew "jq"                 # JSON processor
+brew "yq"                 # YAML/JSON/TOML processor
+
+# ---------- Shell / prompt ----------
+brew "zsh"
+brew "zsh-autosuggestions"
+brew "zsh-completions"
+brew "zsh-syntax-highlighting"
+brew "zsh-you-should-use"
+brew "starship"           # cross-shell prompt
+brew "atuin"              # shell history (sync + search)
+brew "zoxide"             # smart cd
+brew "navi"               # interactive cheatsheet
+
+# ---------- File / search ----------
+brew "ripgrep"            # fast grep (rg)
+brew "fd"                 # fast find
+brew "fzf"                # fuzzy finder
+brew "bat"                # cat with syntax highlight
+brew "eza"                # modern ls
+brew "yazi"               # TUI file manager
+brew "poppler"            # PDF utilities (pdftoppm, pdfinfo, etc.)
+brew "vim"
+
+# ---------- Terminal multiplexer ----------
+brew "zellij"             # terminal multiplexer
+
+# ---------- Runtimes / package managers ----------
+brew "uv"                 # fast Python package manager
+
+# ---------- Misc CLI ----------
+brew "shellcheck"         # shell script linter (used in CI)
+
+# ---------- Casks: terminal / AI ----------
+cask "ghostty"            # GPU-accelerated terminal
+cask "claude"             # Claude desktop
+
+# ---------- Casks: fonts ----------
+cask "font-jetbrains-mono-nerd-font"
+cask "font-meslo-lg-nerd-font"

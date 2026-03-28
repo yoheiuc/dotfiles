@@ -4,7 +4,7 @@
 # Responsibility (nothing more):
 #   1. Verify Homebrew is present
 #   2. Install chezmoi if missing
-#   3. Enforce Homebrew packages to match Brewfile strictly
+#   3. Enforce Homebrew packages to match the core Brew profile strictly
 #   4. Apply dotfiles via chezmoi
 #
 # Post-dotfiles setup (Serena MCP, etc.) → scripts/post-setup.sh
@@ -13,7 +13,6 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BREWFILE="${REPO_ROOT}/home/dot_Brewfile"
 
 log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
@@ -28,11 +27,8 @@ if ! command -v chezmoi &>/dev/null; then
   brew install chezmoi
 fi
 
-# ---- 3. Homebrew packages (strict match) ----------------------------------
-log "Installing packages (brew bundle)..."
-brew bundle --file="${BREWFILE}"
-log "Removing packages not declared in Brewfile (strict mode)..."
-brew bundle cleanup --file="${BREWFILE}" --force
+# ---- 3. Homebrew packages (strict core profile) ---------------------------
+bash "${REPO_ROOT}/scripts/brew-bundle.sh" sync core
 
 # ---- 4. Init chezmoi source and apply dotfiles -----------------------------
 # chezmoi init with a local path creates a symlink:
@@ -46,5 +42,8 @@ chezmoi init --apply --force "${REPO_ROOT}"
 log "Bootstrap complete."
 printf '\nNext:\n'
 printf '  • Open a new terminal to load zsh config\n'
+printf '  • Optional: bash scripts/brew-bundle.sh sync work      (install work apps too)\n'
+printf '  • Optional: bash scripts/brew-bundle.sh sync personal  (install personal apps too)\n'
+printf '  • Optional: bash scripts/brew-bundle.sh sync all       (install every optional layer)\n'
 printf '  • Run:  bash scripts/post-setup.sh   (Serena MCP, etc.)\n'
 printf '  • Run:  bash scripts/doctor.sh        (verify setup)\n'

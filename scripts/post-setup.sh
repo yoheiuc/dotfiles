@@ -37,7 +37,7 @@ fi
 log "Serena MCP registration..."
 
 if ! command -v uvx &>/dev/null; then
-  warn "uvx not found — install uv via Brewfile first."
+  warn "uvx not found — install the core Brew profile first."
   exit 0
 fi
 
