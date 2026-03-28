@@ -7,11 +7,9 @@
 brew "awscli"
 brew "azure-cli"
 brew "tfenv"              # Terraform version manager
-brew "hugo"               # static site generator
 
 # ---------- Editors ----------
 cask "visual-studio-code", args: { appdir: "/Applications" }
-cask "cursor"             # AI editor
 
 # ---------- Cloud / infra ----------
 cask "gcloud-cli", args: { appdir: "/Applications" }
