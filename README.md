@@ -64,6 +64,8 @@ codex login
 
 After `bootstrap.sh` has been run once, chezmoi knows its source directory
 (`~/.local/share/chezmoi` → `~/dotfiles`). No `--source` flag is needed.
+`bootstrap.sh` enforces that symlink so `~/dotfiles` stays the single source
+of truth.
 
 ```bash
 cd ~/dotfiles
