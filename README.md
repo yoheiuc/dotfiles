@@ -35,7 +35,10 @@ bash scripts/brew-bundle.sh sync personal
 bash scripts/brew-bundle.sh sync all
 
 # 4. Open a new terminal to load the zsh config, then run post-setup
-bash scripts/post-setup.sh   # registers Serena MCP into Claude Code / Codex
+bash scripts/post-setup.sh   # installs Codex CLI and registers Serena MCP
+
+# 4.5 Authenticate Codex once
+codex login
 
 # 5. Verify
 bash scripts/doctor.sh
@@ -49,7 +52,7 @@ bash scripts/doctor.sh
 | `brew-bundle.sh sync work` | Syncs `core + work` Brew profiles and cleans up against that combined set | Yes (idempotent) |
 | `brew-bundle.sh sync personal` | Syncs `core + personal` Brew profiles and cleans up against that combined set | Yes (idempotent) |
 | `brew-bundle.sh sync all` | Syncs `core + work + personal` Brew profiles and cleans up against the combined set | Yes (idempotent) |
-| `post-setup.sh` | Registers Serena MCP into Claude Code / Codex | Yes (skips if already registered) |
+| `post-setup.sh` | Installs Codex CLI and registers Serena MCP into Claude Code / Codex | Yes (idempotent) |
 
 `bootstrap.sh` is intentionally minimal — it only ensures the machine has the right packages and dotfiles applied.
 `brew-bundle.sh` is the supported way to keep Homebrew in strict sync after the split.
@@ -89,6 +92,7 @@ bash scripts/doctor.sh
 | `chezmoi --version` | Required | chezmoi is installed |
 | `chezmoi doctor` | Required | Runs and prints built-in health results (`failed` rows are shown as warnings) |
 | `bash scripts/brew-bundle.sh check core` | Required | All core Brew profile packages present |
+| `node --version` | Optional | node/npm runtime available for Codex CLI installs |
 | `uv --version` | Optional | uv installed (needed by Serena MCP) |
 | `ghostty --version` | Optional | Ghostty CLI exists and returns a valid version |
 | `claude --version` | Optional | Claude Code CLI available |
@@ -242,10 +246,13 @@ theme = nord
 - `serena` as a shared Codex MCP server
 - Existing local `projects.*` trust overrides are preserved on `chezmoi apply`
 
-**Serena MCP** is configured for both tools, so it is active in every project:
+**Codex CLI** is installed by `post-setup.sh` using the official npm package. `node` is included in the core Brew profile so new machines have the runtime needed for that install path.
+
+**Serena MCP** is configured for both tools, so it is active in every project. The launch args also disable Serena's browser auto-open behavior:
 
 ```bash
 bash scripts/post-setup.sh    # idempotent — safe to re-run
+codex login                   # one-time auth
 claude mcp list               # verify for Claude Code
 codex mcp list                # verify for Codex
 ```
