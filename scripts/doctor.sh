@@ -7,6 +7,8 @@
 # Usage: bash scripts/doctor.sh
 set -euo pipefail
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 ok()      { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn()    { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 fail()    { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=1; }
@@ -34,7 +36,11 @@ if chezmoi --version &>/dev/null; then
 
   # chezmoi doctor — runs built-in self-checks (gpg, age, diff tool, etc.)
   printf '  chezmoi doctor:\n'
-  chezmoi doctor 2>&1 | sed 's/^/    /'
+  chezmoi_doctor_out="$(chezmoi doctor 2>&1 || true)"
+  printf '%s\n' "$chezmoi_doctor_out" | sed 's/^/    /'
+  if printf '%s\n' "$chezmoi_doctor_out" | grep -Eq '^[[:space:]]*failed[[:space:]]'; then
+    warn "chezmoi doctor: reported failed checks above"
+  fi
 
   # Pending diff (warn only — user may intentionally defer apply)
   diff_out=$(chezmoi diff 2>&1 || true)
@@ -48,12 +54,12 @@ else
   fail "chezmoi not found — run: brew install chezmoi"
 fi
 
-section "Brewfile packages (required)"
-if brew bundle check --global &>/dev/null; then
-  ok "brew bundle --global: all packages present"
+section "Core Brew profile (required)"
+if bash "${REPO_ROOT}/scripts/brew-bundle.sh" check core &>/dev/null; then
+  ok "core Brew profile: all packages present"
 else
-  fail "brew bundle: missing packages — run: brew bundle --global"
-  brew bundle check --global 2>&1 | grep -v '^Using ' | sed 's/^/    /' || true
+  fail "core Brew profile: missing packages — run: bash scripts/brew-bundle.sh sync core"
+  bash "${REPO_ROOT}/scripts/brew-bundle.sh" check core 2>&1 | grep -v '^Using ' | sed 's/^/    /' || true
 fi
 
 # ===========================================================================
@@ -78,7 +84,18 @@ elif [[ -x "/Applications/Ghostty.app/Contents/MacOS/ghostty" ]]; then
 fi
 
 if [[ -n "$_ghostty" ]]; then
-  ok "ghostty $("$_ghostty" --version 2>&1 | head -1)"
+  if ghostty_version_out="$("$_ghostty" --version 2>&1)"; then
+    ghostty_version_line="$(printf '%s\n' "$ghostty_version_out" | head -1)"
+    if [[ "$ghostty_version_line" == Ghostty* ]]; then
+      ok "ghostty ${ghostty_version_line}"
+    else
+      warn "ghostty CLI returned unexpected output"
+      warn "  ${ghostty_version_line}"
+    fi
+  else
+    warn "ghostty CLI found but --version failed"
+    warn "  $(printf '%s\n' "$ghostty_version_out" | head -1)"
+  fi
 else
   warn "ghostty not found in PATH or /Applications — install via Brewfile (cask \"ghostty\")"
 fi

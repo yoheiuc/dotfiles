@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint-and-bundle:
-    name: Shellcheck + Brewfile
+    name: Shellcheck + Core Brewfile
     runs-on: macos-latest
 
     steps:
@@ -17,8 +17,8 @@ jobs:
       - name: Update Homebrew
         run: brew update
 
-      - name: Install Brewfile dependencies
-        run: brew bundle --file=home/dot_Brewfile
+      - name: Install core Brewfile dependencies
+        run: brew bundle --file=home/dot_Brewfile.core
 
       - name: Run shellcheck on scripts
         run: |

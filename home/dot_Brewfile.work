@@ -1,0 +1,18 @@
+# ~/.Brewfile.work — managed by chezmoi (source: home/dot_Brewfile.work)
+# Optional work/dev layer on top of the core profile.
+# Sync core + work:  bash ~/.local/share/chezmoi/scripts/brew-bundle.sh sync work
+# Verify core + work: bash ~/.local/share/chezmoi/scripts/brew-bundle.sh check work
+
+# ---------- Infra / cloud ----------
+brew "awscli"
+brew "azure-cli"
+brew "tfenv"              # Terraform version manager
+brew "hugo"               # static site generator
+
+# ---------- Editors ----------
+cask "visual-studio-code", args: { appdir: "/Applications" }
+cask "cursor"             # AI editor
+
+# ---------- Cloud / infra ----------
+cask "gcloud-cli", args: { appdir: "/Applications" }
+cask "aws-vault-binary", args: { appdir: "/Applications" }
