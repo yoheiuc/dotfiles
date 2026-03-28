@@ -1,0 +1,22 @@
+# ~/.Brewfile.personal — managed by chezmoi (source: home/dot_Brewfile.personal)
+# Optional personal/local layer on top of the core profile.
+# Sync core + personal:  bash ~/.local/share/chezmoi/scripts/brew-bundle.sh sync personal
+# Verify core + personal: bash ~/.local/share/chezmoi/scripts/brew-bundle.sh check personal
+
+# ---------- Local productivity ----------
+brew "laishulu/homebrew/macism"  # input method switcher
+cask "raycast"                   # launcher
+cask "alt-tab", args: { appdir: "/Applications" }  # window switcher
+cask "cleanshot", args: { appdir: "/Applications" }  # screenshot tool
+
+# ---------- Browsers ----------
+cask "firefox", args: { appdir: "/Applications" }
+cask "google-chrome"
+
+# ---------- Accounts / auth ----------
+cask "bitwarden", args: { appdir: "/Applications" }
+cask "ente-auth"                 # 2FA
+
+# ---------- System / locale ----------
+cask "google-japanese-ime"
+cask "logi-options+"

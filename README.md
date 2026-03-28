@@ -12,7 +12,8 @@ Personal macOS dotfiles managed with [chezmoi](https://chezmoi.io).
 | **Homebrew** | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
 | **Git** | Xcode CLT (`xcode-select --install`) or `brew install git` |
 
-Everything else (chezmoi, Ghostty, Claude Code, zsh tools…) is in `home/dot_Brewfile` and installed by `bootstrap.sh`.
+Everything else is split into `home/dot_Brewfile.core`, `home/dot_Brewfile.work`, and `home/dot_Brewfile.personal`.
+`bootstrap.sh` installs only the core profile.
 
 ---
 
@@ -26,10 +27,17 @@ cd ~/dotfiles
 # 2. Bootstrap: installs packages + applies dotfiles
 bash scripts/bootstrap.sh
 
-# 3. Open a new terminal to load the zsh config, then run post-setup
+# 3. Optional: install extra app layers
+bash scripts/brew-bundle.sh sync work
+# or
+bash scripts/brew-bundle.sh sync personal
+# or
+bash scripts/brew-bundle.sh sync all
+
+# 4. Open a new terminal to load the zsh config, then run post-setup
 bash scripts/post-setup.sh   # registers Serena MCP into Claude Code
 
-# 4. Verify
+# 5. Verify
 bash scripts/doctor.sh
 ```
 
@@ -37,10 +45,14 @@ bash scripts/doctor.sh
 
 | Script | What it does | Re-runnable? |
 |--------|-------------|--------------|
-| `bootstrap.sh` | brew check → install chezmoi → `brew bundle` + `brew bundle cleanup --force` → `chezmoi init --apply` | Yes (idempotent) |
+| `bootstrap.sh` | brew check → install chezmoi → sync `core` Brew profile → `chezmoi init --apply` | Yes (idempotent) |
+| `brew-bundle.sh sync work` | Syncs `core + work` Brew profiles and cleans up against that combined set | Yes (idempotent) |
+| `brew-bundle.sh sync personal` | Syncs `core + personal` Brew profiles and cleans up against that combined set | Yes (idempotent) |
+| `brew-bundle.sh sync all` | Syncs `core + work + personal` Brew profiles and cleans up against the combined set | Yes (idempotent) |
 | `post-setup.sh` | Registers Serena MCP into Claude Code | Yes (skips if already registered) |
 
 `bootstrap.sh` is intentionally minimal — it only ensures the machine has the right packages and dotfiles applied.
+`brew-bundle.sh` is the supported way to keep Homebrew in strict sync after the split.
 `post-setup.sh` handles "post-dotfiles" configuration that runs after the environment is in place.
 
 ---
@@ -54,8 +66,13 @@ After `bootstrap.sh` has been run once, chezmoi knows its source directory
 cd ~/dotfiles
 git pull
 chezmoi apply             # apply changes to $HOME
-brew bundle --global      # install/update to match ~/.Brewfile
-brew bundle cleanup --global --force  # remove packages not in ~/.Brewfile
+bash scripts/brew-bundle.sh sync core   # baseline machine
+# or
+bash scripts/brew-bundle.sh sync work   # baseline + work/dev apps
+# or
+bash scripts/brew-bundle.sh sync personal  # baseline + personal/local apps
+# or
+bash scripts/brew-bundle.sh sync all    # baseline + every optional layer
 ```
 
 ---
@@ -70,16 +87,17 @@ bash scripts/doctor.sh
 |-------|------|----------------|
 | `brew --version` | Required | Homebrew is installed |
 | `chezmoi --version` | Required | chezmoi is installed |
-| `chezmoi doctor` | Required | chezmoi self-checks pass |
-| `brew bundle check --global` | Required | All Brewfile packages present |
+| `chezmoi doctor` | Required | Runs and prints built-in health results (`failed` rows are shown as warnings) |
+| `bash scripts/brew-bundle.sh check core` | Required | All core Brew profile packages present |
 | `uv --version` | Optional | uv installed (needed by Serena MCP) |
-| `ghostty --version` | Optional | Ghostty installed |
+| `ghostty --version` | Optional | Ghostty CLI exists and returns a valid version |
 | `claude --version` | Optional | Claude Code CLI available |
 | `claude mcp list` (Serena) | Optional | Serena MCP registered |
 | `ghq --version` | Optional | ghq installed |
 | `zellij --version` | Optional | zellij installed |
 
 Exit code is 0 only when all **required** checks pass.
+Optional checks that are installed but unhealthy are reported as warnings instead of `OK`.
 
 ### ghq (repository management)
 
@@ -154,18 +172,27 @@ Full restore on a new machine: clone the reverted state and re-run `bootstrap.sh
 
 ---
 
-## Brewfile
+## Brew Profiles
 
-`home/dot_Brewfile` is managed by chezmoi and deploys to `~/.Brewfile`.
-Homebrew natively reads `~/.Brewfile` via `brew bundle --global`.
+`home/dot_Brewfile.core` is the minimal baseline used by `bootstrap.sh` and `doctor.sh`.
+`home/dot_Brewfile.work` is an optional work/dev layer.
+`home/dot_Brewfile.personal` is an optional personal/local layer.
 
-Homebrew is run in strict mode in this repo: after install/update, `brew bundle cleanup --force` is also run to remove packages not in the Brewfile.
+Homebrew is still run in strict mode, but cleanup must happen against the effective combined profile.
+Because of that, use `bash scripts/brew-bundle.sh ...` instead of raw `brew bundle --global` commands.
 
 | Context | Command |
 |---------|---------|
-| Initial install (before `chezmoi apply`) | `brew bundle --file=~/dotfiles/home/dot_Brewfile` |
-| After first apply | `brew bundle --global` + `brew bundle cleanup --global --force` |
-| Verify | `brew bundle check --global` |
+| Initial install (core only) | `bash ~/dotfiles/scripts/brew-bundle.sh sync core` |
+| Add work apps too | `bash ~/dotfiles/scripts/brew-bundle.sh sync work` |
+| Add personal apps too | `bash ~/dotfiles/scripts/brew-bundle.sh sync personal` |
+| Add every optional layer | `bash ~/dotfiles/scripts/brew-bundle.sh sync all` |
+| Verify core | `bash ~/dotfiles/scripts/brew-bundle.sh check core` |
+| Verify core + work | `bash ~/dotfiles/scripts/brew-bundle.sh check work` |
+| Verify core + personal | `bash ~/dotfiles/scripts/brew-bundle.sh check personal` |
+| Verify core + work + personal | `bash ~/dotfiles/scripts/brew-bundle.sh check all` |
+
+Use the same profile consistently on later runs. For example, running `sync core` after `sync work` will clean up work-only apps.
 
 ---
 
@@ -228,7 +255,9 @@ dotfiles/
 ├── .chezmoiroot                    # "home" — chezmoi source root
 ├── .gitignore
 ├── home/                           # chezmoi source state → $HOME
-│   ├── dot_Brewfile                # → ~/.Brewfile  (bundle + cleanup)
+│   ├── dot_Brewfile.core           # → ~/.Brewfile.core
+│   ├── dot_Brewfile.work           # → ~/.Brewfile.work
+│   ├── dot_Brewfile.personal       # → ~/.Brewfile.personal
 │   ├── dot_zshrc                   # → ~/.zshrc     (entry point only)
 │   ├── dot_claude/
 │   │   └── settings.json           # → ~/.claude/settings.json
@@ -245,9 +274,10 @@ dotfiles/
 │       │   └── completion.zsh      # compinit (must load last)
 │       └── starship.toml           # prompt config
 ├── scripts/
-│   ├── bootstrap.sh                # brew + chezmoi + brew bundle + apply
+│   ├── brew-bundle.sh              # effective Brew profile sync/check
+│   ├── bootstrap.sh                # core brew + chezmoi + apply
 │   ├── post-setup.sh               # Serena MCP registration (idempotent)
 │   └── doctor.sh                   # health check
 └── .github/workflows/
-    └── ci.yml                      # shellcheck + brew bundle (macos-latest)
+    └── ci.yml                      # shellcheck + core brew bundle (macos-latest)
 ```
