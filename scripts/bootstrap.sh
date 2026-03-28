@@ -30,14 +30,32 @@ fi
 # ---- 3. Homebrew packages (strict core profile) ---------------------------
 bash "${REPO_ROOT}/scripts/brew-bundle.sh" sync core
 
-# ---- 4. Init chezmoi source and apply dotfiles -----------------------------
-# chezmoi init with a local path creates a symlink:
+# ---- 4. Point chezmoi at this repo and apply dotfiles ----------------------
+# Keep a single source of truth for day-to-day edits:
 #   ~/.local/share/chezmoi -> ~/dotfiles
 # .chezmoiroot tells chezmoi the actual source is home/ inside that repo.
-# --force: overwrites the existing symlink on re-runs (makes this idempotent).
-# After this step `chezmoi apply / diff / edit` all work without --source.
-log "Initialising chezmoi and applying dotfiles..."
-chezmoi init --apply --force "${REPO_ROOT}"
+CHEZMOI_LINK="${HOME}/.local/share/chezmoi"
+mkdir -p "$(dirname "${CHEZMOI_LINK}")"
+
+if [ -L "${CHEZMOI_LINK}" ]; then
+  current_target="$(readlink "${CHEZMOI_LINK}")"
+  if [ "${current_target}" != "${REPO_ROOT}" ]; then
+    log "Repointing existing chezmoi symlink..."
+    rm "${CHEZMOI_LINK}"
+    ln -s "${REPO_ROOT}" "${CHEZMOI_LINK}"
+  fi
+elif [ -e "${CHEZMOI_LINK}" ]; then
+  backup_path="${CHEZMOI_LINK}.backup.$(date +%Y%m%d-%H%M%S)"
+  log "Backing up existing chezmoi source to ${backup_path}..."
+  mv "${CHEZMOI_LINK}" "${backup_path}"
+  ln -s "${REPO_ROOT}" "${CHEZMOI_LINK}"
+else
+  log "Linking chezmoi source to this repo..."
+  ln -s "${REPO_ROOT}" "${CHEZMOI_LINK}"
+fi
+
+log "Applying dotfiles..."
+chezmoi apply
 
 log "Bootstrap complete."
 printf '\nNext:\n'
