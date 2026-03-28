@@ -2,14 +2,14 @@
 # brew-bundle.sh — sync/check the effective Brew profile for this repo
 #
 # Usage:
-#   bash scripts/brew-bundle.sh sync core
-#   bash scripts/brew-bundle.sh sync work
-#   bash scripts/brew-bundle.sh sync personal
-#   bash scripts/brew-bundle.sh sync all
-#   bash scripts/brew-bundle.sh check core
-#   bash scripts/brew-bundle.sh check work
-#   bash scripts/brew-bundle.sh check personal
-#   bash scripts/brew-bundle.sh check all
+#   ./scripts/brew-bundle.sh sync core
+#   ./scripts/brew-bundle.sh sync work
+#   ./scripts/brew-bundle.sh sync personal
+#   ./scripts/brew-bundle.sh sync all
+#   ./scripts/brew-bundle.sh check core
+#   ./scripts/brew-bundle.sh check work
+#   ./scripts/brew-bundle.sh check personal
+#   ./scripts/brew-bundle.sh check all
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

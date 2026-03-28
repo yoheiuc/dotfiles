@@ -1,7 +1,7 @@
 # ~/.Brewfile.personal — managed by chezmoi (source: home/dot_Brewfile.personal)
 # Optional personal/local layer on top of the core profile.
-# Sync core + personal:  bash ~/.local/share/chezmoi/scripts/brew-bundle.sh sync personal
-# Verify core + personal: bash ~/.local/share/chezmoi/scripts/brew-bundle.sh check personal
+# Sync core + personal:  ~/.local/share/chezmoi/scripts/brew-bundle.sh sync personal
+# Verify core + personal: ~/.local/share/chezmoi/scripts/brew-bundle.sh check personal
 
 # ---------- Local productivity ----------
 brew "laishulu/homebrew/macism"  # input method switcher

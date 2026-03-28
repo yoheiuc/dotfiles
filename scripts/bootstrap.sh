@@ -9,7 +9,7 @@
 #
 # Post-dotfiles setup (Serena MCP, etc.) → scripts/post-setup.sh
 #
-# Usage: bash scripts/bootstrap.sh
+# Usage: ./scripts/bootstrap.sh
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -42,8 +42,8 @@ chezmoi init --apply --force "${REPO_ROOT}"
 log "Bootstrap complete."
 printf '\nNext:\n'
 printf '  • Open a new terminal to load zsh config\n'
-printf '  • Optional: bash scripts/brew-bundle.sh sync work      (install work apps too)\n'
-printf '  • Optional: bash scripts/brew-bundle.sh sync personal  (install personal apps too)\n'
-printf '  • Optional: bash scripts/brew-bundle.sh sync all       (install every optional layer)\n'
-printf '  • Run:  bash scripts/post-setup.sh   (Serena MCP, etc.)\n'
-printf '  • Run:  bash scripts/doctor.sh        (verify setup)\n'
+printf '  • Optional: ./scripts/brew-bundle.sh sync work      (install work apps too)\n'
+printf '  • Optional: ./scripts/brew-bundle.sh sync personal  (install personal apps too)\n'
+printf '  • Optional: ./scripts/brew-bundle.sh sync all       (install every optional layer)\n'
+printf '  • Run:  ./scripts/post-setup.sh      (Serena MCP, etc.)\n'
+printf '  • Run:  ./scripts/doctor.sh          (verify setup)\n'
