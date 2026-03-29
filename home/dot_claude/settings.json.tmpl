@@ -1,10 +1,11 @@
+{{- $statuslinePath := joinPath .chezmoi.homeDir ".claude/statusline.sh" -}}
 {
   "env": {
     "ENABLE_TOOL_SEARCH": "auto:5"
   },
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline.sh"
+    "command": {{ $statuslinePath | toJson }}
   },
   "permissions": {
     "allow": [

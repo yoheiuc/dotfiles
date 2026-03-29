@@ -13,5 +13,5 @@ zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'  # case-insensitive
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 
 if (( $+functions[_codex] )); then
-  compdef _codex cx cxf cxr cxd cxl cxu
+  compdef _codex cx cxf cxr cxd cxl
 fi

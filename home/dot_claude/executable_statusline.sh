@@ -55,6 +55,17 @@ format_elapsed() {
   printf '%dm' "$minutes"
 }
 
+is_unix_timestamp() {
+  case "$1" in
+    ''|*[!0-9]*)
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
 format_window() {
   local label=$1
   local used=$2
@@ -68,7 +79,7 @@ format_window() {
   local remaining
   remaining=$(awk -v used="$used" 'BEGIN { value = 100 - used; if (value < 0) value = 0; printf "%.0f", value }')
 
-  if [ -n "$reset_at" ]; then
+  if is_unix_timestamp "$reset_at"; then
     eta=$(format_duration $((reset_at - now)))
   fi
 

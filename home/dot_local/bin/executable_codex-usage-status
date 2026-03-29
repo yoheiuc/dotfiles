@@ -34,6 +34,17 @@ cached_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.cached_in
 cache_create_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.cache_creation_input_tokens // 0')
 cache_read_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.cache_read_input_tokens // 0')
 
+is_unix_timestamp() {
+  case "$1" in
+    ''|*[!0-9]*)
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
 format_duration() {
   local total_seconds=$1
   if [ "$total_seconds" -le 0 ]; then
@@ -71,7 +82,7 @@ format_window() {
   remaining=$(awk -v used="$used" 'BEGIN { value = 100 - used; if (value < 0) value = 0; printf "%.0f", value }')
   eta=""
 
-  if [ -n "$reset_at" ]; then
+  if is_unix_timestamp "$reset_at"; then
     eta=$(format_duration $((reset_at - now)))
   fi
 
