@@ -1,69 +1,60 @@
-# starship.toml — Tokyo Night inspired modern config
+# starship.toml — Modern Clean Config
 
 add_newline = true
 
 format = """
-[](blue)\
 $directory\
-[](fg:blue bg:purple)\
 $git_branch\
 $git_status\
-[](fg:purple bg:cyan)\
 $python\
 $nodejs\
 $rust\
-[](fg:cyan bg:yellow)\
 $cmd_duration\
-[](fg:yellow bg:red)\
 $status\
-[](fg:red bg:none) \
 $line_break\
 $character"""
 
 [directory]
 style = "bg:blue fg:black"
-format = "[ $path ]($style)"
+format = "[](blue)[$path]($style)[](fg:blue) "
 truncation_length = 3
 truncation_symbol = "…/"
 
 [git_branch]
 symbol = " "
 style = "bg:purple fg:black"
-format = "[[ $symbol $branch ]($style)]"
+format = "[](purple)[$symbol$branch]($style)[](fg:purple) "
 
 [git_status]
 style = "bg:purple fg:black"
-format = "[[($all_status$ahead_behind )]($style)]"
+format = "([](purple)[$all_status$ahead_behind]($style)[](fg:purple) )"
 
 [nodejs]
 symbol = "󰎙 "
 style = "bg:cyan fg:black"
-format = "[[ $symbol ($version) ]($style)]"
+format = "[](cyan)[$symbol($version)]($style)[](fg:cyan) "
 
 [rust]
 symbol = "󱘗 "
 style = "bg:cyan fg:black"
-format = "[[ $symbol ($version) ]($style)]"
+format = "[](cyan)[$symbol($version)]($style)[](fg:cyan) "
 
 [python]
 symbol = "󰌠 "
 style = "bg:cyan fg:black"
-format = "[[ $symbol ($version) ]($style)]"
+format = "[](cyan)[$symbol($version)]($style)[](fg:cyan) "
 
 [cmd_duration]
 min_time = 2000
 style = "bg:yellow fg:black"
-format = "[[ 󱫿 $duration ]($style)]"
+format = "[](yellow)[󱫿 $duration]($style)[](fg:yellow) "
 
 [status]
 disabled = false
 style = "bg:red fg:black"
-format = "[[ 󰄱 $status ]($style)]"
+format = "[](red)[󰄱 $status]($style)[](fg:red) "
 symbol = "󰄱"
 
 [character]
 success_symbol = "[❯](bold green)"
 error_symbol = "[❯](bold red)"
-
-[time]
-disabled = true # Left to keep layout clean
