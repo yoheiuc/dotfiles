@@ -21,25 +21,25 @@ install-all: ## core + work + personal をすべてインストール
 	bash scripts/brew-bundle.sh sync all
 	bash scripts/post-setup.sh
 
-update: ## dotfiles を最新にして適用 (core)
+update: ## dotfiles を最新にして適用・追加のみ (core)
 	git pull origin main
 	chezmoi apply
-	bash scripts/brew-bundle.sh sync core
+	bash scripts/brew-bundle.sh install core
 
-update-work: ## dotfiles を最新にして適用 (core + work)
+update-work: ## dotfiles を最新にして適用・追加のみ (core + work)
 	git pull origin main
 	chezmoi apply
-	bash scripts/brew-bundle.sh sync work
+	bash scripts/brew-bundle.sh install work
 
-update-personal: ## dotfiles を最新にして適用 (core + personal)
+update-personal: ## dotfiles を最新にして適用・追加のみ (core + personal)
 	git pull origin main
 	chezmoi apply
-	bash scripts/brew-bundle.sh sync personal
+	bash scripts/brew-bundle.sh install personal
 
-update-all: ## dotfiles を最新にして適用 (core + work + personal)
+update-all: ## dotfiles を最新にして適用・追加のみ (core + work + personal)
 	git pull origin main
 	chezmoi apply
-	bash scripts/brew-bundle.sh sync all
+	bash scripts/brew-bundle.sh install all
 
 doctor: ## セットアップの状態を確認
 	bash scripts/doctor.sh

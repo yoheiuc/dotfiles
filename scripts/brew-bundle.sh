@@ -2,14 +2,9 @@
 # brew-bundle.sh — sync/check the effective Brew profile for this repo
 #
 # Usage:
-#   ./scripts/brew-bundle.sh sync core
-#   ./scripts/brew-bundle.sh sync work
-#   ./scripts/brew-bundle.sh sync personal
-#   ./scripts/brew-bundle.sh sync all
+#   ./scripts/brew-bundle.sh sync core        # install + cleanup
+#   ./scripts/brew-bundle.sh install core     # install only (no cleanup)
 #   ./scripts/brew-bundle.sh check core
-#   ./scripts/brew-bundle.sh check work
-#   ./scripts/brew-bundle.sh check personal
-#   ./scripts/brew-bundle.sh check all
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -26,8 +21,8 @@ log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 [[ -f "${CORE_BREWFILE}" ]] || die "Missing core Brewfile: ${CORE_BREWFILE}"
 
 case "${MODE}" in
-  sync|check) ;;
-  *) die "Unsupported mode '${MODE}' (expected: sync or check)" ;;
+  sync|install|check) ;;
+  *) die "Unsupported mode '${MODE}' (expected: sync, install, or check)" ;;
 esac
 
 case "${PROFILE}" in
@@ -55,6 +50,9 @@ if [[ "${MODE}" == "sync" ]]; then
   brew bundle --file="${effective_brewfile}"
   log "Removing packages not declared in '${PROFILE}' profile..."
   brew bundle cleanup --file="${effective_brewfile}" --force
+elif [[ "${MODE}" == "install" ]]; then
+  log "Installing packages for '${PROFILE}' profile (no cleanup)..."
+  brew bundle --file="${effective_brewfile}"
 else
   brew bundle check --file="${effective_brewfile}"
 fi
