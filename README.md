@@ -14,7 +14,7 @@
 | Homebrew | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
 | Git | Xcode CLT (`xcode-select --install`) または `brew install git` |
 
-Git identity (`~/.gitconfig`) も chezmoi 管理です。既定では GitHub noreply address を使います。
+Git identity (`~/.gitconfig`) も chezmoi 管理です。既定では `yoheiuc <16657439+yoheiuc@users.noreply.github.com>` を使い、global `pre-commit` hook でそれ以外の author/committer を止めます。
 
 Homebrew の構成は `home/dot_Brewfile.core`、`home/dot_Brewfile.work`、`home/dot_Brewfile.personal` に分かれています。  
 `bootstrap.sh` が入れるのは `core` プロファイルだけです。
@@ -102,6 +102,7 @@ make doctor
 | `chezmoi --version` | Required | chezmoi が使える |
 | `chezmoi doctor` | Required | 内蔵チェックが実行できる (`failed` 行は warning 扱い) |
 | `./scripts/brew-bundle.sh check core` | Required | core Brew プロファイルが満たされている |
+| `git user.name` / `user.email` / `core.hooksPath` | Required | privacy-safe な Git identity/hook が有効 |
 | `node --version` | Optional | Codex CLI 導入に必要な node/npm がある |
 | `uv --version` | Optional | Serena MCP に必要な `uv` がある |
 | `ghostty --version` | Optional | Ghostty CLI が存在し、バージョンが取得できる |
@@ -187,6 +188,18 @@ chezmoi apply
 ```
 
 新しいマシンで完全に戻したい場合は、巻き戻した状態を clone し直して `bootstrap.sh` を再実行します。
+
+---
+
+## Git の privacy guard
+
+`~/.gitconfig` は次を固定します。
+
+- `user.name = yoheiuc`
+- `user.email = 16657439+yoheiuc@users.noreply.github.com`
+- `core.hooksPath = ~/.config/git/hooks`
+
+`~/.config/git/hooks/pre-commit` は、実際に commit に入る author / committer がこの値と一致しない場合に commit を止めます。`GIT_AUTHOR_*` や repo local config で上書きしても検査対象です。
 
 ---
 
@@ -361,6 +374,7 @@ dotfiles/
 │   │   ├── files.cheat
 │   │   └── terminal.cheat
 │   └── dot_config/
+│       ├── git/hooks/pre-commit    # global Git privacy guard
 │       ├── ghostty/
 │       │   ├── config.ghostty      # エントリポイント
 │       │   ├── core.ghostty        # shell integration / scrollback

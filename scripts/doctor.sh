@@ -95,6 +95,39 @@ else
   printf '%s\n' "$brew_check_out" | grep -v '^Using ' | sed 's/^/    /' || true
 fi
 
+section "Git identity/privacy (required)"
+expected_git_name="yoheiuc"
+expected_git_email="16657439+yoheiuc@users.noreply.github.com"
+expected_hooks_path="${HOME}/.config/git/hooks"
+
+git_name="$(git config --global --get user.name || true)"
+git_email="$(git config --global --get user.email || true)"
+git_hooks_path="$(git config --global --path --get core.hooksPath || true)"
+
+if [[ "${git_name}" == "${expected_git_name}" ]]; then
+  ok "git user.name: ${git_name}"
+else
+  fail "git user.name mismatch — expected '${expected_git_name}', got '${git_name:-<unset>}'"
+fi
+
+if [[ "${git_email}" == "${expected_git_email}" ]]; then
+  ok "git user.email: ${git_email}"
+else
+  fail "git user.email mismatch — expected '${expected_git_email}', got '${git_email:-<unset>}'"
+fi
+
+if [[ "${git_hooks_path}" == "${expected_hooks_path}" ]]; then
+  ok "git hooksPath: ${git_hooks_path}"
+else
+  fail "git hooksPath mismatch — expected '${expected_hooks_path}', got '${git_hooks_path:-<unset>}'"
+fi
+
+if [[ -x "${expected_hooks_path}/pre-commit" ]]; then
+  ok "git pre-commit hook: present"
+else
+  fail "git pre-commit hook missing — run: chezmoi apply"
+fi
+
 # ===========================================================================
 # OPTIONAL checks — warn only, never fail the script
 # ===========================================================================
