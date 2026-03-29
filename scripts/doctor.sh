@@ -14,6 +14,37 @@ warn()    { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 fail()    { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=1; }
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
 strip_codex_path_warning() { sed '/^WARNING: proceeding, even though we could not update PATH:/d'; }
+run_with_timeout() {
+  local timeout_seconds="$1"
+  shift
+  python3 - "$timeout_seconds" "$@" <<'PY'
+import subprocess
+import sys
+
+timeout = float(sys.argv[1])
+cmd = sys.argv[2:]
+
+def write_maybe_bytes(stream, value):
+    if value is None:
+        return
+    if isinstance(value, bytes):
+        stream.write(value.decode("utf-8", errors="replace"))
+    else:
+        stream.write(value)
+
+try:
+    completed = subprocess.run(cmd, text=True, capture_output=True, timeout=timeout)
+except subprocess.TimeoutExpired as exc:
+    write_maybe_bytes(sys.stdout, exc.stdout)
+    write_maybe_bytes(sys.stderr, exc.stderr)
+    sys.stderr.write(f"Timed out after {timeout:g}s\n")
+    raise SystemExit(124)
+
+write_maybe_bytes(sys.stdout, completed.stdout)
+write_maybe_bytes(sys.stderr, completed.stderr)
+raise SystemExit(completed.returncode)
+PY
+}
 
 REQUIRED_FAILED=0
 
@@ -56,11 +87,12 @@ else
 fi
 
 section "Core Brew profile (required)"
-if bash "${REPO_ROOT}/scripts/brew-bundle.sh" check core &>/dev/null; then
+brew_check_out="$(bash "${REPO_ROOT}/scripts/brew-bundle.sh" check core 2>&1 || true)"
+if printf '%s\n' "$brew_check_out" | grep -q "The Brewfile's dependencies are satisfied."; then
   ok "core Brew profile: all packages present"
 else
   fail "core Brew profile: missing packages — run: ./scripts/brew-bundle.sh sync core"
-  bash "${REPO_ROOT}/scripts/brew-bundle.sh" check core 2>&1 | grep -v '^Using ' | sed 's/^/    /' || true
+  printf '%s\n' "$brew_check_out" | grep -v '^Using ' | sed 's/^/    /' || true
 fi
 
 # ===========================================================================
@@ -93,12 +125,12 @@ fi
 
 if [[ -n "$_ghostty" ]]; then
   if ghostty_version_out="$("$_ghostty" --version 2>&1)"; then
-    ghostty_version_line="$(printf '%s\n' "$ghostty_version_out" | head -1)"
-    if [[ "$ghostty_version_line" == Ghostty* ]]; then
+    ghostty_version_line="$(printf '%s\n' "$ghostty_version_out" | grep '^Ghostty' | head -1 || true)"
+    if [[ -n "$ghostty_version_line" ]]; then
       ok "ghostty ${ghostty_version_line}"
     else
       warn "ghostty CLI returned unexpected output"
-      warn "  ${ghostty_version_line}"
+      warn "  $(printf '%s\n' "$ghostty_version_out" | head -1)"
     fi
   else
     warn "ghostty CLI found but --version failed"
@@ -141,11 +173,13 @@ fi
 section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
   ok "$(claude --version 2>&1 | head -1)"
-  printf '  MCP servers registered:\n'
-  claude mcp list 2>&1 | sed 's/^/    /'
-  # Check Serena specifically
-  if claude mcp list 2>/dev/null | grep -q '^serena'; then
+  printf '  MCP servers registered (timeout: 8s):\n'
+  claude_mcp_list_out="$(run_with_timeout 8 claude mcp list 2>&1 || true)"
+  printf '%s\n' "$claude_mcp_list_out" | sed 's/^/    /'
+  if printf '%s\n' "$claude_mcp_list_out" | grep -q '^serena:'; then
     ok "serena MCP: registered"
+  elif printf '%s\n' "$claude_mcp_list_out" | grep -q '^Timed out after '; then
+    warn "serena MCP: check timed out"
   else
     warn "serena MCP: not registered — run: ./scripts/post-setup.sh"
   fi
@@ -155,7 +189,15 @@ fi
 
 section "Gemini CLI (optional)"
 if command -v gemini &>/dev/null; then
-  ok "$(gemini --version 2>&1 | head -1)"
+  gemini_version_out="$(run_with_timeout 5 gemini --version 2>&1 || true)"
+  gemini_version_line="$(printf '%s\n' "$gemini_version_out" | head -1)"
+  if printf '%s\n' "$gemini_version_out" | grep -q '^Timed out after '; then
+    warn "gemini found but --version timed out"
+  elif [[ -n "$gemini_version_line" ]]; then
+    ok "$gemini_version_line"
+  else
+    warn "gemini found but --version returned no usable output"
+  fi
 else
   warn "gemini not found — install via Brewfile (brew \"gemini-cli\")"
 fi
@@ -169,11 +211,13 @@ if command -v codex &>/dev/null; then
     warn "codex found but --version returned no usable output"
   fi
 
-  printf '  MCP servers registered:\n'
-  codex_mcp_list_out="$(codex mcp list 2>&1 | strip_codex_path_warning || true)"
+  printf '  MCP servers registered (timeout: 8s):\n'
+  codex_mcp_list_out="$(run_with_timeout 8 codex mcp list 2>&1 | strip_codex_path_warning || true)"
   printf '%s\n' "$codex_mcp_list_out" | sed 's/^/    /'
-  if codex mcp get serena --json >/dev/null 2>&1; then
+  if printf '%s\n' "$codex_mcp_list_out" | grep -q '^serena[[:space:]]'; then
     ok "serena MCP: registered"
+  elif printf '%s\n' "$codex_mcp_list_out" | grep -q '^Timed out after '; then
+    warn "serena MCP: check timed out"
   else
     warn "serena MCP: not registered for Codex — run: ./scripts/post-setup.sh"
   fi
