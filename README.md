@@ -24,60 +24,50 @@ Everything else is split into `home/dot_Brewfile.core`, `home/dot_Brewfile.work`
 git clone https://github.com/<your-username>/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
-# 2. Bootstrap: installs packages + applies dotfiles
-./scripts/bootstrap.sh
+# 2. セットアップ（用途に合わせて1つ選ぶ）
+make install            # core のみ
+make install-work       # core + work アプリ
+make install-personal   # core + personal アプリ
+make install-all        # すべて
 
-# 3. Optional: install extra app layers
-./scripts/brew-bundle.sh sync work
-# or
-./scripts/brew-bundle.sh sync personal
-# or
-./scripts/brew-bundle.sh sync all
+# 3. 新しいターミナルを開いて zsh 設定を読み込む
 
-# 4. Open a new terminal to load the zsh config, then run post-setup
-./scripts/post-setup.sh      # installs Codex CLI and registers Serena MCP
-
-# 4.5 Authenticate Codex once
+# 4. Codex の認証（初回のみ）
 codex login
 
-# 5. Verify
-./scripts/doctor.sh
+# 5. 状態確認
+make doctor
 ```
 
-### bootstrap.sh vs post-setup.sh
+### make ターゲット一覧
 
-| Script | What it does | Re-runnable? |
-|--------|-------------|--------------|
-| `bootstrap.sh` | brew check → install chezmoi → sync `core` Brew profile → `chezmoi init --apply` | Yes (idempotent) |
-| `brew-bundle.sh sync work` | Syncs `core + work` Brew profiles and cleans up against that combined set | Yes (idempotent) |
-| `brew-bundle.sh sync personal` | Syncs `core + personal` Brew profiles and cleans up against that combined set | Yes (idempotent) |
-| `brew-bundle.sh sync all` | Syncs `core + work + personal` Brew profiles and cleans up against the combined set | Yes (idempotent) |
-| `post-setup.sh` | Installs Codex CLI and registers Serena MCP into Claude Code / Codex | Yes (idempotent) |
+```
+make help
+```
 
-`bootstrap.sh` is intentionally minimal — it only ensures the machine has the right packages and dotfiles applied.
-`brew-bundle.sh` is the supported way to keep Homebrew in strict sync after the split.
-`post-setup.sh` handles "post-dotfiles" configuration that runs after the environment is in place.
+| ターゲット | 何をするか | 再実行 |
+|---|---|---|
+| `make install` | core Brew + chezmoi apply | ✓ |
+| `make install-work` | core + work + post-setup | ✓ |
+| `make install-personal` | core + personal + post-setup | ✓ |
+| `make install-all` | core + work + personal + post-setup | ✓ |
+| `make update` | pull → chezmoi apply → brew sync core | ✓ |
+| `make update-work` | pull → chezmoi apply → brew sync work | ✓ |
+| `make update-personal` | pull → chezmoi apply → brew sync personal | ✓ |
+| `make update-all` | pull → chezmoi apply → brew sync all | ✓ |
+| `make doctor` | セットアップの状態確認 | ✓ |
+| `make uninstall` | dotfiles を削除 | ✓ |
 
 ---
 
 ## Day-to-day: Updating dotfiles
 
-After `bootstrap.sh` has been run once, chezmoi knows its source directory
-(`~/.local/share/chezmoi` → `~/dotfiles`). No `--source` flag is needed.
-`bootstrap.sh` enforces that symlink so `~/dotfiles` stays the single source
-of truth.
-
 ```bash
 cd ~/dotfiles
-git pull
-chezmoi apply             # apply changes to $HOME
-./scripts/brew-bundle.sh sync core      # baseline machine
-# or
-./scripts/brew-bundle.sh sync work      # baseline + work/dev apps
-# or
-./scripts/brew-bundle.sh sync personal  # baseline + personal/local apps
-# or
-./scripts/brew-bundle.sh sync all       # baseline + every optional layer
+make update             # core のみ
+make update-work        # core + work
+make update-personal    # core + personal
+make update-all         # すべて
 ```
 
 ---
@@ -85,7 +75,7 @@ chezmoi apply             # apply changes to $HOME
 ## Health Check
 
 ```bash
-./scripts/doctor.sh
+make doctor
 ```
 
 | Check | Type | Pass condition |
@@ -103,6 +93,7 @@ chezmoi apply             # apply changes to $HOME
 | `codex mcp list` (Serena) | Optional | Serena MCP registered for Codex |
 | `ghq --version` | Optional | ghq installed |
 | `zellij --version` | Optional | zellij installed |
+| `navi --version` | Optional | navi installed + cheatsheets present |
 
 Exit code is 0 only when all **required** checks pass.
 Optional checks that are installed but unhealthy are reported as warnings instead of `OK`.
