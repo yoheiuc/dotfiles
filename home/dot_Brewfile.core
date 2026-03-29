@@ -5,6 +5,7 @@
 
 # ---------- Taps ----------
 tap "laishulu/homebrew"
+tap "domt4/autoupdate"           # required for brew-autoupdate (installed via post-setup.sh)
 
 # ---------- Core CLI ----------
 brew "chezmoi"            # dotfiles manager
