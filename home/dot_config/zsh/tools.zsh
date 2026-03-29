@@ -16,6 +16,11 @@ if command -v atuin &>/dev/null; then
   bindkey '?' self-insert
 fi
 
+# navi — interactive cheatsheet (Ctrl+G)
+if command -v navi &>/dev/null; then
+  eval "$(navi widget zsh)"
+fi
+
 # fzf — fuzzy finder
 if command -v fzf &>/dev/null; then
   # Shell completions

@@ -124,6 +124,20 @@ else
   warn "ghq not found — install via Brewfile (brew \"ghq\")"
 fi
 
+section "navi (optional)"
+if command -v navi &>/dev/null; then
+  ok "$(navi --version 2>&1 | head -1)"
+  _navi_cheats="${HOME}/.local/share/navi/cheats/dotfiles"
+  if [[ -d "$_navi_cheats" ]] && ls "${_navi_cheats}"/*.cheat &>/dev/null 2>&1; then
+    ok "navi cheatsheets: present ($(ls "${_navi_cheats}"/*.cheat | wc -l | tr -d ' ') files)"
+  else
+    warn "navi cheatsheets not found — run: chezmoi apply"
+  fi
+  unset _navi_cheats
+else
+  warn "navi not found — install via Brewfile (brew \"navi\")"
+fi
+
 section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
   ok "$(claude --version 2>&1 | head -1)"
