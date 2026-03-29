@@ -114,16 +114,18 @@ fi
 # ---- brew autoupdate -------------------------------------------------------
 log "brew autoupdate..."
 
-if command -v brew-autoupdate &>/dev/null || brew list brew-autoupdate &>/dev/null 2>&1; then
-  if brew autoupdate status 2>/dev/null | grep -q "Autoupdate is installed and running"; then
-    ok "brew autoupdate: already running"
-  else
-    log "Starting brew autoupdate (every 24h)..."
-    brew autoupdate start 86400 --upgrade --cleanup
-    ok "brew autoupdate: started (every 24h, with upgrade + cleanup)"
-  fi
+if ! brew list brew-autoupdate &>/dev/null 2>&1; then
+  log "Installing brew-autoupdate..."
+  brew tap domt4/autoupdate
+  brew install brew-autoupdate
+fi
+
+if brew autoupdate status 2>/dev/null | grep -q "Autoupdate is installed and running"; then
+  ok "brew autoupdate: already running"
 else
-  warn "brew-autoupdate not found — run: ./scripts/brew-bundle.sh sync core"
+  log "Starting brew autoupdate (every 24h)..."
+  brew autoupdate start 86400 --upgrade --cleanup
+  ok "brew autoupdate: started (every 24h, with upgrade + cleanup)"
 fi
 
 printf '\nVerify with: claude mcp list\n'
