@@ -11,6 +11,9 @@ cask "raycast"                   # launcher
 cask "bitwarden", args: { appdir: "/Applications" }
 cask "ente-auth"                 # 2FA
 
+# ---------- System monitoring ----------
+cask "stats"                     # menu bar system monitor (CPU/RAM/disk/network)
+
 # ---------- System / locale ----------
 cask "google-japanese-ime"
 cask "logi-options+"
