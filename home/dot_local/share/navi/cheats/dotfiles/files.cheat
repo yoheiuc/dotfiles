@@ -1,0 +1,84 @@
+% eza, ls
+
+# ファイル一覧 (ls エイリアス)
+eza --icons
+
+# 詳細表示 (ll エイリアス)
+eza -lah --icons --git
+
+# ツリー表示
+eza --tree --icons
+
+# ツリー表示 (深さ指定)
+eza --tree --icons --level=<depth>
+
+# 隠しファイルも含めて表示
+eza -a --icons
+
+% bat, cat
+
+# ファイルを表示 (cat エイリアス)
+bat <file>
+
+# ページャーなしで表示
+bat --paging=never <file>
+
+# 行番号なしで表示
+bat --style=plain <file>
+
+# 言語を指定して表示
+bat --language=<lang> <file>
+
+# 複数ファイルを表示
+bat <file1> <file2>
+
+% yazi, file-manager
+
+# yazi を起動
+yazi
+
+# yazi 内での基本操作:
+# h/j/k/l または 矢印キー で移動
+# Enter でディレクトリに入る / ファイルを開く
+# q で終了
+# Space でファイルを選択
+# y でコピー, x でカット, p でペースト
+# d で削除, r でリネーム
+# . で隠しファイルの表示切替
+
+% ripgrep, rg, grep
+
+# ファイル内容を検索 (grep エイリアス)
+rg <pattern>
+
+# 大文字小文字を無視して検索
+rg -i <pattern>
+
+# 特定の拡張子だけ検索
+rg <pattern> -t <type>
+
+# 検索結果の前後N行を表示
+rg -C <n> <pattern>
+
+# 隠しファイルも含めて検索
+rg --hidden <pattern>
+
+# ファイル名だけ表示
+rg -l <pattern>
+
+% fd, find
+
+# ファイルを名前で検索 (find エイリアス)
+fd <pattern>
+
+# 特定の拡張子で検索
+fd -e <extension>
+
+# ディレクトリだけ検索
+fd -t d <pattern>
+
+# 隠しファイルも含めて検索
+fd -H <pattern>
+
+# 検索結果に対してコマンド実行
+fd <pattern> -x <command> {}

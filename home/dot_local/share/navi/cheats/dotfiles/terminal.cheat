@@ -1,0 +1,72 @@
+% zellij, terminal-multiplexer
+
+# zellij を起動
+zellij
+
+# 新しいペインを縦に分割
+# Ctrl+P → r
+
+# 新しいペインを横に分割
+# Ctrl+P → d
+
+# ペイン間を移動
+# Ctrl+P → 矢印キー
+
+# 新しいタブを開く
+# Ctrl+T → n
+
+# タブ間を移動
+# Ctrl+T → 矢印キー
+
+# タブをリネーム
+# Ctrl+T → r
+
+# ペインをフルスクリーンに切り替え
+# Ctrl+P → f
+
+# zellij をデタッチ (セッションを保持)
+# Ctrl+O → d
+
+# セッション一覧を表示して接続
+zellij list-sessions
+zellij attach <session-name>
+
+% jq, json
+
+# JSON を整形して表示
+jq '.' <file.json>
+
+# 特定のフィールドを取得
+jq '.<field>' <file.json>
+
+# 配列の最初の要素を取得
+jq '.[0]' <file.json>
+
+# 配列から特定フィールドだけ抽出
+jq '.[].< field>' <file.json>
+
+# 条件でフィルタ
+jq '.[] | select(.<field> == "<value>")' <file.json>
+
+# パイプで jq に渡す
+curl -s <url> | jq '.'
+
+# キーの一覧を表示
+jq 'keys' <file.json>
+
+% yq, yaml
+
+# YAML を整形して表示
+yq '.' <file.yaml>
+
+# 特定のフィールドを取得
+yq '.<field>' <file.yaml>
+
+# YAML を JSON に変換
+yq -o=json '.' <file.yaml>
+
+# JSON を YAML に変換
+yq -P '.' <file.json>
+
+# 値を書き換えて上書き
+yq -i '.<field> = "<value>"' <file.yaml>

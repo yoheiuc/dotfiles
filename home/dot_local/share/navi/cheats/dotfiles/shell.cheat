@@ -1,0 +1,61 @@
+% atuin, history
+
+# atuin でシェル履歴を検索する (Ctrl+R)
+atuin search
+
+# atuin でインタラクティブ検索を起動
+atuin search --interactive
+
+# atuin の統計を表示
+atuin stats
+
+# atuin: 直近の履歴を表示
+atuin history list
+
+% zoxide, cd
+
+# zoxide: よく行くディレクトリに移動 (z コマンド)
+z <directory>
+
+# zoxide: インタラクティブに移動先を選ぶ (zi コマンド)
+zi
+
+# zoxide: 登録済みディレクトリ一覧
+zoxide query --list
+
+# zoxide: スコアとともに一覧表示
+zoxide query --list --score
+
+% fzf, fuzzy
+
+# fzf でファイルを選んで開く
+vim $(fzf)
+
+# fzf でファイルを選んで cat する
+bat $(fzf)
+
+# fzf でコマンド履歴を検索 (Ctrl+R)
+# → Ctrl+R を押すと自動で起動
+
+# fzf でディレクトリを選んで移動 (Alt+C)
+# → Alt+C を押すと自動で起動
+
+# fzf でプロセスを選んで kill
+kill -9 $(ps aux | fzf | awk '{print $2}')
+
+# fzf でブランチを選んで checkout
+git checkout $(git branch | fzf)
+
+% navi, cheatsheet
+
+# navi を起動してチートシートを検索
+navi
+
+# navi でキーワード検索
+navi --query <keyword>
+
+# navi でコミュニティのチートシートを追加
+navi repo add <repo-url>
+
+# navi のチートシート保存場所を確認
+navi info cheats-path
