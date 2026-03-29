@@ -5,6 +5,8 @@
 #   - Install Claude Code CLI (via https://claude.ai/install.sh)
 #   - Install Codex CLI (via npm install -g @openai/codex)
 #   - Register Serena MCP server into Claude Code and Codex (idempotent)
+#   - Register Sequential Thinking MCP into Claude Code and Codex (idempotent)
+#   - Download curated Codex skills from openai/skills (plan, figma)
 #   - Set up brew-autoupdate (tap domt4/autoupdate + start 24h schedule)
 #
 # Safe to re-run: already-configured items are skipped.
@@ -112,6 +114,53 @@ else
 fi
 
 fi  # end uvx check
+
+# ---- Sequential Thinking MCP (Claude Code / Codex) ------------------------
+log "Sequential Thinking MCP..."
+
+if command -v claude &>/dev/null; then
+  if claude mcp get sequential-thinking >/dev/null 2>&1; then
+    ok "Claude Code: sequential-thinking already registered"
+  else
+    log "Registering sequential-thinking for Claude Code..."
+    claude mcp add --scope user sequential-thinking -- \
+      npx -y @modelcontextprotocol/server-sequential-thinking
+    ok "Claude Code: sequential-thinking registered"
+  fi
+fi
+
+if command -v codex &>/dev/null; then
+  if codex mcp get sequential-thinking --json >/dev/null 2>&1; then
+    ok "Codex: sequential-thinking already registered"
+  else
+    log "Registering sequential-thinking for Codex..."
+    codex mcp add sequential-thinking -- \
+      npx -y @modelcontextprotocol/server-sequential-thinking
+    ok "Codex: sequential-thinking registered"
+  fi
+fi
+
+# ---- Codex skills from openai/skills ---------------------------------------
+log "Codex skills (openai/skills)..."
+
+_skills_dir="${HOME}/.codex/skills"
+_skills_tmp="$(mktemp -d)"
+
+if git clone --depth=1 --filter=blob:none --sparse \
+    https://github.com/openai/skills.git "${_skills_tmp}" 2>/dev/null; then
+  git -C "${_skills_tmp}" sparse-checkout set plan figma
+  for _skill in plan figma; do
+    if [[ -d "${_skills_dir}/${_skill}" ]]; then
+      ok "Codex skill '${_skill}': already present"
+    else
+      cp -r "${_skills_tmp}/${_skill}" "${_skills_dir}/"
+      ok "Codex skill '${_skill}': installed"
+    fi
+  done
+else
+  warn "openai/skills のクローンに失敗しました — スキルのインストールをスキップします"
+fi
+rm -rf "${_skills_tmp}"
 
 # ---- brew autoupdate -------------------------------------------------------
 log "brew autoupdate..."
