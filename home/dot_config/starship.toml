@@ -13,14 +13,14 @@ $python\
 $nodejs\
 $rust\
 $cmd_duration\
+$status\
+$memory_usage\
+$time\
 $line_break\
 $character"""
 
-# Right-side prompt configuration
-right_format = """
-$status\
-$memory_usage\
-$time"""
+# Remove right-side prompt
+right_format = ""
 
 [character]
 success_symbol = "[❯](bold green)"
@@ -58,7 +58,7 @@ show_milliseconds  = false
 
 [status]
 disabled = false
-format = "[$symbol $status]($style) "
+format = " [$symbol $status]($style)"
 symbol = "󰄱"
 success_symbol = "󰄲"
 not_found_symbol = "󰍉"
@@ -66,7 +66,7 @@ sigint_symbol = "󰚏"
 
 [time]
 disabled = false
-format = "[$time]($style)"
+format = " [$time]($style)"
 time_format = "%R" # Hour:Minute Format
 style = "dimmed white"
 
