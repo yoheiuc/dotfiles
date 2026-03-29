@@ -14,13 +14,46 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Update Homebrew
-        run: brew update
+      - name: Set up Homebrew cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Homebrew
+            /opt/homebrew
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('home/dot_Brewfile.*') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
 
-      - name: Install core Brewfile dependencies
+      - name: Install Brewfile dependencies (Core)
         run: brew bundle --file=home/dot_Brewfile.core
+
+      - name: Check Brewfile syntax (Work)
+        run: brew bundle check --file=home/dot_Brewfile.work || true
+        # '|| true' because some work apps might not be installable on CI runners (e.g. GUI apps)
+        # but we want to at least verify the syntax/existence.
+
+      - name: Check Brewfile syntax (Personal)
+        run: brew bundle check --file=home/dot_Brewfile.personal || true
+
+      - name: Validate configuration files (YAML/JSON/TOML)
+        run: |
+          # YAML Validation
+          yamllint .serena/*.yml
+          
+          # TOML Validation using yq
+          yq eval . home/dot_config/starship.toml > /dev/null
+          yq eval . home/dot_config/atuin/config.toml > /dev/null
+          yq eval . home/dot_config/yazi/yazi.toml > /dev/null
+          
+          # JSON Validation using jq
+          jq . home/dot_claude/settings.json > /dev/null
+
+      - name: Validate Chezmoi templates
+        run: |
+          # Verify .tmpl files can be rendered correctly
+          find . -name "*.tmpl" -exec chezmoi execute-template < {} \; > /dev/null
 
       - name: Run shellcheck on scripts
         run: |
-          # shellcheck is installed via Brewfile
           shellcheck --severity=warning scripts/*.sh

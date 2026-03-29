@@ -50,6 +50,7 @@ brew "uv"                 # fast Python package manager
 
 # ---------- Misc CLI ----------
 brew "shellcheck"         # shell script linter (used in CI)
+brew "yamllint"          # YAML linter (used in CI)
 
 # ---------- Casks: terminal / AI ----------
 cask "ghostty"            # GPU-accelerated terminal
