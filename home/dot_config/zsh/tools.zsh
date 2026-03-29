@@ -1,4 +1,4 @@
-# tools.zsh — third-party tool hooks (existence-checked)
+# tools.zsh — third-party tool hooks and wrappers (existence-checked)
 
 # starship prompt
 if command -v starship &>/dev/null; then
@@ -25,6 +25,41 @@ fi
 if command -v codex &>/dev/null; then
   eval "$(codex completion zsh 2>/dev/null | sed '/^WARNING: proceeding, even though we could not update PATH:/d')"
 fi
+
+# codex — shortcuts and usage helpers
+_codex_statusline() {
+  command -v codex-usage-status >/dev/null 2>&1 || return 0
+  codex-usage-status
+}
+
+_codex_run() {
+  _codex_statusline
+  command codex "$@"
+}
+
+cx() {
+  _codex_run "$@"
+}
+
+cxf() {
+  _codex_run -p fast "$@"
+}
+
+cxr() {
+  _codex_run -p review "$@"
+}
+
+cxd() {
+  _codex_run -p deep "$@"
+}
+
+cxl() {
+  _codex_run resume --last "$@"
+}
+
+cxu() {
+  _codex_statusline
+}
 
 # fzf — fuzzy finder
 if command -v fzf &>/dev/null; then

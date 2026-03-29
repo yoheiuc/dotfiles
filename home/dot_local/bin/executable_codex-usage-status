@@ -1,0 +1,116 @@
+#!/bin/bash
+
+set -euo pipefail
+
+sessions_dir="${HOME}/.codex/sessions"
+
+latest_file=""
+if [ -d "$sessions_dir" ]; then
+  latest_file=$(
+    find "$sessions_dir" -type f -name '*.jsonl' -exec stat -f '%m %N' {} + 2>/dev/null \
+      | sort -nr \
+      | head -1 \
+      | cut -d' ' -f2-
+  )
+fi
+
+[ -n "$latest_file" ] && [ -f "$latest_file" ] || exit 0
+
+payload=$(jq -sr '
+  map(select(.type == "event_msg" and .payload.type == "token_count") | .payload)
+  | last // empty
+' "$latest_file")
+
+[ -n "$payload" ] || exit 0
+
+plan=$(printf '%s' "$payload" | jq -r '.rate_limits.plan_type // "codex"')
+five_used=$(printf '%s' "$payload" | jq -r '.rate_limits.primary.used_percent // empty')
+five_reset=$(printf '%s' "$payload" | jq -r '.rate_limits.primary.resets_at // empty')
+week_used=$(printf '%s' "$payload" | jq -r '.rate_limits.secondary.used_percent // empty')
+week_reset=$(printf '%s' "$payload" | jq -r '.rate_limits.secondary.resets_at // empty')
+window_size=$(printf '%s' "$payload" | jq -r '.info.model_context_window // empty')
+input_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.input_tokens // 0')
+cached_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.cached_input_tokens // 0')
+cache_create_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.cache_creation_input_tokens // 0')
+cache_read_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.cache_read_input_tokens // 0')
+
+format_duration() {
+  local total_seconds=$1
+  if [ "$total_seconds" -le 0 ]; then
+    printf 'now'
+    return
+  fi
+
+  local days hours minutes
+  days=$((total_seconds / 86400))
+  hours=$(((total_seconds % 86400) / 3600))
+  minutes=$(((total_seconds % 3600) / 60))
+
+  if [ "$days" -gt 0 ]; then
+    printf '%dd%dh' "$days" "$hours"
+    return
+  fi
+
+  if [ "$hours" -gt 0 ]; then
+    printf '%dh%dm' "$hours" "$minutes"
+    return
+  fi
+
+  printf '%dm' "$minutes"
+}
+
+format_window() {
+  local label=$1
+  local used=$2
+  local reset_at=$3
+
+  [ -n "$used" ] || return 0
+
+  local now remaining eta
+  now=$(date +%s)
+  remaining=$(awk -v used="$used" 'BEGIN { value = 100 - used; if (value < 0) value = 0; printf "%.0f", value }')
+  eta=""
+
+  if [ -n "$reset_at" ]; then
+    eta=$(format_duration $((reset_at - now)))
+  fi
+
+  if [ -n "$eta" ]; then
+    printf '%s left %s%% %s' "$label" "$remaining" "$eta"
+    return
+  fi
+
+  printf '%s left %s%%' "$label" "$remaining"
+}
+
+parts=()
+parts+=("codex ${plan}")
+
+five_part=$(format_window "5h" "$five_used" "$five_reset")
+if [ -n "$five_part" ]; then
+  parts+=("$five_part")
+fi
+
+week_part=$(format_window "7d" "$week_used" "$week_reset")
+if [ -n "$week_part" ]; then
+  parts+=("$week_part")
+fi
+
+if [ -n "$window_size" ] && [ "$window_size" -gt 0 ]; then
+  ctx_pct=$(awk \
+    -v input="$input_tokens" \
+    -v cached="$cached_tokens" \
+    -v create="$cache_create_tokens" \
+    -v read="$cache_read_tokens" \
+    -v size="$window_size" \
+    'BEGIN { used = input + cached + create + read; printf "%.0f", (used / size) * 100 }')
+  parts+=("ctx ${ctx_pct}%")
+fi
+
+for i in "${!parts[@]}"; do
+  if [ "$i" -gt 0 ]; then
+    printf ' | '
+  fi
+  printf '%s' "${parts[$i]}"
+done
+printf '\n'

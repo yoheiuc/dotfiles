@@ -13,13 +13,6 @@ alias gs='git status'
 alias gd='git diff'
 alias gl='git log --oneline --graph --decorate'
 
-# Codex shortcuts
-alias cx='codex'
-alias cxf='codex -p fast'
-alias cxr='codex -p review'
-alias cxd='codex -p deep'
-alias cxl='codex resume --last'
-
 # Safety nets
 alias rm='rm -i'
 alias cp='cp -i'
