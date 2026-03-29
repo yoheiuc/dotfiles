@@ -47,6 +47,7 @@ brew "uv"                 # fast Python package manager
 
 # ---------- Misc CLI ----------
 brew "shellcheck"         # shell script linter (used in CI)
+brew "brew-autoupdate"    # automatic brew update/upgrade via launchd
 
 # ---------- Casks: terminal / AI ----------
 cask "ghostty"            # GPU-accelerated terminal
