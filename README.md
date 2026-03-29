@@ -14,6 +14,8 @@
 | Homebrew | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
 | Git | Xcode CLT (`xcode-select --install`) または `brew install git` |
 
+Git identity (`~/.gitconfig`) も chezmoi 管理です。既定では GitHub noreply address を使います。
+
 Homebrew の構成は `home/dot_Brewfile.core`、`home/dot_Brewfile.work`、`home/dot_Brewfile.personal` に分かれています。  
 `bootstrap.sh` が入れるのは `core` プロファイルだけです。
 
@@ -343,6 +345,7 @@ dotfiles/
 │   ├── dot_Brewfile.core           # -> ~/.Brewfile.core
 │   ├── dot_Brewfile.work           # -> ~/.Brewfile.work
 │   ├── dot_Brewfile.personal       # -> ~/.Brewfile.personal
+│   ├── dot_gitconfig               # -> ~/.gitconfig
 │   ├── dot_zshrc                   # -> ~/.zshrc
 │   ├── dot_claude/
 │   │   ├── CLAUDE.md               # -> ~/.claude/CLAUDE.md
