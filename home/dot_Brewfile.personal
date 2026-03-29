@@ -17,3 +17,7 @@ cask "stats"                     # menu bar system monitor (CPU/RAM/disk/network
 # ---------- Browser ----------
 cask "google-chrome"
 
+# ---------- System / locale ----------
+cask "google-japanese-ime"
+cask "logi-options+"
+
