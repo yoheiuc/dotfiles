@@ -12,5 +12,4 @@ brew "tfenv"              # Terraform version manager
 cask "visual-studio-code", args: { appdir: "/Applications" }
 
 # ---------- Cloud / infra ----------
-cask "gcloud-cli", args: { appdir: "/Applications" }
 cask "aws-vault-binary", args: { appdir: "/Applications" }
