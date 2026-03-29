@@ -1,4 +1,4 @@
-# starship.toml — Modern Clean Config
+# starship.toml — Deep & Modern Config
 
 add_newline = true
 
@@ -15,44 +15,44 @@ $line_break\
 $character"""
 
 [directory]
-style = "bg:blue fg:black"
-format = "[](blue)[$path]($style)[](fg:blue) "
+style = "bold white bg:#313244" # Deep Gray/Blue
+format = "[](#313244)[$path]($style)[](fg:#313244) "
 truncation_length = 3
 truncation_symbol = "…/"
 
 [git_branch]
 symbol = " "
-style = "bg:purple fg:black"
-format = "[](purple)[$symbol$branch]($style)[](fg:purple) "
+style = "bold white bg:#45475a" # Slightly lighter Deep Gray
+format = "[](#45475a)[$symbol$branch]($style)[](fg:#45475a) "
 
 [git_status]
-style = "bg:purple fg:black"
-format = "([](purple)[$all_status$ahead_behind]($style)[](fg:purple) )"
+style = "bold white bg:#45475a"
+format = "([](#45475a)[$all_status$ahead_behind]($style)[](fg:#45475a) )"
 
 [nodejs]
 symbol = "󰎙 "
-style = "bg:cyan fg:black"
-format = "[](cyan)[$symbol($version)]($style)[](fg:cyan) "
+style = "bold white bg:#585b70" # Muted Blue/Gray
+format = "[](#585b70)[$symbol($version)]($style)[](fg:#585b70) "
 
 [rust]
 symbol = "󱘗 "
-style = "bg:cyan fg:black"
-format = "[](cyan)[$symbol($version)]($style)[](fg:cyan) "
+style = "bold white bg:#585b70"
+format = "[](#585b70)[$symbol($version)]($style)[](fg:#585b70) "
 
 [python]
 symbol = "󰌠 "
-style = "bg:cyan fg:black"
-format = "[](cyan)[$symbol($version)]($style)[](fg:cyan) "
+style = "bold white bg:#585b70"
+format = "[](#585b70)[$symbol($version)]($style)[](fg:#585b70) "
 
 [cmd_duration]
 min_time = 2000
-style = "bg:yellow fg:black"
-format = "[](yellow)[󱫿 $duration]($style)[](fg:yellow) "
+style = "bold white bg:#fab387" # Muted Orange
+format = "[](#fab387)[󱫿 $duration]($style)[](fg:#fab387) "
 
 [status]
 disabled = false
-style = "bg:red fg:black"
-format = "[](red)[󰄱 $status]($style)[](fg:red) "
+style = "bold white bg:#f38ba8" # Muted Red
+format = "[](#f38ba8)[󰄱 $status]($style)[](fg:#f38ba8) "
 symbol = "󰄱"
 
 [character]
