@@ -41,6 +41,9 @@ codex login
 
 # 5. 状態確認
 make doctor
+
+# 6. 変更前の確認
+make preview
 ```
 
 ### make ターゲット一覧
@@ -55,6 +58,10 @@ make help
 | `make install-work` | core + work + `post-setup` | ✓ |
 | `make install-personal` | core + personal + `post-setup` | ✓ |
 | `make install-all` | core + work + personal + `post-setup` | ✓ |
+| `make preview` | `chezmoi diff` + dry-run + brew preview (core) | ✓ |
+| `make preview-work` | `chezmoi diff` + dry-run + brew preview (work) | ✓ |
+| `make preview-personal` | `chezmoi diff` + dry-run + brew preview (personal) | ✓ |
+| `make preview-all` | `chezmoi diff` + dry-run + brew preview (all) | ✓ |
 | `make update` | pull → `chezmoi apply` → brew sync core | ✓ |
 | `make update-work` | pull → `chezmoi apply` → brew sync work | ✓ |
 | `make update-personal` | pull → `chezmoi apply` → brew sync personal | ✓ |
@@ -68,11 +75,14 @@ make help
 
 ```bash
 cd ~/dotfiles
+make preview
 make update
 make update-work
 make update-personal
 make update-all
 ```
+
+適用前に見たい場合は `make preview` を使います。用途に応じて `make preview-work`、`make preview-personal`、`make preview-all` も使えます。
 
 ---
 
@@ -362,6 +372,7 @@ dotfiles/
 ├── scripts/
 │   ├── brew-bundle.sh              # Brew profile の sync / install / check
 │   ├── bootstrap.sh                # core brew + chezmoi + apply
+│   ├── preview.sh                  # chezmoi/Brew の変更予定を確認
 │   ├── post-setup.sh               # Serena MCP + brew-autoupdate
 │   ├── uninstall.sh                # dotfiles を削除
 │   └── doctor.sh                   # 健全性チェック
