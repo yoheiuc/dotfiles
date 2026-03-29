@@ -114,10 +114,9 @@ fi
 # ---- brew autoupdate -------------------------------------------------------
 log "brew autoupdate..."
 
-if ! brew list brew-autoupdate &>/dev/null 2>&1; then
-  log "Installing brew-autoupdate..."
+if ! brew tap | grep -q "domt4/autoupdate"; then
+  log "Tapping domt4/autoupdate..."
   brew tap domt4/autoupdate
-  brew install brew-autoupdate
 fi
 
 if brew autoupdate status 2>/dev/null | grep -q "Autoupdate is installed and running"; then
