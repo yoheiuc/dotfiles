@@ -254,6 +254,24 @@ if command -v codex &>/dev/null; then
   else
     warn "serena MCP: not registered for Codex — run: ./scripts/post-setup.sh"
   fi
+
+  if rg -q '^[[:space:]]*codex_hooks[[:space:]]*=[[:space:]]*true' "${HOME}/.codex/config.toml" 2>/dev/null; then
+    ok "codex hooks: enabled"
+  else
+    warn "codex hooks: disabled — set [features].codex_hooks = true"
+  fi
+
+  if [[ -f "${HOME}/.codex/hooks.json" ]]; then
+    ok "codex hooks.json: present"
+  else
+    warn "codex hooks.json missing — run: chezmoi apply"
+  fi
+
+  if [[ -f "${HOME}/.codex/skills/codex-auto-save-memory/scripts/autosave_memory.py" ]]; then
+    ok "codex auto-save memory skill: present"
+  else
+    warn "codex auto-save memory skill missing — run: chezmoi apply"
+  fi
 else
   warn "codex not found — install Codex CLI separately"
 fi
