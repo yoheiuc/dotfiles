@@ -7,6 +7,15 @@
 # Reload config without restarting
 keybind = cmd+shift+comma=reload_config
 
+# Font size controls
+keybind = cmd+plus=increase_font_size:1
+keybind = cmd+minus=decrease_font_size:1
+keybind = cmd+zero=reset_font_size
+
+# Split panes
+keybind = cmd+d=new_split:right
+keybind = cmd+shift+d=new_split:down
+
 # ---------- Future expansion ----------
 # keybind = cmd+t=new_tab
 # keybind = cmd+w=close_surface
