@@ -6,7 +6,7 @@
 #   - Install Codex CLI (via npm install -g @openai/codex)
 #   - Register Serena MCP server into Claude Code and Codex (idempotent)
 #   - Register Sequential Thinking MCP into Claude Code and Codex (idempotent)
-#   - Download curated Codex skills from openai/skills (plan, figma)
+#   - Rely on chezmoi-managed Codex skills bundled in this repository
 #   - Set up brew-autoupdate (tap domt4/autoupdate + start 24h schedule)
 #
 # Safe to re-run: already-configured items are skipped.
@@ -131,27 +131,9 @@ if command -v codex &>/dev/null; then
   fi
 fi
 
-# ---- Codex skills from openai/skills ---------------------------------------
-log "Codex skills (openai/skills)..."
-
-_skills_dir="${HOME}/.codex/skills"
-_skills_tmp="$(mktemp -d)"
-
-if git clone --depth=1 --filter=blob:none --sparse \
-    https://github.com/openai/skills.git "${_skills_tmp}" 2>/dev/null; then
-  git -C "${_skills_tmp}" sparse-checkout set plan figma
-  for _skill in plan figma; do
-    if [[ -d "${_skills_dir}/${_skill}" ]]; then
-      ok "Codex skill '${_skill}': already present"
-    else
-      cp -r "${_skills_tmp}/${_skill}" "${_skills_dir}/"
-      ok "Codex skill '${_skill}': installed"
-    fi
-  done
-else
-  warn "openai/skills のクローンに失敗しました — スキルのインストールをスキップします"
-fi
-rm -rf "${_skills_tmp}"
+# ---- Codex skills ----------------------------------------------------------
+log "Codex skills..."
+ok "Codex skills are managed by chezmoi under ~/.codex/skills"
 
 # ---- brew autoupdate -------------------------------------------------------
 log "brew autoupdate..."

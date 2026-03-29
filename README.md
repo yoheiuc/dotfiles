@@ -273,7 +273,7 @@ codex mcp list
 
 セットアップ系のスクリプトは Bash 前提で書いているので、呼び出しは `bash` 明示です。日常利用は普段どおり `zsh` のままで問題ありません。
 
-Bundled skill は `~/.codex/skills` に入ります。たとえば:
+同梱している skill は `~/.codex/skills` に入り、`chezmoi apply` で反映されます。現在は `playwright`、`screenshot`、`doc`、`pdf`、`spreadsheet`、`jupyter-notebook`、`security-best-practices` を同梱しています。たとえば:
 
 ```zsh
 ~/.codex/skills/playwright/scripts/playwright_cli.sh open https://example.com
