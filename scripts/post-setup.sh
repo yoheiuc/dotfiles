@@ -60,9 +60,8 @@ fi
 log "Serena MCP registration..."
 
 if ! command -v uvx &>/dev/null; then
-  warn "uvx not found — install the core Brew profile first."
-  exit 0
-fi
+  warn "uvx not found — Serena MCP skipped (install the core Brew profile first)"
+else
 
 if claude mcp get serena >/dev/null 2>&1; then
   if claude mcp get serena 2>/dev/null | grep -Fq -- '--open-web-dashboard False'; then
@@ -111,6 +110,8 @@ if command -v codex &>/dev/null; then
 else
   warn "codex not found — Serena for Codex skipped"
 fi
+
+fi  # end uvx check
 
 # ---- brew autoupdate -------------------------------------------------------
 log "brew autoupdate..."

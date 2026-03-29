@@ -1,7 +1,7 @@
 # ~/.Brewfile.core — managed by chezmoi (source: home/dot_Brewfile.core)
 # Minimal machine baseline used by bootstrap / doctor.
-# Sync core only:  ~/.local/share/chezmoi/scripts/brew-bundle.sh sync core
-# Verify core:     ~/.local/share/chezmoi/scripts/brew-bundle.sh check core
+# Install: make install
+# Update:  make update
 
 # ---------- Taps ----------
 tap "laishulu/homebrew"
