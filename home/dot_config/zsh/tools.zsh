@@ -21,6 +21,11 @@ if command -v navi &>/dev/null; then
   eval "$(navi widget zsh)"
 fi
 
+# codex — shell completion
+if command -v codex &>/dev/null; then
+  eval "$(codex completion zsh 2>/dev/null | sed '/^WARNING: proceeding, even though we could not update PATH:/d')"
+fi
+
 # fzf — fuzzy finder
 if command -v fzf &>/dev/null; then
   # Shell completions
