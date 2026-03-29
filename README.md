@@ -2,6 +2,8 @@
 
 [chezmoi](https://chezmoi.io) で管理している、macOS 向けの個人用 dotfiles です。
 
+現在の運用メモは [docs/notes/current-state.md](/Users/y.uchiyama/dotfiles/docs/notes/current-state.md) に置いています。
+
 ---
 
 ## 前提条件
