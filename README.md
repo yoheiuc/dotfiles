@@ -249,6 +249,8 @@ config-file = local.ghostty
 - `git push` と `WebFetch` は確認つき
 - 読み取り専用の git コマンドや `--version` / `--help` は自動許可
 
+`~/.claude/CLAUDE.md` も chezmoi 管理にしており、個人用の共通メモと運用方針を置きます。
+
 `~/.codex/config.toml` も chezmoi 管理で、主に次を設定しています。
 
 - 既定モデル / reasoning / personality
@@ -292,6 +294,7 @@ python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp --acti
 Claude Code と Gemini CLI は、共通設定とローカル state を分けて管理します。
 
 - Claude Code は `~/.claude/settings.json` だけを dotfiles 管理する
+- `~/.claude/CLAUDE.md` は共通メモとして dotfiles 管理する
 - `~/.claude/history.jsonl`、`projects/`、`sessions/`、`cache/`、`plugins/` などの運用データは管理しない
 - Gemini CLI は `~/.gemini/settings.json` だけを dotfiles 管理する
 - `~/.gemini/oauth_creds.json`、`google_accounts.json`、`history/`、`projects.json`、`state.json`、`trustedFolders.json`、`tmp/` などは管理しない
@@ -313,6 +316,7 @@ dotfiles/
 │   ├── dot_Brewfile.personal       # -> ~/.Brewfile.personal
 │   ├── dot_zshrc                   # -> ~/.zshrc
 │   ├── dot_claude/
+│   │   ├── CLAUDE.md               # -> ~/.claude/CLAUDE.md
 │   │   └── settings.json           # -> ~/.claude/settings.json
 │   ├── dot_codex/
 │   │   ├── config.toml.tmpl        # -> ~/.codex/config.toml
