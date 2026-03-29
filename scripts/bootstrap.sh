@@ -64,8 +64,7 @@ chezmoi apply
 log "Bootstrap complete."
 printf '\nNext:\n'
 printf '  • Open a new terminal to load zsh config\n'
-printf '  • Optional: ./scripts/brew-bundle.sh sync work      (install work apps too)\n'
-printf '  • Optional: ./scripts/brew-bundle.sh sync personal  (install personal apps too)\n'
-printf '  • Optional: ./scripts/brew-bundle.sh sync all       (install every optional layer)\n'
-printf '  • Run:  ./scripts/post-setup.sh      (Serena MCP, etc.)\n'
-printf '  • Run:  ./scripts/doctor.sh          (verify setup)\n'
+printf '  • Optional: make install-work       (add work apps)\n'
+printf '  • Optional: make install-personal   (add personal apps)\n'
+printf '  • Optional: make install-all        (add all apps)\n'
+printf '  • Run:      make doctor             (verify setup)\n'

@@ -5,9 +5,10 @@
 #   - Install Claude Code CLI (via https://claude.ai/install.sh)
 #   - Install Codex CLI (via npm install -g @openai/codex)
 #   - Register Serena MCP server into Claude Code and Codex (idempotent)
-#   - Any future "first-time only" configuration that is not a dotfile
+#   - Set up brew-autoupdate (tap domt4/autoupdate + start 24h schedule)
 #
 # Safe to re-run: already-configured items are skipped.
+# Called automatically by: make install-work / install-personal / install-all
 #
 # Usage: ./scripts/post-setup.sh
 set -euo pipefail
