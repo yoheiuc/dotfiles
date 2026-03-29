@@ -8,8 +8,9 @@ brew "awscli"
 brew "azure-cli"
 brew "tfenv"              # Terraform version manager
 
-# ---------- Editors ----------
+# ---------- Editors / AI ----------
 cask "visual-studio-code", args: { appdir: "/Applications" }
+cask "codex-app"                 # OpenAI Codex desktop app
 
 # ---------- Cloud / infra ----------
 cask "aws-vault-binary", args: { appdir: "/Applications" }
