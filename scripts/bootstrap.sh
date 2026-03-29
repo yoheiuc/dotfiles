@@ -4,10 +4,10 @@
 # Responsibility (nothing more):
 #   1. Verify Homebrew is present
 #   2. Install chezmoi if missing
-#   3. Enforce Homebrew packages to match the core Brew profile strictly
+#   3. Install core Brew packages (no cleanup — won't remove work/personal packages)
 #   4. Apply dotfiles via chezmoi
 #
-# Post-dotfiles setup (Serena MCP, etc.) → scripts/post-setup.sh
+# Called automatically by: make install / install-work / install-personal / install-all
 #
 # Usage: ./scripts/bootstrap.sh
 set -euo pipefail

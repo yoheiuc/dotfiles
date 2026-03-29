@@ -128,6 +128,5 @@ else
   ok "brew autoupdate: started (every 24h, with upgrade + cleanup)"
 fi
 
-printf '\nVerify with: claude mcp list\n'
-printf '             codex mcp list\n'
-printf '             codex login\n'
+printf '\nVerify with: make doctor\n'
+printf '             codex login    (one-time auth)\n'

@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
-# brew-bundle.sh — sync/check the effective Brew profile for this repo
+# brew-bundle.sh — manage Homebrew packages for the effective profile
+#
+# Modes:
+#   sync    install + cleanup (removes packages not in profile)  ← used by make install-*
+#   install install only, no cleanup                             ← used by make update-*
+#   check   verify all packages are present (non-destructive)    ← used by make doctor
+#
+# Profiles: core | work | personal | all
 #
 # Usage:
-#   ./scripts/brew-bundle.sh sync core        # install + cleanup
-#   ./scripts/brew-bundle.sh install core     # install only (no cleanup)
-#   ./scripts/brew-bundle.sh check core
+#   ./scripts/brew-bundle.sh sync    core
+#   ./scripts/brew-bundle.sh sync    all
+#   ./scripts/brew-bundle.sh install personal
+#   ./scripts/brew-bundle.sh check   work
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
