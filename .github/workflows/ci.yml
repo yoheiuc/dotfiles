@@ -52,7 +52,7 @@ jobs:
       - name: Validate Chezmoi templates
         run: |
           # Verify .tmpl files can be rendered correctly
-          find . -name "*.tmpl" -exec chezmoi execute-template < {} \; > /dev/null
+          find . -name "*.tmpl" -exec sh -c 'chezmoi execute-template < "$1" > /dev/null' _ {} \;
 
       - name: Run shellcheck on scripts
         run: |
