@@ -29,16 +29,19 @@ error_symbol   = "[❯](bold red)"
 [directory]
 truncation_length    = 4
 truncate_to_repo     = true
-style                = "bold blue"
+style                = "bold white bg:blue"
+format = " [](blue)[$path]($style)[](blue) "
 read_only            = " 󰌾"
 home_symbol          = "󱂵 ~"
 
 [git_branch]
 symbol = " "
-style  = "bold purple"
+style  = "bold white bg:purple"
+format = "[](purple)[$symbol$branch]($style)[](purple) "
 
 [git_status]
-style    = "bold red"
+style    = "bold white bg:red"
+format = "([](red)[$all_status$ahead_behind]($style)[](red) )"
 ahead    = "⇡${count}"
 behind   = "⇣${count}"
 diverged = "⇕⇡${ahead_count}⇣${behind_count}"
