@@ -13,6 +13,7 @@ cask "ente-auth"                 # 2FA
 
 # ---------- System monitoring ----------
 cask "stats"                     # menu bar system monitor (CPU/RAM/disk/network)
+cask "cleanshot"                 # screenshot tool
 
 # ---------- Browser ----------
 cask "google-chrome"
