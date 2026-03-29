@@ -60,9 +60,10 @@ show_milliseconds  = false
 disabled = false
 format = " [$symbol $status]($style)"
 symbol = "󰄱"
-success_symbol = "󰄲"
+success_symbol = "" # Show nothing on success
 not_found_symbol = "󰍉"
 sigint_symbol = "󰚏"
+style = "bold red"
 
 [time]
 disabled = false
