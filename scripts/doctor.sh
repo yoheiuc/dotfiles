@@ -150,7 +150,14 @@ if command -v claude &>/dev/null; then
     warn "serena MCP: not registered — run: ./scripts/post-setup.sh"
   fi
 else
-  warn "claude not found — install via Brewfile (cask \"claude\")"
+  warn "claude not found — install via Brewfile (cask \"claude-code\")"
+fi
+
+section "Gemini CLI (optional)"
+if command -v gemini &>/dev/null; then
+  ok "$(gemini --version 2>&1 | head -1)"
+else
+  warn "gemini not found — install via Brewfile (brew \"gemini-cli\")"
 fi
 
 section "Codex (optional)"

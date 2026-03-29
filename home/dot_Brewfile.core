@@ -15,6 +15,7 @@ brew "git-lfs"            # large file storage
 brew "gh"                 # GitHub CLI
 brew "ghq"                # Manage local clones
 brew "lazygit"            # TUI git client
+brew "gemini-cli"         # Gemini CLI
 brew "jq"                 # JSON processor
 brew "yq"                 # YAML/JSON/TOML processor
 
@@ -53,6 +54,7 @@ brew "shellcheck"         # shell script linter (used in CI)
 # ---------- Casks: terminal / AI ----------
 cask "ghostty"            # GPU-accelerated terminal
 cask "claude"             # Claude desktop
+cask "claude-code"        # Claude CLI
 
 # ---------- Casks: fonts ----------
 cask "font-jetbrains-mono-nerd-font"

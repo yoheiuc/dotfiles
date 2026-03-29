@@ -23,18 +23,9 @@ warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 log "Claude Code CLI..."
 
 if command -v claude &>/dev/null; then
-  ok "Claude Code already installed: $(claude --version 2>/dev/null || true)"
+  ok "Claude Code already installed: $(claude --version 2>/dev/null | head -1 || true)"
 else
-  log "Installing Claude Code via install script..."
-  curl -fsSL https://claude.ai/install.sh | bash
-  # Reload PATH so subsequent steps can find the claude binary
-  export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"
-  if command -v claude &>/dev/null; then
-    ok "Claude Code installed: $(claude --version 2>/dev/null || true)"
-  else
-    warn "claude CLI still not found after install — open a new terminal and re-run."
-    exit 1
-  fi
+  warn "claude CLI not found — install via Brewfile (cask \"claude-code\")"
 fi
 
 # ---- Codex CLI -------------------------------------------------------------
