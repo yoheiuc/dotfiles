@@ -173,25 +173,13 @@ Full restore on a new machine: clone the reverted state and re-run `bootstrap.sh
 
 ## Brew Profiles
 
-`home/dot_Brewfile.core` is the minimal baseline used by `bootstrap.sh` and `doctor.sh`.
-`home/dot_Brewfile.work` is an optional work/dev layer.
-`home/dot_Brewfile.personal` is an optional personal/local layer.
+| Brewfile | 用途 |
+|---|---|
+| `dot_Brewfile.core` | 全マシン共通のベースライン |
+| `dot_Brewfile.work` | work/dev 追加レイヤー |
+| `dot_Brewfile.personal` | personal 追加レイヤー |
 
-Homebrew is still run in strict mode, but cleanup must happen against the effective combined profile.
-Because of that, use `./scripts/brew-bundle.sh ...` instead of raw `brew bundle --global` commands.
-
-| Context | Command |
-|---------|---------|
-| Initial install (core only) | `~/dotfiles/scripts/brew-bundle.sh sync core` |
-| Add work apps too | `~/dotfiles/scripts/brew-bundle.sh sync work` |
-| Add personal apps too | `~/dotfiles/scripts/brew-bundle.sh sync personal` |
-| Add every optional layer | `~/dotfiles/scripts/brew-bundle.sh sync all` |
-| Verify core | `~/dotfiles/scripts/brew-bundle.sh check core` |
-| Verify core + work | `~/dotfiles/scripts/brew-bundle.sh check work` |
-| Verify core + personal | `~/dotfiles/scripts/brew-bundle.sh check personal` |
-| Verify core + work + personal | `~/dotfiles/scripts/brew-bundle.sh check all` |
-
-Use the same profile consistently on later runs. For example, running `sync core` after `sync work` will clean up work-only apps.
+cleanup はプロファイル全体に対して行われるため、`make` コマンド経由で実行すること。同じプロファイルを一貫して使うこと（例: `sync work` の後に `sync core` を実行すると work アプリが削除される）。
 
 ---
 
@@ -242,7 +230,9 @@ theme = nord
 
 **Codex CLI** is installed by `post-setup.sh` using the official npm package. `node` is included in the core Brew profile so new machines have the runtime needed for that install path.
 
-**Serena MCP** is configured for both tools, so it is active in every project. The launch args also disable Serena's browser auto-open behavior:
+**Serena MCP** is configured for both tools, so it is active in every project. The launch args also disable Serena's browser auto-open behavior.
+
+**brew-autoupdate** は `post-setup.sh` が `domt4/autoupdate` tap 経由でインストール・起動する（24時間ごとに自動 upgrade + cleanup）。
 
 ```bash
 ./scripts/post-setup.sh       # idempotent — safe to re-run
@@ -272,6 +262,7 @@ python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp --acti
 
 ```
 dotfiles/
+├── Makefile                        # install / update / doctor / uninstall
 ├── .chezmoiroot                    # "home" — chezmoi source root
 ├── .gitignore
 ├── home/                           # chezmoi source state → $HOME
@@ -284,6 +275,11 @@ dotfiles/
 │   ├── dot_codex/
 │   │   ├── config.toml.tmpl        # → ~/.codex/config.toml
 │   │   └── skills/                 # → ~/.codex/skills/*
+│   ├── dot_local/share/navi/cheats/dotfiles/
+│   │   ├── git.cheat               # lazygit, ghq, git-delta, gh
+│   │   ├── shell.cheat             # atuin, zoxide, fzf, navi
+│   │   ├── files.cheat             # eza, bat, yazi, ripgrep, fd
+│   │   └── terminal.cheat          # zellij, jq, yq
 │   └── dot_config/
 │       ├── ghostty/
 │       │   ├── config.ghostty      # entry point (loads modules)
@@ -293,13 +289,14 @@ dotfiles/
 │       ├── zsh/
 │       │   ├── env.zsh             # PATH, brew shellenv, exports
 │       │   ├── aliases.zsh         # eza, bat, fd, rg shortcuts
-│       │   ├── tools.zsh           # starship / zoxide / atuin / fzf hooks
+│       │   ├── tools.zsh           # starship / zoxide / atuin / fzf / navi hooks
 │       │   └── completion.zsh      # compinit (must load last)
 │       └── starship.toml           # prompt config
 ├── scripts/
 │   ├── brew-bundle.sh              # effective Brew profile sync/check
 │   ├── bootstrap.sh                # core brew + chezmoi + apply
-│   ├── post-setup.sh               # Serena MCP registration (idempotent)
+│   ├── post-setup.sh               # Serena MCP + brew-autoupdate (idempotent)
+│   ├── uninstall.sh                # dotfiles を削除
 │   └── doctor.sh                   # health check
 └── .github/workflows/
     └── ci.yml                      # shellcheck + core brew bundle (macos-latest)
