@@ -30,9 +30,6 @@ week_used=$(printf '%s' "$payload" | jq -r '.rate_limits.secondary.used_percent 
 week_reset=$(printf '%s' "$payload" | jq -r '.rate_limits.secondary.resets_at // empty')
 window_size=$(printf '%s' "$payload" | jq -r '.info.model_context_window // empty')
 input_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.input_tokens // 0')
-cached_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.cached_input_tokens // 0')
-cache_create_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.cache_creation_input_tokens // 0')
-cache_read_tokens=$(printf '%s' "$payload" | jq -r '.info.last_token_usage.cache_read_input_tokens // 0')
 
 is_unix_timestamp() {
   case "$1" in
@@ -108,14 +105,16 @@ if [ -n "$week_part" ]; then
 fi
 
 if [ -n "$window_size" ] && [ "$window_size" -gt 0 ]; then
-  ctx_pct=$(awk \
+  input_pct=$(awk \
     -v input="$input_tokens" \
-    -v cached="$cached_tokens" \
-    -v create="$cache_create_tokens" \
-    -v read="$cache_read_tokens" \
     -v size="$window_size" \
-    'BEGIN { used = input + cached + create + read; printf "%.0f", (used / size) * 100 }')
-  parts+=("ctx ${ctx_pct}%")
+    'BEGIN {
+      used = (size > 0) ? (input / size) * 100 : 0
+      if (used < 0) used = 0
+      if (used > 100) used = 100
+      printf "%.0f", used
+    }')
+  parts+=("input ${input_pct}%")
 fi
 
 for i in "${!parts[@]}"; do
