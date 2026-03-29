@@ -287,6 +287,17 @@ python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp --acti
 /plugin install superpowers
 ```
 
+### Claude Code / Gemini CLI のローカル state
+
+Claude Code と Gemini CLI は、共通設定とローカル state を分けて管理します。
+
+- Claude Code は `~/.claude/settings.json` だけを dotfiles 管理する
+- `~/.claude/history.jsonl`、`projects/`、`sessions/`、`cache/`、`plugins/` などの運用データは管理しない
+- Gemini CLI は `~/.gemini/settings.json` だけを dotfiles 管理する
+- `~/.gemini/oauth_creds.json`、`google_accounts.json`、`history/`、`projects.json`、`state.json`、`trustedFolders.json`、`tmp/` などは管理しない
+
+Gemini の `settings.json` は chezmoi テンプレートで管理し、既存の認証方式 (`selectedAuthType`) だけはローカル値を温存します。これにより、UI 設定は揃えつつ認証状態は壊しません。
+
 ---
 
 ## ディレクトリ構成
@@ -306,6 +317,8 @@ dotfiles/
 │   ├── dot_codex/
 │   │   ├── config.toml.tmpl        # -> ~/.codex/config.toml
 │   │   └── skills/                 # -> ~/.codex/skills/*
+│   ├── dot_gemini/
+│   │   └── settings.json.tmpl      # -> ~/.gemini/settings.json
 │   ├── dot_local/share/navi/cheats/dotfiles/
 │   │   ├── git.cheat
 │   │   ├── shell.cheat

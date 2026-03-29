@@ -1,0 +1,19 @@
+{{- $settingsPath := joinPath .chezmoi.homeDir ".gemini/settings.json" -}}
+{{- $selectedAuthType := output "sh" "-c" (printf "python3 - <<'PY'\nimport json\nfrom pathlib import Path\npath = Path(%q)\nvalue = 'oauth-personal'\nif path.exists():\n    try:\n        data = json.loads(path.read_text())\n        value = data.get('selectedAuthType') or data.get('security', {}).get('auth', {}).get('selectedType') or value\n    except Exception:\n        pass\nprint(value)\nPY" $settingsPath) | trim -}}
+{
+  "selectedAuthType": {{ $selectedAuthType | toJson }},
+  "security": {
+    "auth": {
+      "selectedType": {{ $selectedAuthType | toJson }}
+    }
+  },
+  "ui": {
+    "footer": {
+      "hideCWD": false,
+      "hideModelInfo": false,
+      "hideContextPercentage": false
+    },
+    "showStatusInTitle": true,
+    "dynamicWindowTitle": true
+  }
+}
