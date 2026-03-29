@@ -17,9 +17,7 @@ $rust\
 $cmd_duration\
 [](fg:yellow bg:red)\
 $status\
-[](fg:red bg:#313244)\
-$time\
-[](fg:#313244)\
+[](fg:red)\
 $line_break\
 $character"""
 
@@ -65,10 +63,7 @@ format = "[ 󰄱 $status ]($style)"
 symbol = "󰄱"
 
 [time]
-disabled = false
-style = "bg:#313244 fg:white"
-format = "[ 󱑎 at $time ]($style)"
-time_format = "%T" # Hour:Minute:Second (e.g. 12:34:56)
+disabled = true
 
 [character]
 success_symbol = "[❯](bold green)"
