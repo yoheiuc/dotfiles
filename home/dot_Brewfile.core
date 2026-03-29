@@ -37,6 +37,7 @@ brew "eza"                # modern ls
 brew "yazi"               # TUI file manager
 brew "poppler"            # PDF utilities (pdftoppm, pdfinfo, etc.)
 brew "vim"
+brew "micro"              # simple terminal text editor
 
 # ---------- Terminal multiplexer ----------
 brew "zellij"             # terminal multiplexer
