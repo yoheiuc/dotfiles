@@ -1,38 +1,40 @@
 # dotfiles
 
-Personal macOS dotfiles managed with [chezmoi](https://chezmoi.io).
+[chezmoi](https://chezmoi.io) で管理している、macOS 向けの個人用 dotfiles です。
 
 ---
 
-## Prerequisites
+## 前提条件
 
-| | |
+| 項目 | 内容 |
 |---|---|
-| **macOS** (Apple Silicon or Intel) | |
-| **Homebrew** | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
-| **Git** | Xcode CLT (`xcode-select --install`) or `brew install git` |
+| macOS | Apple Silicon / Intel のどちらでも可 |
+| Homebrew | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
+| Git | Xcode CLT (`xcode-select --install`) または `brew install git` |
 
-Everything else is split into `home/dot_Brewfile.core`, `home/dot_Brewfile.work`, and `home/dot_Brewfile.personal`.
-`bootstrap.sh` installs only the core profile.
+Homebrew の構成は `home/dot_Brewfile.core`、`home/dot_Brewfile.work`、`home/dot_Brewfile.personal` に分かれています。  
+`bootstrap.sh` が入れるのは `core` プロファイルだけです。
 
 ---
 
-## Initial Setup (new Mac)
+## 初期セットアップ
+
+新しい Mac での基本手順です。
 
 ```bash
-# 1. Clone
+# 1. clone
 git clone https://github.com/<your-username>/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
-# 2. セットアップ（用途に合わせて1つ選ぶ）
+# 2. 用途に応じてセットアップ
 make install            # core のみ
-make install-work       # core + work アプリ
-make install-personal   # core + personal アプリ
+make install-work       # core + work
+make install-personal   # core + personal
 make install-all        # すべて
 
-# 3. 新しいターミナルを開いて zsh 設定を読み込む
+# 3. 新しいターミナルを開いて zsh を読み直す
 
-# 4. Codex の認証（初回のみ）
+# 4. Codex の初回認証
 codex login
 
 # 5. 状態確認
@@ -41,85 +43,86 @@ make doctor
 
 ### make ターゲット一覧
 
-```
+```bash
 make help
 ```
 
-| ターゲット | 何をするか | 再実行 |
+| ターゲット | 内容 | 再実行 |
 |---|---|---|
-| `make install` | core Brew + chezmoi apply | ✓ |
-| `make install-work` | core + work + post-setup | ✓ |
-| `make install-personal` | core + personal + post-setup | ✓ |
-| `make install-all` | core + work + personal + post-setup | ✓ |
-| `make update` | pull → chezmoi apply → brew sync core | ✓ |
-| `make update-work` | pull → chezmoi apply → brew sync work | ✓ |
-| `make update-personal` | pull → chezmoi apply → brew sync personal | ✓ |
-| `make update-all` | pull → chezmoi apply → brew sync all | ✓ |
-| `make doctor` | セットアップの状態確認 | ✓ |
+| `make install` | core Brew + `chezmoi apply` | ✓ |
+| `make install-work` | core + work + `post-setup` | ✓ |
+| `make install-personal` | core + personal + `post-setup` | ✓ |
+| `make install-all` | core + work + personal + `post-setup` | ✓ |
+| `make update` | pull → `chezmoi apply` → brew sync core | ✓ |
+| `make update-work` | pull → `chezmoi apply` → brew sync work | ✓ |
+| `make update-personal` | pull → `chezmoi apply` → brew sync personal | ✓ |
+| `make update-all` | pull → `chezmoi apply` → brew sync all | ✓ |
+| `make doctor` | 設定と依存の健全性確認 | ✓ |
 | `make uninstall` | dotfiles を削除 | ✓ |
 
 ---
 
-## Day-to-day: Updating dotfiles
+## 日常の更新
 
 ```bash
 cd ~/dotfiles
-make update             # core のみ
-make update-work        # core + work
-make update-personal    # core + personal
-make update-all         # すべて
+make update
+make update-work
+make update-personal
+make update-all
 ```
 
 ---
 
-## Health Check
+## ヘルスチェック
 
 ```bash
 make doctor
 ```
 
-| Check | Type | Pass condition |
-|-------|------|----------------|
-| `brew --version` | Required | Homebrew is installed |
-| `chezmoi --version` | Required | chezmoi is installed |
-| `chezmoi doctor` | Required | Runs and prints built-in health results (`failed` rows are shown as warnings) |
-| `./scripts/brew-bundle.sh check core` | Required | All core Brew profile packages present |
-| `node --version` | Optional | node/npm runtime available for Codex CLI installs |
-| `uv --version` | Optional | uv installed (needed by Serena MCP) |
-| `ghostty --version` | Optional | Ghostty CLI exists and returns a valid version |
-| `claude --version` | Optional | Claude Code CLI available |
-| `claude mcp list` (Serena) | Optional | Serena MCP registered |
-| `codex --version` | Optional | Codex CLI available |
-| `codex mcp list` (Serena) | Optional | Serena MCP registered for Codex |
-| `ghq --version` | Optional | ghq installed |
-| `zellij --version` | Optional | zellij installed |
-| `navi --version` | Optional | navi installed + cheatsheets present |
+`doctor.sh` は次の項目を確認します。
 
-Exit code is 0 only when all **required** checks pass.
-Optional checks that are installed but unhealthy are reported as warnings instead of `OK`.
+| チェック | 種別 | 合格条件 |
+|---|---|---|
+| `brew --version` | Required | Homebrew が使える |
+| `chezmoi --version` | Required | chezmoi が使える |
+| `chezmoi doctor` | Required | 内蔵チェックが実行できる (`failed` 行は warning 扱い) |
+| `./scripts/brew-bundle.sh check core` | Required | core Brew プロファイルが満たされている |
+| `node --version` | Optional | Codex CLI 導入に必要な node/npm がある |
+| `uv --version` | Optional | Serena MCP に必要な `uv` がある |
+| `ghostty --version` | Optional | Ghostty CLI が存在し、バージョンが取得できる |
+| `claude --version` | Optional | Claude Code CLI がある |
+| `claude mcp list` | Optional | Claude Code 側で Serena MCP が見える |
+| `codex --version` | Optional | Codex CLI がある |
+| `codex mcp list` | Optional | Codex 側で Serena MCP が見える |
+| `ghq --version` | Optional | `ghq` がある |
+| `zellij --version` | Optional | `zellij` がある |
+| `navi --version` | Optional | `navi` と cheatsheet がある |
 
-### ghq (repository management)
+終了コードが `0` になるのは Required がすべて通ったときだけです。  
+Optional は失敗しても warning 扱いです。
+
+### ghq の使い方
 
 ```bash
-# Find and jump to a managed repository
+# 管理対象リポジトリへ移動
 qcd
 
-# Clone through ghq (stored under $(ghq root))
+# ghq 経由で clone
 ghq get git@github.com:owner/repo.git
 ```
 
-
 ---
 
+## AI セッション
 
-## AI Session (zellij) — 使い方イメージ
+`zellij` 上で AI セッションを開くための最小構成です。
 
 ```bash
-# AI セッション起動（レイアウトは固定しない）
 bash ~/.local/share/chezmoi/scripts/ai-session.sh
 ```
 
-起動直後（プレーン）イメージ:
+起動直後のイメージ:
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -129,121 +132,148 @@ bash ~/.local/share/chezmoi/scripts/ai-session.sh
 └──────────────────────────────────────────────────────────────┘
 ```
 
-- レイアウトやキーバインドを固定しない、プレーンな起動のみ
+- レイアウトは固定しない
+- キーバインドも追加で押し付けない
+- まずは素の `zellij` セッションとして開く
 
 ---
 
-## chezmoi の基本的な使い方
+## chezmoi の基本運用
+
+基本は「`~/dotfiles` を編集して `chezmoi apply`」です。
 
 ```bash
-# 1) dotfiles リポジトリ側を編集
+# 1. repo 側を編集
 cd ~/dotfiles
 $EDITOR home/dot_config/zsh/aliases.zsh
 
-# 2) 変更を自分の HOME に反映
+# 2. HOME へ反映
 chezmoi apply
 
-# 3) 反映前に差分だけ見たいとき
+# 3. 反映前に差分確認
 chezmoi diff
 chezmoi apply -n -v
 
-# 4) すでに HOME 側で編集したファイルを管理下に取り込むとき
+# 4. HOME 側で直接編集した内容を取り込む
 chezmoi add ~/.zshrc
 ```
 
-よく使う流れは「`~/dotfiles` を編集 → `chezmoi apply` で反映」です。
-
 ---
 
-## Rollback
+## 巻き戻し
 
 ```bash
-# Undo a specific file change
+# 特定ファイルだけ戻す
 git checkout <commit> -- home/dot_config/zsh/tools.zsh
 chezmoi apply
 
-# Undo the last commit and re-apply
+# 直前のコミットを打ち消す
 git revert HEAD
 chezmoi apply
 ```
 
-Full restore on a new machine: clone the reverted state and re-run `bootstrap.sh`.
+新しいマシンで完全に戻したい場合は、巻き戻した状態を clone し直して `bootstrap.sh` を再実行します。
 
 ---
 
-## Brew Profiles
+## Brew プロファイル
 
 | Brewfile | 用途 |
 |---|---|
-| `dot_Brewfile.core` | 全マシン共通のベースライン |
-| `dot_Brewfile.work` | work/dev 追加レイヤー |
-| `dot_Brewfile.personal` | personal 追加レイヤー |
+| `dot_Brewfile.core` | 全マシン共通のベース |
+| `dot_Brewfile.work` | 仕事用・開発用の追加レイヤー |
+| `dot_Brewfile.personal` | 個人用の追加レイヤー |
 
-cleanup はプロファイル全体に対して行われるため、`make` コマンド経由で実行すること。同じプロファイルを一貫して使うこと（例: `sync work` の後に `sync core` を実行すると work アプリが削除される）。
+`cleanup` はプロファイル全体に対して実行されるため、`make` 経由で使う前提です。  
+同じプロファイルを一貫して使ってください。たとえば `sync work` の後に `sync core` を実行すると、work 側の追加アプリが削除されます。
 
 ---
 
-## Ghostty Config
+## Ghostty 設定
 
-The config is split into focused modules under `~/.config/ghostty/`:
+Ghostty の設定は `~/.config/ghostty/` 配下で分割管理しています。
 
-| File | Purpose |
-|------|---------|
-| `config.ghostty` | Entry point — loads the modules below |
-| `core.ghostty` | Shell integration, scrollback, window behaviour |
-| `ui.ghostty` | Font, Catppuccin Mocha theme, padding |
-| `keybinds.ghostty` | Key overrides (defaults are macOS-standard) |
-| `local.ghostty` | **Machine-local overrides — not tracked in git** |
+| ファイル | 用途 |
+|---|---|
+| `config.ghostty` | エントリポイント |
+| `core.ghostty` | shell integration、scrollback、終了挙動 |
+| `ui.ghostty` | フォント、テーマ、padding |
+| `keybinds.ghostty` | 追加キーバインド |
+| `local.ghostty` | 任意のマシンローカル設定用。git 管理しない |
 
-### Local overrides
+### GUI で設定を変えた場合
 
-For per-machine settings (font size on an external display, an experimental colour scheme, etc.), create `~/.config/ghostty/local.ghostty`:
+Ghostty の GUI から設定を変更すると、通常は `~/.config/ghostty/*.ghostty` が直接書き換わります。  
+この変更は `chezmoi diff` で検出できます。
 
+```bash
+chezmoi diff
+chezmoi diff ~/.config/ghostty/config.ghostty
 ```
-# ~/.config/ghostty/local.ghostty  (not tracked by git)
+
+運用は次の方針です。
+
+- GUI での変更は一時的なローカル差分として扱う
+- 残したい変更だけ dotfiles 側へ取り込む
+- `chezmoi apply` をすると共通設定で上書きされることがある
+
+### `local.ghostty` について
+
+マシンごとの上書き設定を使いたい場合は、必要なマシンだけ `~/.config/ghostty/local.ghostty` を作成します。
+
+```conf
+# ~/.config/ghostty/local.ghostty
 font-size = 16
 theme = nord
 ```
 
-Ghostty errors on missing `config-file` includes, so `local.ghostty` is not loaded automatically. To use local overrides, add `config-file = local.ghostty` to `~/.config/ghostty/config.ghostty` on that machine after creating the file.
+Ghostty は存在しない `config-file` を無視せずエラーにするため、`local.ghostty` は共通設定からは自動で読み込みません。  
+本当に使いたいマシンだけ、そのマシンの `~/.config/ghostty/config.ghostty` に次を手で追加してください。
 
-> **Note:** Ghostty CLI may not be in `$PATH` when installed as a `.app` bundle.
-> The binary is at `/Applications/Ghostty.app/Contents/MacOS/ghostty`.
-> `doctor.sh` checks both locations.
+```conf
+config-file = local.ghostty
+```
+
+> 注意: この手修正は共通の chezmoi 管理対象ではないため、あとで `chezmoi apply` すると元に戻る可能性があります。恒久化したい場合は dotfiles 側へ取り込むこと。
+
+> 補足: Ghostty CLI が `$PATH` に無い場合でも、`/Applications/Ghostty.app/Contents/MacOS/ghostty` から実行できます。`doctor.sh` は両方を確認します。
 
 ---
 
 ## Claude Code / Codex / MCP
 
-`~/.claude/settings.json` (managed by chezmoi) sets:
-- Default deny for destructive shell commands (`curl`, `wget`, `rm`, `sudo`, `chmod`, `chown`)
-- Default deny for credential paths (`.env`, `secrets/**`, `~/.ssh/**`)
-- Ask-before-run for `git push` and `WebFetch`
-- Auto-allow for read-only git commands and `--version`/`--help`
+`~/.claude/settings.json` は chezmoi 管理で、主に次を設定しています。
 
-`~/.codex/config.toml` (managed by chezmoi) sets:
-- Default model / reasoning / personality
-- OpenAI curated `github` and `google-calendar` plugins enabled
-- `serena` as a shared Codex MCP server
-- Curated local skills such as `playwright` and `screenshot`
-- Existing local `projects.*` trust overrides are preserved on `chezmoi apply`
+- 破壊的なシェルコマンド (`curl`, `wget`, `rm`, `sudo`, `chmod`, `chown`) は既定 deny
+- 認証情報に近いパス (`.env`, `secrets/**`, `~/.ssh/**`) は既定 deny
+- `git push` と `WebFetch` は確認つき
+- 読み取り専用の git コマンドや `--version` / `--help` は自動許可
 
-**Codex CLI** is installed by `post-setup.sh` using the official npm package. `node` is included in the core Brew profile so new machines have the runtime needed for that install path.
+`~/.codex/config.toml` も chezmoi 管理で、主に次を設定しています。
 
-**Serena MCP** is configured for both tools, so it is active in every project. The launch args also disable Serena's browser auto-open behavior.
+- 既定モデル / reasoning / personality
+- OpenAI curated の `github` と `google-calendar` プラグインを有効化
+- `serena` を共有 MCP サーバーとして有効化
+- `playwright`、`screenshot` などのローカル skill を利用可能にする
+- 既存の `projects.*` trust override は `chezmoi apply` で壊さない
 
-**brew-autoupdate** は `post-setup.sh` が `domt4/autoupdate` tap 経由でインストール・起動する（24時間ごとに自動 upgrade + cleanup）。
+**Codex CLI** は `post-setup.sh` が公式 npm パッケージ経由で導入します。  
+`node` は core Brew プロファイルに含めているので、新規マシンでもこの導線がそのまま使えます。
+
+**Serena MCP** は Claude Code / Codex の両方で使う前提です。起動引数にはブラウザ自動起動の抑止も入れています。
+
+**brew-autoupdate** は `post-setup.sh` が `domt4/autoupdate` tap 経由で導入し、24 時間ごとに `upgrade + cleanup` するよう起動します。
 
 ```bash
-./scripts/post-setup.sh       # idempotent — safe to re-run
-codex login                   # one-time auth
-claude mcp list               # verify for Claude Code
-codex mcp list                # verify for Codex
+./scripts/post-setup.sh
+codex login
+claude mcp list
+codex mcp list
 ```
 
-Setup scripts are invoked with `bash` explicitly because the repository scripts are written for Bash. Day-to-day usage can stay in your normal `zsh` shell.
+セットアップ系のスクリプトは Bash 前提で書いているので、呼び出しは `bash` 明示です。日常利用は普段どおり `zsh` のままで問題ありません。
 
-Bundled Codex skills are available under `~/.codex/skills`. For example, from `zsh`:
+Bundled skill は `~/.codex/skills` に入ります。たとえば:
 
 ```zsh
 ~/.codex/skills/playwright/scripts/playwright_cli.sh open https://example.com
@@ -251,53 +281,54 @@ Bundled Codex skills are available under `~/.codex/skills`. For example, from `z
 python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp --active-window
 ```
 
-**Superpowers plugin** (manual, inside a Claude Code session):
-```
+**Superpowers plugin** は Claude Code セッション内で手動インストールです。
+
+```text
 /plugin install superpowers
 ```
 
 ---
 
-## Structure
+## ディレクトリ構成
 
-```
+```text
 dotfiles/
 ├── Makefile                        # install / update / doctor / uninstall
-├── .chezmoiroot                    # "home" — chezmoi source root
+├── .chezmoiroot                    # "home" を chezmoi source root として使う
 ├── .gitignore
-├── home/                           # chezmoi source state → $HOME
-│   ├── dot_Brewfile.core           # → ~/.Brewfile.core
-│   ├── dot_Brewfile.work           # → ~/.Brewfile.work
-│   ├── dot_Brewfile.personal       # → ~/.Brewfile.personal
-│   ├── dot_zshrc                   # → ~/.zshrc     (entry point only)
+├── home/                           # chezmoi source state -> $HOME
+│   ├── dot_Brewfile.core           # -> ~/.Brewfile.core
+│   ├── dot_Brewfile.work           # -> ~/.Brewfile.work
+│   ├── dot_Brewfile.personal       # -> ~/.Brewfile.personal
+│   ├── dot_zshrc                   # -> ~/.zshrc
 │   ├── dot_claude/
-│   │   └── settings.json           # → ~/.claude/settings.json
+│   │   └── settings.json           # -> ~/.claude/settings.json
 │   ├── dot_codex/
-│   │   ├── config.toml.tmpl        # → ~/.codex/config.toml
-│   │   └── skills/                 # → ~/.codex/skills/*
+│   │   ├── config.toml.tmpl        # -> ~/.codex/config.toml
+│   │   └── skills/                 # -> ~/.codex/skills/*
 │   ├── dot_local/share/navi/cheats/dotfiles/
-│   │   ├── git.cheat               # lazygit, ghq, git-delta, gh
-│   │   ├── shell.cheat             # atuin, zoxide, fzf, navi
-│   │   ├── files.cheat             # eza, bat, yazi, ripgrep, fd
-│   │   └── terminal.cheat          # zellij, jq, yq
+│   │   ├── git.cheat
+│   │   ├── shell.cheat
+│   │   ├── files.cheat
+│   │   └── terminal.cheat
 │   └── dot_config/
 │       ├── ghostty/
-│       │   ├── config.ghostty      # entry point (loads modules)
-│       │   ├── core.ghostty        # shell integration, scrollback
-│       │   ├── ui.ghostty          # fonts, Catppuccin Mocha
-│       │   └── keybinds.ghostty    # key overrides
+│       │   ├── config.ghostty      # エントリポイント
+│       │   ├── core.ghostty        # shell integration / scrollback
+│       │   ├── ui.ghostty          # font / theme / padding
+│       │   └── keybinds.ghostty    # 追加キーバインド
 │       ├── zsh/
-│       │   ├── env.zsh             # PATH, brew shellenv, exports
-│       │   ├── aliases.zsh         # eza, bat, fd, rg shortcuts
-│       │   ├── tools.zsh           # starship / zoxide / atuin / fzf / navi hooks
-│       │   └── completion.zsh      # compinit (must load last)
-│       └── starship.toml           # prompt config
+│       │   ├── env.zsh             # PATH / export / brew shellenv
+│       │   ├── aliases.zsh         # alias 群
+│       │   ├── tools.zsh           # starship / zoxide / atuin / fzf / navi
+│       │   └── completion.zsh      # compinit
+│       └── starship.toml           # prompt 設定
 ├── scripts/
-│   ├── brew-bundle.sh              # effective Brew profile sync/check
+│   ├── brew-bundle.sh              # Brew profile の sync / install / check
 │   ├── bootstrap.sh                # core brew + chezmoi + apply
-│   ├── post-setup.sh               # Serena MCP + brew-autoupdate (idempotent)
+│   ├── post-setup.sh               # Serena MCP + brew-autoupdate
 │   ├── uninstall.sh                # dotfiles を削除
-│   └── doctor.sh                   # health check
+│   └── doctor.sh                   # 健全性チェック
 └── .github/workflows/
-    └── ci.yml                      # shellcheck + core brew bundle (macos-latest)
+    └── ci.yml                      # shellcheck + core brew bundle
 ```
