@@ -5,8 +5,6 @@
 
 # ---------- Taps ----------
 tap "laishulu/homebrew"
-tap "domt4/autoupdate"
-brew "domt4/autoupdate/brew-autoupdate"  # automatic brew update/upgrade via launchd
 
 # ---------- Core CLI ----------
 brew "chezmoi"            # dotfiles manager
