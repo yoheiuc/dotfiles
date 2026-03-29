@@ -27,8 +27,12 @@ if ! command -v chezmoi &>/dev/null; then
   brew install chezmoi
 fi
 
-# ---- 3. Homebrew packages (strict core profile) ---------------------------
-bash "${REPO_ROOT}/scripts/brew-bundle.sh" sync core
+# ---- 3. Homebrew packages (install core profile, no cleanup) ---------------
+# Cleanup is intentionally skipped here so that work/personal packages
+# installed by broader profiles are not removed when bootstrap re-runs.
+# Cleanup happens only when explicitly running brew-bundle.sh sync <profile>.
+log "Installing packages for 'core' profile..."
+brew bundle --file="${REPO_ROOT}/home/dot_Brewfile.core"
 
 # ---- 4. Point chezmoi at this repo and apply dotfiles ----------------------
 # Keep a single source of truth for day-to-day edits:
