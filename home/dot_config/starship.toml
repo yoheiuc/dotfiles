@@ -1,58 +1,65 @@
-# starship.toml — Deep & Modern Config
+# starship.toml — Ultimate Modern Pill Config (2026)
 
 add_newline = true
 
+# 1行目にピルを表示し、2行目にコマンド入力を配置
 format = """
+[](blue)\
 $directory\
+[](fg:blue bg:purple)\
 $git_branch\
 $git_status\
+[](fg:purple bg:cyan)\
 $python\
 $nodejs\
 $rust\
+[](fg:cyan bg:yellow)\
 $cmd_duration\
+[](fg:yellow bg:red)\
 $status\
+[](fg:red)\
 $line_break\
 $character"""
 
 [directory]
-style = "bold white bg:#313244" # Deep Gray/Blue
-format = "[](#313244)[$path]($style)[](fg:#313244) "
+style = "bg:blue fg:black"
+format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
 
 [git_branch]
 symbol = " "
-style = "bold white bg:#45475a" # Slightly lighter Deep Gray
-format = "[](#45475a)[$symbol$branch]($style)[](fg:#45475a) "
+style = "bg:purple fg:black"
+format = "[ $symbol$branch ]($style)"
 
 [git_status]
-style = "bold white bg:#45475a"
-format = "([](#45475a)[$all_status$ahead_behind]($style)[](fg:#45475a) )"
+style = "bg:purple fg:black"
+format = "[($all_status$ahead_behind )]($style)"
 
 [nodejs]
 symbol = "󰎙 "
-style = "bold white bg:#585b70" # Muted Blue/Gray
-format = "[](#585b70)[$symbol($version)]($style)[](fg:#585b70) "
+style = "bg:cyan fg:black"
+format = "[ $symbol($version) ]($style)"
 
 [rust]
 symbol = "󱘗 "
-style = "bold white bg:#585b70"
-format = "[](#585b70)[$symbol($version)]($style)[](fg:#585b70) "
+style = "bg:cyan fg:black"
+format = "[ $symbol($version) ]($style)"
 
 [python]
 symbol = "󰌠 "
-style = "bold white bg:#585b70"
-format = "[](#585b70)[$symbol($version)]($style)[](fg:#585b70) "
+style = "bg:cyan fg:black"
+format = "[ $symbol($version) ]($style)"
 
 [cmd_duration]
 min_time = 2000
-style = "bold white bg:#fab387" # Muted Orange
-format = "[](#fab387)[󱫿 $duration]($style)[](fg:#fab387) "
+style = "bg:yellow fg:black"
+format = "[ 󱫿 $duration ]($style)"
 
 [status]
 disabled = false
-style = "bold white bg:#f38ba8" # Muted Red
-format = "[](#f38ba8)[󰄱 $status]($style)[](fg:#f38ba8) "
+style = "bg:red fg:black"
+format = "[ 󰄱 $status ]($style)"
 symbol = "󰄱"
 
 [character]
