@@ -27,7 +27,10 @@ symbol = " "
 style  = "bold purple"
 
 [git_status]
-style = "bold red"
+style    = "bold red"
+ahead    = "⇡${count}"   # リモートより進んでいる
+behind   = "⇣${count}"   # リモートより遅れている
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
 
 [cmd_duration]
 min_time           = 2_000
