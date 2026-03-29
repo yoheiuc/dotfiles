@@ -1,94 +1,69 @@
-# starship.toml — prompt configuration
-# Docs: https://starship.rs/config/
+# starship.toml — Tokyo Night inspired modern config
 
-# Add a blank line between shell prompts
 add_newline = true
 
-# Left-side prompt configuration
 format = """
+[](blue)\
 $directory\
+[](fg:blue bg:purple)\
 $git_branch\
 $git_status\
+[](fg:purple bg:cyan)\
 $python\
 $nodejs\
 $rust\
+[](fg:cyan bg:yellow)\
 $cmd_duration\
+[](fg:yellow bg:red)\
 $status\
-$memory_usage\
-$time\
+[](fg:red bg:none) \
 $line_break\
 $character"""
 
-# Remove right-side prompt
-right_format = ""
-
-[character]
-success_symbol = "[❯](bold green)"
-error_symbol   = "[❯](bold red)"
-
 [directory]
-truncation_length    = 4
-truncate_to_repo     = true
-style                = "bold blue"
-format = " [$path]($style) [$read_only]($read_only_style)"
-read_only            = "󰌾"
-home_symbol          = "󱂵 ~"
+style = "bg:blue fg:black"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
 
 [git_branch]
 symbol = " "
-style  = "bold purple"
-format = "on [$symbol$branch]($style) "
+style = "bg:purple fg:black"
+format = "[[ $symbol $branch ]($style)]"
 
 [git_status]
-style    = "bold red"
-format = "([$all_status$ahead_behind]($style) )"
-ahead    = "⇡${count}"
-behind   = "⇣${count}"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-conflicted = "="
-stashed    = "$"
-modified   = "!"
-staged     = "+"
-renamed    = "»"
-untracked  = "?"
-deleted    = "✘"
-
-[cmd_duration]
-min_time           = 2_000
-format             = "󱫿 [$duration]($style) "
-style              = "yellow"
-show_milliseconds  = false
-
-[status]
-disabled = false
-format = " [$symbol $status]($style)"
-symbol = "󰄱"
-success_symbol = "" # Show nothing on success
-not_found_symbol = "󰍉"
-sigint_symbol = "󰚏"
-style = "bold red"
-
-[time]
-disabled = false
-format = " [$time]($style)"
-time_format = "%R" # Hour:Minute Format
-style = "dimmed white"
-
-# ---------- Language modules (only shown when relevant) ----------
-[python]
-symbol = "󰌠 "
-style = "bold yellow"
+style = "bg:purple fg:black"
+format = "[[($all_status$ahead_behind )]($style)]"
 
 [nodejs]
 symbol = "󰎙 "
-style = "bold green"
+style = "bg:cyan fg:black"
+format = "[[ $symbol ($version) ]($style)]"
 
 [rust]
 symbol = "󱘗 "
-style = "bold orange"
+style = "bg:cyan fg:black"
+format = "[[ $symbol ($version) ]($style)]"
 
-[memory_usage]
-symbol = "󰍛 "
+[python]
+symbol = "󰌠 "
+style = "bg:cyan fg:black"
+format = "[[ $symbol ($version) ]($style)]"
+
+[cmd_duration]
+min_time = 2000
+style = "bg:yellow fg:black"
+format = "[[ 󱫿 $duration ]($style)]"
+
+[status]
 disabled = false
-threshold = 75
-style = "dimmed white"
+style = "bg:red fg:black"
+format = "[[ 󰄱 $status ]($style)]"
+symbol = "󰄱"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+[time]
+disabled = true # Left to keep layout clean
