@@ -205,7 +205,7 @@ font-size = 16
 theme = nord
 ```
 
-`config.ghostty` always loads this file last, so values here win. If the file doesn't exist, Ghostty silently ignores the missing include.
+Ghostty errors on missing `config-file` includes, so `local.ghostty` is not loaded automatically. To use local overrides, add `config-file = local.ghostty` to `~/.config/ghostty/config.ghostty` on that machine after creating the file.
 
 > **Note:** Ghostty CLI may not be in `$PATH` when installed as a `.app` bundle.
 > The binary is at `/Applications/Ghostty.app/Contents/MacOS/ghostty`.

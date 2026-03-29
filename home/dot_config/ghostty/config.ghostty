@@ -4,4 +4,3 @@
 config-file = core.ghostty
 config-file = ui.ghostty
 config-file = keybinds.ghostty
-config-file = local.ghostty
