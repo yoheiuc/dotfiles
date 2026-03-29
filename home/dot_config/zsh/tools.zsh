@@ -21,11 +21,6 @@ if command -v navi &>/dev/null; then
   eval "$(navi widget zsh)"
 fi
 
-# codex — shell completion
-if command -v codex &>/dev/null; then
-  eval "$(codex completion zsh 2>/dev/null | sed '/^WARNING: proceeding, even though we could not update PATH:/d')"
-fi
-
 # codex — shortcuts and usage helpers
 _codex_statusline() {
   command -v codex-usage-status >/dev/null 2>&1 || return 0
