@@ -307,6 +307,12 @@ config-file = local.ghostty
 - `cxd` = `codex -p deep`
 - `cxl` = `codex resume --last`
 
+Gemini は補助用途の one-shot コマンドを用意しています。
+
+- `gr "<prompt>"` = `gemini -p "<prompt>"`
+- `gmr [追加指示]` = 現在の git diff を Gemini にレビューさせる
+- `gms [追加指示]` = 現在の git diff を Gemini に要約させる
+
 `fast` は軽い確認や小修正向け、`review` は読解やレビュー向け、`deep` は長めの実装や整理向けです。
 
 **Codex CLI** は `post-setup.sh` が公式 npm パッケージ経由で導入します。  

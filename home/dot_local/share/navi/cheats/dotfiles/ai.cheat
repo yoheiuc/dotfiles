@@ -3,8 +3,8 @@
 # Gemini CLI を起動
 gemini
 
-# Gemini に質問を投げる
-gemini "<prompt>"
+# Gemini に one-shot で質問を投げる
+gemini -p "<prompt>"
 
 # 特定のファイルを読み込ませて質問
 gemini --file <file> "<prompt>"
@@ -17,6 +17,15 @@ gemini --version
 
 # Gemini CLI の設定を表示
 gemini config
+
+# Gemini に one-shot で質問
+gr "<prompt>"
+
+# 現在の diff を Gemini にレビューさせる
+gmr
+
+# 現在の diff を Gemini に要約させる
+gms
 
 % claude, ai
 
