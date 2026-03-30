@@ -148,8 +148,18 @@ bash ~/.local/share/chezmoi/scripts/ai-session.sh
 ```
 
 - レイアウトは固定しない
-- キーバインドも追加で押し付けない
-- まずは素の `zellij` セッションとして開く
+- 通常の pane / tab 操作は upstream の流儀を維持する
+- まずはほぼ素の `zellij` セッションとして開く
+
+`~/.config/zellij/config.kdl` は discoverability を少しだけ強めています。
+
+- `F1`: `about` を開いてキーバインドやヘルプを確認
+- `F2`: `session-manager` を開いてセッション一覧/復帰/切替
+- `F3`: `configuration` を開いて UI とキーバインド設定を確認
+- マウス hover で pane frame の補助表示を出し、pane 境界の drag で resize
+- `Ctrl` を押しながら floating pane の境界を drag、またはホイールで resize
+
+`compact` レイアウトを使う場合でも、下部 `compact-bar` のヒントは `F1` で表示できます。
 
 ---
 
