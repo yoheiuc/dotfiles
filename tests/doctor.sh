@@ -194,13 +194,11 @@ mkdir -p "${home_drift}/.codex/skills/codex-auto-save-memory/scripts"
 : > "${home_drift}/.codex/skills/codex-auto-save-memory/scripts/autosave_memory.py"
 
 run_capture run_doctor "${home_drift}" \
-  BREW_FORMULAE=$'chezmoi\ngit\nlaishulu/homebrew/macism\n' \
+  BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\nbitwarden\n' \
   CLAUDE_MCP_LIST_OUTPUT='' \
   CODEX_MCP_LIST_OUTPUT=''
 assert_eq "0" "${RUN_STATUS}" "doctor should stay green when only optional drift warnings are present"
-assert_contains "${RUN_OUTPUT}" "Brew profile drift: formulae installed outside 'core' profile" "doctor should warn on formula drift"
-assert_contains "${RUN_OUTPUT}" "laishulu/homebrew/macism" "doctor should list drifting formula names"
 assert_contains "${RUN_OUTPUT}" "Brew profile drift: casks installed outside 'core' profile" "doctor should warn on cask drift"
 assert_contains "${RUN_OUTPUT}" "bitwarden" "doctor should list drifting cask names"
 

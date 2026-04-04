@@ -6,10 +6,6 @@
 # Update:  make update-home
 
 # ---------- Taps ----------
-tap "laishulu/homebrew"
-
-# ---------- Local productivity ----------
-brew "laishulu/homebrew/macism"  # input method switcher
 cask "raycast"                   # launcher
 
 # ---------- Accounts / auth ----------
