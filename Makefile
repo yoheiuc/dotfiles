@@ -1,4 +1,4 @@
-.PHONY: help install install-home preview preview-home update update-home sync sync-home doctor test test-scripts uninstall
+.PHONY: help install install-home preview preview-home update update-home sync sync-core sync-home doctor test test-scripts uninstall
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -33,6 +33,11 @@ sync: ## 現在のプロファイルを cleanup 付きで同期
 	PROFILE="$$(bash scripts/profile.sh get)"; \
 	chezmoi apply; \
 	bash scripts/brew-bundle.sh sync "$$PROFILE"
+
+sync-core: ## core プロファイルを cleanup 付きで同期
+	bash scripts/profile.sh set core >/dev/null
+	chezmoi apply
+	bash scripts/brew-bundle.sh sync core
 
 sync-home: ## home プロファイルを cleanup 付きで同期
 	bash scripts/profile.sh set home >/dev/null

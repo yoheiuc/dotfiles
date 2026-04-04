@@ -71,6 +71,7 @@ make help
 | `make update` | pull → `chezmoi apply` → brew install 現在のプロファイル | ✓ |
 | `make update-home` | pull → `chezmoi apply` → brew install home | ✓ |
 | `make sync` | `chezmoi apply` → brew sync 現在のプロファイル (cleanup あり) | ✓ |
+| `make sync-core` | `chezmoi apply` → brew sync core (cleanup あり) | ✓ |
 | `make sync-home` | `chezmoi apply` → brew sync home (cleanup あり) | ✓ |
 | `make doctor` | 現在のプロファイルで設定と依存の健全性確認 | ✓ |
 | `make test` | shell ベースの回帰テスト | ✓ |
@@ -86,12 +87,14 @@ make preview
 make update
 make update-home
 make sync
+make sync-core
 make sync-home
 ```
 
 ふだんは `make preview` / `make update` で、現在のプロファイルに追従します。  
 別プロファイルを一時的に見たいときだけ `make preview-home` を使います。
 cleanup まで含めて Homebrew 実体を定義どおりに寄せたいときは `make sync` / `make sync-home` を使います。
+会社 PC で明示的に `core` へ寄せたいときは `make sync-core` を使います。
 
 まだ `~/.config/dotfiles/profile` が無い既存マシンでは、`make preview` / `make update` / `make doctor` は一時的に `core` を既定として使います。  
 その場合は一度だけ、意図する役割に合わせて `make install-home` または `make update-home` を実行してプロファイルを保存してください。
