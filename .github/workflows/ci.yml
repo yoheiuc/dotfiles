@@ -28,13 +28,10 @@ jobs:
       - name: Install Brewfile dependencies (Core)
         run: brew bundle --file=home/dot_Brewfile.core
 
-      - name: Check Brewfile syntax (Work)
-        run: brew bundle check --file=home/dot_Brewfile.work || true
-        # '|| true' because some work apps might not be installable on CI runners (e.g. GUI apps)
+      - name: Check Brewfile syntax (Home)
+        run: brew bundle check --file=home/dot_Brewfile.home || true
+        # '|| true' because some home apps might not be installable on CI runners (e.g. GUI apps)
         # but we want to at least verify the syntax/existence.
-
-      - name: Check Brewfile syntax (Personal)
-        run: brew bundle check --file=home/dot_Brewfile.personal || true
 
       - name: Validate configuration files (YAML/JSON/TOML)
         run: |
@@ -46,8 +43,9 @@ jobs:
           yq eval . home/dot_config/atuin/config.toml > /dev/null
           yq eval . home/dot_config/yazi/yazi.toml > /dev/null
           
-          # JSON Validation using jq
-          jq . home/dot_claude/settings.json > /dev/null
+          # JSON Validation using jq on rendered chezmoi templates
+          chezmoi execute-template < home/dot_claude/settings.json.tmpl | jq . > /dev/null
+          chezmoi execute-template < home/dot_gemini/settings.json.tmpl | jq . > /dev/null
 
       - name: Validate Chezmoi templates
         run: |
@@ -56,4 +54,4 @@ jobs:
 
       - name: Run shellcheck on scripts
         run: |
-          shellcheck --severity=warning scripts/*.sh
+          shellcheck --severity=warning scripts/*.sh tests/*.sh tests/lib/*.sh home/dot_config/git/hooks/*
