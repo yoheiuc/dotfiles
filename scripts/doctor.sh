@@ -83,7 +83,7 @@ report_profile_drift() {
   esac
 
   forbidden="$(forbidden_profile_entries "${kind}")"
-  [[ -n "${forbidden}" ]] || return 0
+  [[ -n "${forbidden}" ]] || return 1
 
   installed="$(installed_brew_entries "${kind}")"
   unexpected="$(comm -12 <(printf '%s\n' "${forbidden}" | sort -u) <(printf '%s\n' "${installed}" | sort -u))"
