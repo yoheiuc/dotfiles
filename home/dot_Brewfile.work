@@ -1,16 +1,6 @@
 # ~/.Brewfile.work — managed by chezmoi (source: home/dot_Brewfile.work)
-# Optional work/dev layer on top of the core profile.
+# Optional work-only layer on top of the core profile.
 # Install: make install-work
 # Update:  make update-work
 
-# ---------- Infra / cloud ----------
-brew "awscli"
-brew "azure-cli"
-brew "tfenv"              # Terraform version manager
-
-# ---------- Editors / AI ----------
-cask "visual-studio-code", args: { appdir: "/Applications" }
-cask "codex-app"                 # OpenAI Codex desktop app
-
-# ---------- Cloud / infra ----------
-cask "aws-vault-binary", args: { appdir: "/Applications" }
+# Reserved for future work-only additions.

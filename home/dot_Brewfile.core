@@ -51,11 +51,17 @@ brew "uv"                 # fast Python package manager
 # ---------- Misc CLI ----------
 brew "shellcheck"         # shell script linter (used in CI)
 brew "yamllint"          # YAML linter (used in CI)
+brew "awscli"
+brew "azure-cli"
+brew "tfenv"              # Terraform version manager
 
 # ---------- Casks: terminal / AI ----------
 cask "ghostty"            # GPU-accelerated terminal
 cask "claude"             # Claude desktop
 cask "claude-code"        # Claude CLI
+cask "visual-studio-code", args: { appdir: "/Applications" }
+cask "codex-app"                 # OpenAI Codex desktop app
+cask "aws-vault-binary", args: { appdir: "/Applications" }
 
 # ---------- Casks: fonts ----------
 cask "font-jetbrains-mono-nerd-font"
