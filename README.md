@@ -73,6 +73,12 @@ make help
 | `make sync` | `chezmoi apply` → brew sync 現在のプロファイル (cleanup あり) | ✓ |
 | `make sync-core` | `chezmoi apply` → brew sync core (cleanup あり) | ✓ |
 | `make sync-home` | `chezmoi apply` → brew sync home (cleanup あり) | ✓ |
+| `make brew-diff` | 現在のプロファイルとローカル Brew 実体の差分確認 | ✓ |
+| `make brew-diff-core` | core とローカル Brew 実体の差分確認 | ✓ |
+| `make brew-diff-home` | home とローカル Brew 実体の差分確認 | ✓ |
+| `make brew-add-core KIND=... NAME=...` | core Brewfile に 1 件追加 | ✓ |
+| `make brew-add-home KIND=... NAME=...` | home Brewfile に 1 件追加 | ✓ |
+| `make tips` | よく使う dotfiles コマンドのヒント表示 | ✓ |
 | `make doctor` | 現在のプロファイルで設定と依存の健全性確認 | ✓ |
 | `make test` | shell ベースの回帰テスト | ✓ |
 | `make uninstall` | dotfiles を削除 | ✓ |
@@ -89,12 +95,38 @@ make update-home
 make sync
 make sync-core
 make sync-home
+make brew-diff
+make tips
 ```
 
 ふだんは `make preview` / `make update` で、現在のプロファイルに追従します。  
 別プロファイルを一時的に見たいときだけ `make preview-home` を使います。
 cleanup まで含めて Homebrew 実体を定義どおりに寄せたいときは `make sync` / `make sync-home` を使います。
 会社 PC で明示的に `core` へ寄せたいときは `make sync-core` を使います。
+
+新しい package をローカルで試したあとに repo へ取り込みたいときは、`brew bundle dump` ではなく 1 件ずつ追記します。
+
+```bash
+brew install jq
+make brew-add-core KIND=brew NAME=jq
+
+brew install --cask google-chrome
+make brew-add-home KIND=cask NAME=google-chrome
+
+make brew-diff-home
+make test
+```
+
+`make brew-diff*` は、現在の Brewfile とローカル Brew 実体の差分を見ます。formula は `brew leaves` 基準なので、依存ではなくトップレベルで入れたものだけが差分に出ます。
+
+コマンドを覚えなくてよいように、ヒント表示も用意しています。
+
+```bash
+make tips
+dothelp
+```
+
+`dothelp` は zsh helper で、`make tips` と同じ案内を出します。現在の profile に応じた日常コマンド、`sync-core` / `sync-home`、`brew-diff` / `brew-add-*` の例をまとめて見られます。
 
 まだ `~/.config/dotfiles/profile` が無い既存マシンでは、`make preview` / `make update` / `make doctor` は一時的に `core` を既定として使います。  
 その場合は一度だけ、意図する役割に合わせて `make install-home` または `make update-home` を実行してプロファイルを保存してください。
@@ -203,6 +235,7 @@ chezmoi add ~/.zshrc
 
 ```bash
 dotprofile
+dothelp
 cat ~/.config/dotfiles/profile
 ```
 

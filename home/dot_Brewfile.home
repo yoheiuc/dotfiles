@@ -5,7 +5,7 @@
 # Install: make install-home
 # Update:  make update-home
 
-# ---------- Taps ----------
+# ---------- Local productivity ----------
 cask "raycast"                   # launcher
 
 # ---------- Accounts / auth ----------

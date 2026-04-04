@@ -60,6 +60,21 @@ dotprofile() {
   printf '%s\n' "${DOTFILES_PROFILE:-core}"
 }
 
+dothelp() {
+  local repo_root=""
+
+  if [[ -x "${HOME}/dotfiles/scripts/dotfiles-help.sh" ]]; then
+    repo_root="${HOME}/dotfiles"
+  elif [[ -x "${HOME}/.local/share/chezmoi/scripts/dotfiles-help.sh" ]]; then
+    repo_root="${HOME}/.local/share/chezmoi"
+  else
+    echo "dotfiles-help.sh が見つかりません" >&2
+    return 1
+  fi
+
+  DOTFILES_REPO_ROOT="${repo_root}" bash "${repo_root}/scripts/dotfiles-help.sh" "$@"
+}
+
 # gemini — one-shot prompt helpers
 _gemini_require() {
   if ! command -v gemini >/dev/null 2>&1; then
