@@ -1,4 +1,4 @@
-.PHONY: help install install-home preview preview-home update update-home doctor test test-scripts uninstall
+.PHONY: help install install-home preview preview-home update update-home sync sync-home doctor test test-scripts uninstall
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -28,6 +28,16 @@ update-home: ## dotfiles を最新にして home プロファイルを適用
 	bash scripts/profile.sh set home >/dev/null
 	chezmoi apply
 	bash scripts/brew-bundle.sh install home
+
+sync: ## 現在のプロファイルを cleanup 付きで同期
+	PROFILE="$$(bash scripts/profile.sh get)"; \
+	chezmoi apply; \
+	bash scripts/brew-bundle.sh sync "$$PROFILE"
+
+sync-home: ## home プロファイルを cleanup 付きで同期
+	bash scripts/profile.sh set home >/dev/null
+	chezmoi apply
+	bash scripts/brew-bundle.sh sync home
 
 doctor: ## 現在のプロファイルでセットアップ状態を確認
 	bash scripts/doctor.sh
