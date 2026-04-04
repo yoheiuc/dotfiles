@@ -14,7 +14,21 @@
 | Homebrew | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
 | Git | Xcode CLT (`xcode-select --install`) または `brew install git` |
 
-Git identity (`~/.gitconfig`) も chezmoi 管理です。既定では `yoheiuc <16657439+yoheiuc@users.noreply.github.com>` を使い、global `pre-commit` hook でそれ以外の author/committer を止めます。
+Git identity (`~/.gitconfig`) も chezmoi 管理です。既存の global git config を引き継ぎ、global `pre-commit` hook で author / committer がその値とずれていないかを確認します。public に clone した人向けには、[docs/examples/chezmoidata.yaml](/Users/y.uchiyama/dotfiles/docs/examples/chezmoidata.yaml) を `.chezmoidata.yaml` にコピーして `gitIdentity.name` / `gitIdentity.email` を上書きする方法も用意しています。
+
+初回に git identity が未設定なら、先に次のどちらかを行ってください。
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "your-github-id@users.noreply.github.com"
+```
+
+または:
+
+```bash
+cp docs/examples/chezmoidata.yaml .chezmoidata.yaml
+$EDITOR .chezmoidata.yaml
+```
 
 Homebrew の構成は `home/dot_Brewfile.core` と `home/dot_Brewfile.home` に分かれています。  
 `bootstrap.sh` が入れるのは `core` プロファイルだけです。
@@ -147,7 +161,7 @@ make doctor
 | `chezmoi --version` | Required | chezmoi が使える |
 | `chezmoi doctor` | Required | 内蔵チェックが実行できる (`failed` 行は warning 扱い) |
 | `./scripts/brew-bundle.sh check <active-profile>` | Required | 現在の Brew プロファイルが満たされている |
-| `git user.name` / `user.email` / `core.hooksPath` | Required | privacy-safe な Git identity/hook が有効 |
+| `git user.name` / `user.email` / `core.hooksPath` | Required | git identity が設定され、global hook が有効 |
 | `node --version` | Optional | Codex CLI 導入に必要な node/npm がある |
 | `uv --version` | Optional | Serena MCP に必要な `uv` がある |
 | `ghostty --version` | Optional | Ghostty CLI が存在し、バージョンが取得できる |
@@ -259,13 +273,13 @@ chezmoi apply
 
 ## Git の privacy guard
 
-`~/.gitconfig` は次を固定します。
+`~/.gitconfig` は次を管理します。
 
-- `user.name = yoheiuc`
-- `user.email = 16657439+yoheiuc@users.noreply.github.com`
+- `user.name = <your configured identity>`
+- `user.email = <your configured identity>`
 - `core.hooksPath = ~/.config/git/hooks`
 
-`~/.config/git/hooks/pre-commit` は、実際に commit に入る author / committer がこの値と一致しない場合に commit を止めます。`GIT_AUTHOR_*` や repo local config で上書きしても検査対象です。
+`~/.config/git/hooks/pre-commit` は、実際に commit に入る author / committer が global git config の値と一致しない場合に commit を止めます。`GIT_AUTHOR_*` や repo local config で上書きしても検査対象です。
 
 ---
 
@@ -437,7 +451,7 @@ dotfiles/
 ├── home/                           # chezmoi source state -> $HOME
 │   ├── dot_Brewfile.core           # -> ~/.Brewfile.core
 │   ├── dot_Brewfile.home           # -> ~/.Brewfile.home
-│   ├── dot_gitconfig               # -> ~/.gitconfig
+│   ├── dot_gitconfig.tmpl          # -> ~/.gitconfig
 │   ├── dot_zshrc                   # -> ~/.zshrc
 │   ├── dot_claude/
 │   │   ├── CLAUDE.md               # -> ~/.claude/CLAUDE.md

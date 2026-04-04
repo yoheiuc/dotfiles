@@ -196,24 +196,22 @@ else
 fi
 
 section "Git identity/privacy (required)"
-expected_git_name="yoheiuc"
-expected_git_email="16657439+yoheiuc@users.noreply.github.com"
 expected_hooks_path="${HOME}/.config/git/hooks"
 
 git_name="$(git config --global --get user.name || true)"
 git_email="$(git config --global --get user.email || true)"
 git_hooks_path="$(git config --global --path --get core.hooksPath || true)"
 
-if [[ "${git_name}" == "${expected_git_name}" ]]; then
+if [[ -n "${git_name}" ]]; then
   ok "git user.name: ${git_name}"
 else
-  fail "git user.name mismatch — expected '${expected_git_name}', got '${git_name:-<unset>}'"
+  fail "git user.name is unset — configure your git identity"
 fi
 
-if [[ "${git_email}" == "${expected_git_email}" ]]; then
+if [[ -n "${git_email}" ]]; then
   ok "git user.email: ${git_email}"
 else
-  fail "git user.email mismatch — expected '${expected_git_email}', got '${git_email:-<unset>}'"
+  fail "git user.email is unset — configure your git identity"
 fi
 
 if [[ "${git_hooks_path}" == "${expected_hooks_path}" ]]; then

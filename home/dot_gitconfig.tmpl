@@ -1,0 +1,16 @@
+{{- $gitName := (output "git" "config" "--global" "--default" "YOUR_GIT_NAME" "--get" "user.name" | trim) -}}
+{{- $gitEmail := (output "git" "config" "--global" "--default" "your-github-id@users.noreply.github.com" "--get" "user.email" | trim) -}}
+{{- if hasKey . "gitIdentity" -}}
+  {{- if hasKey .gitIdentity "name" -}}
+    {{- $gitName = .gitIdentity.name -}}
+  {{- end -}}
+  {{- if hasKey .gitIdentity "email" -}}
+    {{- $gitEmail = .gitIdentity.email -}}
+  {{- end -}}
+{{- end -}}
+[user]
+	name = {{ $gitName }}
+	email = {{ $gitEmail }}
+
+[core]
+	hooksPath = ~/.config/git/hooks

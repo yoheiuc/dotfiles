@@ -1,6 +1,0 @@
-[user]
-	name = yoheiuc
-	email = 16657439+yoheiuc@users.noreply.github.com
-
-[core]
-	hooksPath = ~/.config/git/hooks

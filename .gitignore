@@ -4,6 +4,9 @@
 # Serena local state (machine-specific, not for tracking)
 .serena/
 
+# chezmoi local data overrides (machine-specific)
+.chezmoidata.yaml
+
 # macOS
 .DS_Store
 **/.DS_Store
