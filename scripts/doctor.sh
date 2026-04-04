@@ -315,13 +315,19 @@ fi
 section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
   ok "$(claude --version 2>&1 | head -1)"
-  printf '  MCP servers registered (timeout: 8s):\n'
-  claude_mcp_list_out="$(run_with_timeout 8 claude mcp list 2>&1 || true)"
+  printf '  MCP servers registered (timeout: 15s):\n'
+  claude_mcp_list_out="$(run_with_timeout 15 claude mcp list 2>&1 || true)"
   printf '%s\n' "$claude_mcp_list_out" | sed 's/^/    /'
-  if printf '%s\n' "$claude_mcp_list_out" | grep -q '^serena:'; then
-    ok "serena MCP: registered"
-  elif printf '%s\n' "$claude_mcp_list_out" | grep -q '^Timed out after '; then
-    warn "serena MCP: check timed out"
+  if printf '%s\n' "$claude_mcp_list_out" | grep -q '^Timed out after '; then
+    if rg -q '"serena"[[:space:]]*:' "${HOME}/.claude.json" 2>/dev/null; then
+      ok "serena MCP: registered (interactive health check timed out)"
+    else
+      warn "serena MCP: check timed out"
+    fi
+  elif printf '%s\n' "$claude_mcp_list_out" | grep -Eq '^serena:.*- ✓ Connected$'; then
+    ok "serena MCP: connected"
+  elif printf '%s\n' "$claude_mcp_list_out" | grep -q '^serena:'; then
+    warn "serena MCP: found but not connected"
   else
     warn "serena MCP: not registered — run: ./scripts/post-setup.sh"
   fi

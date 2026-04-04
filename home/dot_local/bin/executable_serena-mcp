@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -euo pipefail
+
+context="${1:-}"
+if [[ -z "${context}" ]]; then
+  printf 'usage: %s <context>\n' "$0" >&2
+  exit 64
+fi
+
+export HOME="${HOME}"
+export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
+
+exec /opt/homebrew/bin/uvx \
+  --from git+https://github.com/oraios/serena \
+  serena start-mcp-server \
+  --context="${context}" \
+  --project-from-cwd \
+  --open-web-dashboard False

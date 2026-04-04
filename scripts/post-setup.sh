@@ -56,48 +56,36 @@ if ! command -v uvx &>/dev/null; then
   warn "uvx not found — Serena MCP skipped (install the core Brew profile first)"
 else
 
+SERENA_MCP_WRAPPER="${HOME}/.local/bin/serena-mcp"
+
 if claude mcp get serena >/dev/null 2>&1; then
-  if claude mcp get serena 2>/dev/null | grep -Fq -- '--open-web-dashboard False'; then
+  if claude mcp get serena 2>/dev/null | grep -Fq -- "Command: ${SERENA_MCP_WRAPPER}"; then
     ok "Claude Code: Serena already registered"
   else
-    log "Claude Code: updating Serena to disable browser auto-open..."
+    log "Claude Code: updating Serena wrapper..."
     claude mcp remove serena -s user
     claude mcp add --scope user serena -- \
-      uvx \
-      --from git+https://github.com/oraios/serena \
-      serena start-mcp-server --context=claude-code --project-from-cwd \
-      --open-web-dashboard False
+      "${SERENA_MCP_WRAPPER}" claude-code
   fi
 else
   log "Registering Serena for Claude Code (user scope)..."
   claude mcp add --scope user serena -- \
-    uvx \
-    --from git+https://github.com/oraios/serena \
-    serena start-mcp-server --context=claude-code --project-from-cwd \
-    --open-web-dashboard False
+    "${SERENA_MCP_WRAPPER}" claude-code
 fi
 ok "Claude Code: Serena registered"
 
 if command -v codex &>/dev/null; then
   if codex mcp get serena --json >/dev/null 2>&1; then
-    if codex mcp get serena --json 2>/dev/null | grep -Fq -- '"--open-web-dashboard"'; then
+    if codex mcp get serena --json 2>/dev/null | grep -Fq -- "\"${SERENA_MCP_WRAPPER}\""; then
       ok "Codex: Serena already registered"
     else
-      log "Codex: updating Serena to disable browser auto-open..."
+      log "Codex: updating Serena wrapper..."
       codex mcp remove serena
-      codex mcp add serena -- \
-        uvx \
-        --from git+https://github.com/oraios/serena \
-        serena start-mcp-server --context=codex --project-from-cwd \
-        --open-web-dashboard False
+      codex mcp add serena -- "${SERENA_MCP_WRAPPER}" codex
     fi
   else
     log "Registering Serena for Codex..."
-    codex mcp add serena -- \
-      uvx \
-      --from git+https://github.com/oraios/serena \
-      serena start-mcp-server --context=codex --project-from-cwd \
-      --open-web-dashboard False
+    codex mcp add serena -- "${SERENA_MCP_WRAPPER}" codex
   fi
   ok "Codex: Serena registered"
 else
