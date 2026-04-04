@@ -178,7 +178,7 @@ run_capture run_doctor "${home_ok}" \
   CLAUDE_MCP_LIST_STATUS=124 \
   CODEX_MCP_LIST_OUTPUT=$'Name    Command                                Args   Env  Cwd  Status   Auth\nserena  '"${home_ok}"'/.local/bin/serena-mcp  codex  -    -    enabled  Unsupported\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy home profile case"
-assert_contains "${RUN_OUTPUT}" "No work/home-only Brew packages are installed outside 'home' profile" "doctor should report clean drift status"
+assert_contains "${RUN_OUTPUT}" "No Brew profile drift detected for 'home'" "doctor should report clean drift status"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered (interactive health check timed out)" "doctor should accept Claude timeout fallback when serena is registered"
 assert_contains "${RUN_OUTPUT}" "serena MCP: enabled via wrapper" "doctor should recognize Codex wrapper configuration"
 

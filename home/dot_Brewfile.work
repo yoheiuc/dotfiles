@@ -1,6 +1,0 @@
-# ~/.Brewfile.work — managed by chezmoi (source: home/dot_Brewfile.work)
-# Optional work-only layer on top of the core profile.
-# Install: make install-work
-# Update:  make update-work
-
-# Reserved for future work-only additions.

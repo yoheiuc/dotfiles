@@ -4,7 +4,6 @@
 # Update:  make update
 
 # ---------- Taps ----------
-tap "laishulu/homebrew"
 tap "domt4/autoupdate"           # brew autoupdate command
 
 # ---------- Core CLI ----------

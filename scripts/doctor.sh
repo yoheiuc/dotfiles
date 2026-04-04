@@ -37,20 +37,16 @@ extract_brewfile_entries() {
 }
 forbidden_profile_entries() {
   local kind="$1"
-  local work_entries home_entries
+  local home_entries
 
-  work_entries="$(extract_brewfile_entries "${kind}" "${REPO_ROOT}/home/dot_Brewfile.work")"
   home_entries="$(extract_brewfile_entries "${kind}" "${REPO_ROOT}/home/dot_Brewfile.home")"
 
   case "${ACTIVE_PROFILE}" in
     core)
-      printf '%s\n%s\n' "${work_entries}" "${home_entries}" | sed '/^$/d' | sort -u
-      ;;
-    work)
-      comm -23 <(printf '%s\n' "${home_entries}" | sed '/^$/d' | sort -u) <(printf '%s\n' "${work_entries}" | sed '/^$/d' | sort -u)
+      printf '%s\n' "${home_entries}" | sed '/^$/d' | sort -u
       ;;
     home)
-      comm -23 <(printf '%s\n' "${work_entries}" | sed '/^$/d' | sort -u) <(printf '%s\n' "${home_entries}" | sed '/^$/d' | sort -u)
+      :
       ;;
     *)
       return 1
@@ -194,7 +190,7 @@ else
     drift_found=1
   fi
   if [[ "${drift_found}" -eq 0 ]]; then
-    ok "No work/home-only Brew packages are installed outside '${ACTIVE_PROFILE}' profile"
+    ok "No Brew profile drift detected for '${ACTIVE_PROFILE}'"
   fi
   unset drift_found
 fi

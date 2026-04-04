@@ -10,7 +10,7 @@
 #   - Set up brew-autoupdate (tap domt4/autoupdate + start 24h schedule)
 #
 # Safe to re-run: already-configured items are skipped.
-# Called automatically by: make install-work / install-home
+# Called automatically by: make install-home
 #
 # Usage: ./scripts/post-setup.sh
 set -euo pipefail

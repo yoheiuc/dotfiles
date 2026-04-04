@@ -33,6 +33,12 @@ assert_eq "0" "${RUN_STATUS}" "profile get should migrate legacy personal profil
 assert_eq "home" "${RUN_OUTPUT}" "legacy personal profile should be canonicalized to home"
 assert_eq "home" "$(tr -d '[:space:]' < "${profile_file}")" "legacy personal profile should be rewritten in place"
 
+printf 'work\n' > "${profile_file}"
+run_capture bash "${REPO_ROOT}/scripts/profile.sh" get
+assert_eq "0" "${RUN_STATUS}" "profile get should migrate legacy work profile"
+assert_eq "core" "${RUN_OUTPUT}" "legacy work profile should be canonicalized to core"
+assert_eq "core" "$(tr -d '[:space:]' < "${profile_file}")" "legacy work profile should be rewritten in place"
+
 run_capture bash "${REPO_ROOT}/scripts/profile.sh" set all
 assert_eq "1" "${RUN_STATUS}" "legacy all profile should fail"
 assert_contains "${RUN_OUTPUT}" "Legacy profile 'all' is no longer supported" "legacy all profile should explain migration"

@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./scripts/profile.sh get
-#   ./scripts/profile.sh set work
+#   ./scripts/profile.sh set home
 #   ./scripts/profile.sh exists
 #   ./scripts/profile.sh path
 set -euo pipefail
@@ -15,17 +15,20 @@ die() { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 canonicalize_profile() {
   case "${1:-}" in
-    core|work|home)
+    core|home)
       printf '%s\n' "${1}"
+      ;;
+    work)
+      printf 'core\n'
       ;;
     personal)
       printf 'home\n'
       ;;
     all)
-      die "Legacy profile 'all' is no longer supported; choose 'work' or 'home'"
+      die "Legacy profile 'all' is no longer supported; choose 'core' or 'home'"
       ;;
     *)
-      die "Unsupported profile '${1:-}' (expected: core, work, or home)"
+      die "Unsupported profile '${1:-}' (expected: core or home)"
       ;;
   esac
 }

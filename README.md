@@ -16,13 +16,13 @@
 
 Git identity (`~/.gitconfig`) も chezmoi 管理です。既定では `yoheiuc <16657439+yoheiuc@users.noreply.github.com>` を使い、global `pre-commit` hook でそれ以外の author/committer を止めます。
 
-Homebrew の構成は `home/dot_Brewfile.core`、`home/dot_Brewfile.work`、`home/dot_Brewfile.home` に分かれています。  
+Homebrew の構成は `home/dot_Brewfile.core` と `home/dot_Brewfile.home` に分かれています。  
 `bootstrap.sh` が入れるのは `core` プロファイルだけです。
 
 アクティブなマシンプロファイルは `~/.config/dotfiles/profile` に保存します。  
-`make install-work`、`make install-home`、`make update-work`、`make update-home` などの明示的なターゲットを実行すると、この値も切り替わります。
-`make install` は profile 未設定の初回だけ `core` を保存し、既存の `work` / `home` は上書きしません。
-旧 `personal` profile は自動で `home` に移行します。旧 `all` profile は非対応です。
+`make install-home`、`make update-home` などの明示的なターゲットを実行すると、この値も切り替わります。
+`make install` は profile 未設定の初回だけ `core` を保存し、既存の `home` は上書きしません。
+旧 `personal` profile は自動で `home` に、旧 `work` profile は自動で `core` に移行します。旧 `all` profile は非対応です。
 
 ---
 
@@ -37,7 +37,6 @@ cd ~/dotfiles
 
 # 2. 用途に応じてセットアップ
 make install            # core のみ
-make install-work       # core + work
 make install-home       # core + home
 
 # 3. 新しいターミナルを開いて zsh を読み直す
@@ -61,15 +60,13 @@ make help
 | ターゲット | 内容 | 再実行 |
 |---|---|---|
 | `make install` | core Brew + `chezmoi apply` | ✓ |
-| `make install-work` | core + work + `post-setup` | ✓ |
 | `make install-home` | core + home + `post-setup` | ✓ |
 | `make preview` | `chezmoi diff` + dry-run + brew preview (現在のプロファイル) | ✓ |
-| `make preview-work` | `chezmoi diff` + dry-run + brew preview (work) | ✓ |
 | `make preview-home` | `chezmoi diff` + dry-run + brew preview (home) | ✓ |
 | `make update` | pull → `chezmoi apply` → brew install 現在のプロファイル | ✓ |
-| `make update-work` | pull → `chezmoi apply` → brew install work | ✓ |
 | `make update-home` | pull → `chezmoi apply` → brew install home | ✓ |
 | `make doctor` | 現在のプロファイルで設定と依存の健全性確認 | ✓ |
+| `make test` | shell ベースの回帰テスト | ✓ |
 | `make uninstall` | dotfiles を削除 | ✓ |
 
 ---
@@ -80,15 +77,14 @@ make help
 cd ~/dotfiles
 make preview
 make update
-make update-work
 make update-home
 ```
 
 ふだんは `make preview` / `make update` で、現在のプロファイルに追従します。  
-別プロファイルを一時的に見たいときだけ `make preview-work`、`make preview-home` を使います。
+別プロファイルを一時的に見たいときだけ `make preview-home` を使います。
 
 まだ `~/.config/dotfiles/profile` が無い既存マシンでは、`make preview` / `make update` / `make doctor` は一時的に `core` を既定として使います。  
-その場合は一度だけ、意図する役割に合わせて `make install-work`、`make install-home`、または `make update-work` / `make update-home` を実行してプロファイルを保存してください。
+その場合は一度だけ、意図する役割に合わせて `make install-home` または `make update-home` を実行してプロファイルを保存してください。
 
 ---
 
@@ -119,7 +115,7 @@ make doctor
 | `navi --version` | Optional | `navi` と cheatsheet がある |
 
 `doctor.sh` は、保存済み profile と実際に入っている Brew package も照合します。  
-たとえば `core` なのに `work` / `home` 専用の formula や cask が入っている場合は warning を出します。
+たとえば `core` なのに `home` 専用の formula や cask が入っている場合は warning を出します。
 
 終了コードが `0` になるのは Required がすべて通ったときだけです。  
 Optional は失敗しても warning 扱いです。
@@ -232,12 +228,11 @@ chezmoi apply
 | Brewfile | 用途 |
 |---|---|
 | `dot_Brewfile.core` | 全マシン共通のベース |
-| `dot_Brewfile.work` | 仕事用・開発用の追加レイヤー |
 | `dot_Brewfile.home` | 自宅用の追加レイヤー |
 
 `cleanup` はプロファイル全体に対して実行されるため、`make` 経由で使う前提です。  
 `make install-*` / `make update-*` は `~/.config/dotfiles/profile` を更新し、その値を日常運用の既定にします。  
-たとえば `make install-work` の後は `make preview` / `make update` / `make doctor` が work を前提に動きます。
+たとえば `make install-home` の後は `make preview` / `make update` / `make doctor` が home を前提に動きます。
 
 保存済み profile と Homebrew の実体がズレているか見たいときは、まず次を見ます。
 
@@ -395,7 +390,6 @@ dotfiles/
 ├── .gitignore
 ├── home/                           # chezmoi source state -> $HOME
 │   ├── dot_Brewfile.core           # -> ~/.Brewfile.core
-│   ├── dot_Brewfile.work           # -> ~/.Brewfile.work
 │   ├── dot_Brewfile.home           # -> ~/.Brewfile.home
 │   ├── dot_gitconfig               # -> ~/.gitconfig
 │   ├── dot_zshrc                   # -> ~/.zshrc

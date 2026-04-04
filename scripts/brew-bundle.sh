@@ -7,19 +7,18 @@
 #   check   verify all packages are present (non-destructive)    ← used by make doctor
 #   preview show what install/cleanup would change               ← used by make preview*
 #
-# Profiles: core | work | home
+# Profiles: core | home
 #
 # Usage:
 #   ./scripts/brew-bundle.sh sync    core
 #   ./scripts/brew-bundle.sh sync    home
 #   ./scripts/brew-bundle.sh install home
-#   ./scripts/brew-bundle.sh check   work
+#   ./scripts/brew-bundle.sh check   core
 #   ./scripts/brew-bundle.sh preview home
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CORE_BREWFILE="${REPO_ROOT}/home/dot_Brewfile.core"
-WORK_BREWFILE="${REPO_ROOT}/home/dot_Brewfile.work"
 HOME_BREWFILE="${REPO_ROOT}/home/dot_Brewfile.home"
 
 MODE="${1:-sync}"
@@ -36,19 +35,15 @@ case "${MODE}" in
 esac
 
 case "${PROFILE}" in
-  core|work|home) ;;
-  *) die "Unsupported profile '${PROFILE}' (expected: core, work, or home)" ;;
+  core|home) ;;
+  work) PROFILE="core" ;;
+  *) die "Unsupported profile '${PROFILE}' (expected: core or home)" ;;
 esac
 
 effective_brewfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-brewfile.XXXXXX")"
 trap 'rm -f "${effective_brewfile}"' EXIT
 
 cat "${CORE_BREWFILE}" > "${effective_brewfile}"
-if [[ "${PROFILE}" == "work" ]]; then
-  [[ -f "${WORK_BREWFILE}" ]] || die "Missing work Brewfile: ${WORK_BREWFILE}"
-  printf '\n' >> "${effective_brewfile}"
-  cat "${WORK_BREWFILE}" >> "${effective_brewfile}"
-fi
 if [[ "${PROFILE}" == "home" ]]; then
   [[ -f "${HOME_BREWFILE}" ]] || die "Missing home Brewfile: ${HOME_BREWFILE}"
   printf '\n' >> "${effective_brewfile}"

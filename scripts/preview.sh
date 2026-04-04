@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./scripts/preview.sh
-#   ./scripts/preview.sh work
+#   ./scripts/preview.sh home
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
