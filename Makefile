@@ -1,4 +1,4 @@
-.PHONY: help install install-work install-home preview preview-work preview-home update update-work update-home doctor uninstall
+.PHONY: help install install-work install-home preview preview-work preview-home update update-work update-home doctor test test-scripts uninstall
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -45,6 +45,12 @@ update-home: ## dotfiles を最新にして home プロファイルを適用
 
 doctor: ## 現在のプロファイルでセットアップ状態を確認
 	bash scripts/doctor.sh
+
+test: test-scripts ## 回帰テストを実行
+
+test-scripts: ## shell スクリプトの回帰テストを実行
+	bash tests/profile.sh
+	bash tests/doctor.sh
 
 uninstall: ## dotfiles をアンインストール
 	bash scripts/uninstall.sh
