@@ -1,6 +1,9 @@
 # Claude Code local session permissions (machine-specific, not for tracking)
 .claude/settings.local.json
 
+# Serena local state (machine-specific, not for tracking)
+.serena/
+
 # macOS
 .DS_Store
 **/.DS_Store
