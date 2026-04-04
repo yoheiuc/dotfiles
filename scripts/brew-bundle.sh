@@ -68,7 +68,7 @@ elif [[ "${MODE}" == "preview" ]]; then
 
   printf '  brew bundle check --verbose --no-upgrade:\n'
   set +e
-  check_out="$(brew bundle check --file="${effective_brewfile}" --verbose --no-upgrade 2>&1)"
+  check_out="$(HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --file="${effective_brewfile}" --verbose --no-upgrade 2>&1)"
   check_status=$?
   set -e
 
@@ -86,7 +86,7 @@ elif [[ "${MODE}" == "preview" ]]; then
 
   printf '\n  brew bundle cleanup (preview only):\n'
   set +e
-  cleanup_out="$(brew bundle cleanup --file="${effective_brewfile}" 2>&1)"
+  cleanup_out="$(HOMEBREW_NO_AUTO_UPDATE=1 brew bundle cleanup --file="${effective_brewfile}" 2>&1)"
   cleanup_status=$?
   set -e
 
@@ -99,5 +99,5 @@ elif [[ "${MODE}" == "preview" ]]; then
     exit "${cleanup_status}"
   fi
 else
-  brew bundle check --file="${effective_brewfile}"
+  HOMEBREW_NO_AUTO_UPDATE=1 brew bundle check --file="${effective_brewfile}" --verbose --no-upgrade
 fi

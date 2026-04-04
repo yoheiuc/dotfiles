@@ -5,17 +5,24 @@
 #   1. Verify Homebrew is present
 #   2. Install chezmoi if missing
 #   3. Install core Brew packages (no cleanup — won't remove work/personal packages)
-#   4. Apply dotfiles via chezmoi
+#   4. Persist the active machine profile
+#   5. Apply dotfiles via chezmoi
 #
 # Called automatically by: make install / install-work / install-personal / install-all
 #
-# Usage: ./scripts/bootstrap.sh
+# Usage: ./scripts/bootstrap.sh [core|work|personal|all]
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROFILE="${1:-core}"
 
 log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
+
+case "${PROFILE}" in
+  core|work|personal|all) ;;
+  *) die "Unsupported profile '${PROFILE}' (expected: core, work, personal, or all)" ;;
+esac
 
 # ---- 1. Homebrew -----------------------------------------------------------
 command -v brew &>/dev/null \
@@ -34,7 +41,11 @@ fi
 log "Installing packages for 'core' profile..."
 brew bundle --file="${REPO_ROOT}/home/dot_Brewfile.core"
 
-# ---- 4. Point chezmoi at this repo and apply dotfiles ----------------------
+# ---- 4. Persist active profile ---------------------------------------------
+log "Setting active dotfiles profile to '${PROFILE}'..."
+bash "${REPO_ROOT}/scripts/profile.sh" set "${PROFILE}" >/dev/null
+
+# ---- 5. Point chezmoi at this repo and apply dotfiles ----------------------
 # Keep a single source of truth for day-to-day edits:
 #   ~/.local/share/chezmoi -> ~/dotfiles
 # .chezmoiroot tells chezmoi the actual source is home/ inside that repo.
@@ -63,6 +74,7 @@ chezmoi apply
 
 log "Bootstrap complete."
 printf '\nNext:\n'
+printf '  • Active profile: %s\n' "${PROFILE}"
 printf '  • Open a new terminal to load zsh config\n'
 printf '  • Optional: make install-work       (add work apps)\n'
 printf '  • Optional: make install-personal   (add personal apps)\n'

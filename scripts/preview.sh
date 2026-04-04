@@ -7,7 +7,12 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROFILE="${1:-core}"
+ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
+PROFILE="${1:-${ACTIVE_PROFILE}}"
+PROFILE_IS_EXPLICIT=0
+if bash "${REPO_ROOT}/scripts/profile.sh" exists; then
+  PROFILE_IS_EXPLICIT=1
+fi
 
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
 ok() { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
@@ -15,6 +20,15 @@ warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 
 echo
 printf '\033[1m=== dotfiles preview (%s) ===\033[0m\n' "${PROFILE}"
+
+section "dotfiles profile"
+printf '  Active profile: %s\n' "${ACTIVE_PROFILE}"
+if [[ "${PROFILE_IS_EXPLICIT}" -ne 1 ]]; then
+  warn "No persisted machine profile yet; defaulting to 'core'."
+fi
+if [[ "${PROFILE}" != "${ACTIVE_PROFILE}" ]]; then
+  warn "Preview target differs from active profile."
+fi
 
 section "chezmoi diff"
 diff_out="$(chezmoi diff 2>&1 || true)"

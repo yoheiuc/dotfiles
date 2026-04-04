@@ -8,6 +8,11 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
+PROFILE_IS_EXPLICIT=0
+if bash "${REPO_ROOT}/scripts/profile.sh" exists; then
+  PROFILE_IS_EXPLICIT=1
+fi
 
 ok()      { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn()    { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
@@ -50,6 +55,10 @@ REQUIRED_FAILED=0
 
 echo
 printf '\033[1m=== dotfiles doctor ===\033[0m\n'
+printf 'Active profile: %s\n' "${ACTIVE_PROFILE}"
+if [[ "${PROFILE_IS_EXPLICIT}" -ne 1 ]]; then
+  warn "No persisted machine profile yet; defaulting to 'core'"
+fi
 
 # ===========================================================================
 # REQUIRED checks — failures increment REQUIRED_FAILED and affect exit code
@@ -70,7 +79,7 @@ if chezmoi --version &>/dev/null; then
   printf '  chezmoi doctor:\n'
   chezmoi_doctor_out="$(chezmoi doctor 2>&1 || true)"
   printf '%s\n' "$chezmoi_doctor_out" | sed 's/^/    /'
-  if printf '%s\n' "$chezmoi_doctor_out" | grep -Eq '^[[:space:]]*failed[[:space:]]'; then
+  if printf '%s\n' "$chezmoi_doctor_out" | grep -Ev '^[[:space:]]*failed[[:space:]]+latest-version[[:space:]]' | grep -Eq '^[[:space:]]*failed[[:space:]]'; then
     warn "chezmoi doctor: reported failed checks above"
   fi
 
@@ -86,12 +95,12 @@ else
   fail "chezmoi not found — run: brew install chezmoi"
 fi
 
-section "Core Brew profile (required)"
-brew_check_out="$(bash "${REPO_ROOT}/scripts/brew-bundle.sh" check core 2>&1 || true)"
+section "Active Brew profile (required)"
+brew_check_out="$(bash "${REPO_ROOT}/scripts/brew-bundle.sh" check "${ACTIVE_PROFILE}" 2>&1 || true)"
 if printf '%s\n' "$brew_check_out" | grep -q "The Brewfile's dependencies are satisfied."; then
-  ok "core Brew profile: all packages present"
+  ok "${ACTIVE_PROFILE} Brew profile: all packages present"
 else
-  fail "core Brew profile: missing packages — run: ./scripts/brew-bundle.sh sync core"
+  fail "${ACTIVE_PROFILE} Brew profile: missing packages — run: ./scripts/brew-bundle.sh sync ${ACTIVE_PROFILE}"
   printf '%s\n' "$brew_check_out" | grep -v '^Using ' | sed 's/^/    /' || true
 fi
 
@@ -193,12 +202,13 @@ section "navi (optional)"
 if command -v navi &>/dev/null; then
   ok "$(navi --version 2>&1 | head -1)"
   _navi_cheats="${HOME}/.local/share/navi/cheats/dotfiles"
-  if [[ -d "$_navi_cheats" ]] && ls "${_navi_cheats}"/*.cheat &>/dev/null 2>&1; then
-    ok "navi cheatsheets: present ($(ls "${_navi_cheats}"/*.cheat | wc -l | tr -d ' ') files)"
+  _navi_cheat_count="$(find "${_navi_cheats}" -maxdepth 1 -type f -name '*.cheat' | wc -l | tr -d ' ')"
+  if [[ -d "$_navi_cheats" ]] && [[ "${_navi_cheat_count}" != "0" ]]; then
+    ok "navi cheatsheets: present (${_navi_cheat_count} files)"
   else
     warn "navi cheatsheets not found — run: chezmoi apply"
   fi
-  unset _navi_cheats
+  unset _navi_cheats _navi_cheat_count
 else
   warn "navi not found — install via Brewfile (brew \"navi\")"
 fi

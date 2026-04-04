@@ -56,6 +56,10 @@ cxu() {
   _codex_statusline
 }
 
+dotprofile() {
+  printf '%s\n' "${DOTFILES_PROFILE:-core}"
+}
+
 # gemini — one-shot prompt helpers
 _gemini_require() {
   if ! command -v gemini >/dev/null 2>&1; then

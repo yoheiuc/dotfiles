@@ -19,6 +19,9 @@ Git identity (`~/.gitconfig`) も chezmoi 管理です。既定では `yoheiuc <
 Homebrew の構成は `home/dot_Brewfile.core`、`home/dot_Brewfile.work`、`home/dot_Brewfile.personal` に分かれています。  
 `bootstrap.sh` が入れるのは `core` プロファイルだけです。
 
+アクティブなマシンプロファイルは `~/.config/dotfiles/profile` に保存します。  
+`make install-work`、`make install-personal`、`make install-all`、`make update-work` などの明示的なターゲットを実行すると、この値も切り替わります。
+
 ---
 
 ## 初期セットアップ
@@ -60,15 +63,15 @@ make help
 | `make install-work` | core + work + `post-setup` | ✓ |
 | `make install-personal` | core + personal + `post-setup` | ✓ |
 | `make install-all` | core + work + personal + `post-setup` | ✓ |
-| `make preview` | `chezmoi diff` + dry-run + brew preview (core) | ✓ |
+| `make preview` | `chezmoi diff` + dry-run + brew preview (現在のプロファイル) | ✓ |
 | `make preview-work` | `chezmoi diff` + dry-run + brew preview (work) | ✓ |
 | `make preview-personal` | `chezmoi diff` + dry-run + brew preview (personal) | ✓ |
 | `make preview-all` | `chezmoi diff` + dry-run + brew preview (all) | ✓ |
-| `make update` | pull → `chezmoi apply` → brew sync core | ✓ |
-| `make update-work` | pull → `chezmoi apply` → brew sync work | ✓ |
-| `make update-personal` | pull → `chezmoi apply` → brew sync personal | ✓ |
-| `make update-all` | pull → `chezmoi apply` → brew sync all | ✓ |
-| `make doctor` | 設定と依存の健全性確認 | ✓ |
+| `make update` | pull → `chezmoi apply` → brew install 現在のプロファイル | ✓ |
+| `make update-work` | pull → `chezmoi apply` → brew install work | ✓ |
+| `make update-personal` | pull → `chezmoi apply` → brew install personal | ✓ |
+| `make update-all` | pull → `chezmoi apply` → brew install all | ✓ |
+| `make doctor` | 現在のプロファイルで設定と依存の健全性確認 | ✓ |
 | `make uninstall` | dotfiles を削除 | ✓ |
 
 ---
@@ -84,7 +87,11 @@ make update-personal
 make update-all
 ```
 
-適用前に見たい場合は `make preview` を使います。用途に応じて `make preview-work`、`make preview-personal`、`make preview-all` も使えます。
+ふだんは `make preview` / `make update` で、現在のプロファイルに追従します。  
+別プロファイルを一時的に見たいときだけ `make preview-work`、`make preview-personal`、`make preview-all` を使います。
+
+まだ `~/.config/dotfiles/profile` が無い既存マシンでは、`make preview` / `make update` / `make doctor` は一時的に `core` を既定として使います。  
+その場合は一度だけ、意図する役割に合わせて `make install-work`、`make install-personal`、`make install-all`、または `make update-work` などを実行してプロファイルを保存してください。
 
 ---
 
@@ -101,7 +108,7 @@ make doctor
 | `brew --version` | Required | Homebrew が使える |
 | `chezmoi --version` | Required | chezmoi が使える |
 | `chezmoi doctor` | Required | 内蔵チェックが実行できる (`failed` 行は warning 扱い) |
-| `./scripts/brew-bundle.sh check core` | Required | core Brew プロファイルが満たされている |
+| `./scripts/brew-bundle.sh check <active-profile>` | Required | 現在の Brew プロファイルが満たされている |
 | `git user.name` / `user.email` / `core.hooksPath` | Required | privacy-safe な Git identity/hook が有効 |
 | `node --version` | Optional | Codex CLI 導入に必要な node/npm がある |
 | `uv --version` | Optional | Serena MCP に必要な `uv` がある |
@@ -183,6 +190,13 @@ chezmoi apply -n -v
 chezmoi add ~/.zshrc
 ```
 
+現在のマシンプロファイルは次で確認できます。
+
+```bash
+dotprofile
+cat ~/.config/dotfiles/profile
+```
+
 ---
 
 ## 巻き戻し
@@ -222,7 +236,8 @@ chezmoi apply
 | `dot_Brewfile.personal` | 個人用の追加レイヤー |
 
 `cleanup` はプロファイル全体に対して実行されるため、`make` 経由で使う前提です。  
-同じプロファイルを一貫して使ってください。たとえば `sync work` の後に `sync core` を実行すると、work 側の追加アプリが削除されます。
+`make install-*` / `make update-*` は `~/.config/dotfiles/profile` を更新し、その値を日常運用の既定にします。  
+たとえば `make install-work` の後は `make preview` / `make update` / `make doctor` が work を前提に動きます。
 
 ---
 
@@ -306,6 +321,7 @@ config-file = local.ghostty
 - `cxr` = `codex -p review`
 - `cxd` = `codex -p deep`
 - `cxl` = `codex resume --last`
+- `dotprofile` = 現在の dotfiles プロファイルを表示
 
 Gemini は補助用途の one-shot コマンドを用意しています。
 
@@ -396,6 +412,7 @@ dotfiles/
 │       │   ├── core.ghostty        # shell integration / scrollback
 │       │   ├── ui.ghostty          # font / theme / padding
 │       │   └── keybinds.ghostty    # 追加キーバインド
+│       ├── dotfiles/profile        # ローカルの active profile (runtime state)
 │       ├── zsh/
 │       │   ├── env.zsh             # PATH / export / brew shellenv
 │       │   ├── aliases.zsh         # alias 群
@@ -405,6 +422,7 @@ dotfiles/
 ├── scripts/
 │   ├── brew-bundle.sh              # Brew profile の sync / install / check
 │   ├── bootstrap.sh                # core brew + chezmoi + apply
+│   ├── profile.sh                  # active profile の保存 / 参照
 │   ├── preview.sh                  # chezmoi/Brew の変更予定を確認
 │   ├── post-setup.sh               # Serena MCP + brew-autoupdate
 │   ├── uninstall.sh                # dotfiles を削除
