@@ -341,7 +341,7 @@ Gemini は補助用途の one-shot コマンドを用意しています。
 **Codex CLI** は `post-setup.sh` が公式 npm パッケージ経由で導入します。  
 `node` は core Brew プロファイルに含めているので、新規マシンでもこの導線がそのまま使えます。
 
-**Serena MCP** は Claude Code / Codex の両方で使う前提です。起動引数にはブラウザ自動起動の抑止も入れています。
+**Serena MCP** は Claude Code / Codex の両方で使う前提です。`~/.local/bin/serena-mcp` wrapper 経由で起動し、Homebrew の `uvx` とブラウザ自動起動抑止を明示しています。
 
 **brew-autoupdate** は `post-setup.sh` が `domt4/autoupdate` tap 経由で導入し、24 時間ごとに `upgrade + cleanup` するよう起動します。
 

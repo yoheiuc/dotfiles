@@ -362,8 +362,12 @@ if command -v codex &>/dev/null; then
   printf '  MCP servers registered (timeout: 8s):\n'
   codex_mcp_list_out="$(run_with_timeout 8 codex mcp list 2>&1 | strip_codex_path_warning || true)"
   printf '%s\n' "$codex_mcp_list_out" | sed 's/^/    /'
-  if printf '%s\n' "$codex_mcp_list_out" | grep -q '^serena[[:space:]]'; then
-    ok "serena MCP: registered"
+  if printf '%s\n' "$codex_mcp_list_out" | grep -Eq "^serena[[:space:]]+${HOME}/\\.local/bin/serena-mcp[[:space:]].*[[:space:]]enabled[[:space:]]"; then
+    ok "serena MCP: enabled via wrapper"
+  elif printf '%s\n' "$codex_mcp_list_out" | grep -Eq '^serena[[:space:]]+uvx[[:space:]].*[[:space:]]enabled[[:space:]]'; then
+    warn "serena MCP: enabled with legacy uvx command — run: chezmoi apply"
+  elif printf '%s\n' "$codex_mcp_list_out" | grep -q '^serena[[:space:]]'; then
+    warn "serena MCP: configured with unexpected command"
   elif printf '%s\n' "$codex_mcp_list_out" | grep -q '^Timed out after '; then
     warn "serena MCP: check timed out"
   else
