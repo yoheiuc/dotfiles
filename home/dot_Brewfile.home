@@ -1,7 +1,7 @@
-# ~/.Brewfile.personal — managed by chezmoi (source: home/dot_Brewfile.personal)
-# Optional personal/local layer on top of the core profile.
-# Install: make install-personal
-# Update:  make update-personal
+# ~/.Brewfile.home — managed by chezmoi (source: home/dot_Brewfile.home)
+# Optional home/local layer on top of the core profile.
+# Install: make install-home
+# Update:  make update-home
 
 # ---------- Local productivity ----------
 brew "laishulu/homebrew/macism"  # input method switcher
@@ -21,4 +21,3 @@ cask "google-chrome"
 # ---------- System / locale ----------
 cask "google-japanese-ime"
 cask "logi-options+"
-

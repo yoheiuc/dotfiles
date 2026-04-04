@@ -13,20 +13,38 @@ DEFAULT_PROFILE="core"
 
 die() { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
-validate_profile() {
+canonicalize_profile() {
   case "${1:-}" in
-    core|work|personal|all) ;;
-    *) die "Unsupported profile '${1:-}' (expected: core, work, personal, or all)" ;;
+    core|work|home)
+      printf '%s\n' "${1}"
+      ;;
+    personal)
+      printf 'home\n'
+      ;;
+    all)
+      die "Legacy profile 'all' is no longer supported; choose 'work' or 'home'"
+      ;;
+    *)
+      die "Unsupported profile '${1:-}' (expected: core, work, or home)"
+      ;;
   esac
+}
+
+validate_profile() {
+  canonicalize_profile "${1:-}" >/dev/null
 }
 
 get_profile() {
   if [[ -r "${PROFILE_FILE}" ]]; then
-    local profile
+    local profile canonical_profile
     profile="$(tr -d '[:space:]' < "${PROFILE_FILE}")"
     if [[ -n "${profile}" ]]; then
-      validate_profile "${profile}"
-      printf '%s\n' "${profile}"
+      canonical_profile="$(canonicalize_profile "${profile}")"
+      if [[ "${canonical_profile}" != "${profile}" ]]; then
+        mkdir -p "$(dirname "${PROFILE_FILE}")"
+        printf '%s\n' "${canonical_profile}" > "${PROFILE_FILE}"
+      fi
+      printf '%s\n' "${canonical_profile}"
       return 0
     fi
   fi
@@ -35,12 +53,13 @@ get_profile() {
 }
 
 set_profile() {
-  local profile="${1:-}"
-  validate_profile "${profile}"
+  local profile canonical_profile
+  profile="${1:-}"
+  canonical_profile="$(canonicalize_profile "${profile}")"
 
   mkdir -p "$(dirname "${PROFILE_FILE}")"
-  printf '%s\n' "${profile}" > "${PROFILE_FILE}"
-  printf '%s\n' "${profile}"
+  printf '%s\n' "${canonical_profile}" > "${PROFILE_FILE}"
+  printf '%s\n' "${canonical_profile}"
 }
 
 command_name="${1:-get}"

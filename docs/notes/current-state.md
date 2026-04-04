@@ -10,5 +10,5 @@
 - Gemini CLI は `~/.gemini/settings.json` だけ管理し、認証・履歴・state は管理しない。
 - Codex は `~/.codex/config.toml` と `~/AGENTS.md` を管理し、auth や sessions は管理しない。
 - Codex には `fast` / `review` / `deep` profile と `cx` / `cxf` / `cxr` / `cxd` / `cxl` alias を入れている。
-- 仕事用 / 個人用の切り替えは `~/.config/dotfiles/profile` に保存し、`make preview` / `make update` / `make doctor` はその値を既定で使う。
+- 仕事用 / 自宅用の切り替えは `~/.config/dotfiles/profile` に保存し、`make preview` / `make update` / `make doctor` はその値を既定で使う。
 - README は全面的に日本語化済みで、今の運用方針に合わせて更新済み。

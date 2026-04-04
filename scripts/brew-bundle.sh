@@ -7,20 +7,20 @@
 #   check   verify all packages are present (non-destructive)    ← used by make doctor
 #   preview show what install/cleanup would change               ← used by make preview*
 #
-# Profiles: core | work | personal | all
+# Profiles: core | work | home
 #
 # Usage:
 #   ./scripts/brew-bundle.sh sync    core
-#   ./scripts/brew-bundle.sh sync    all
-#   ./scripts/brew-bundle.sh install personal
+#   ./scripts/brew-bundle.sh sync    home
+#   ./scripts/brew-bundle.sh install home
 #   ./scripts/brew-bundle.sh check   work
-#   ./scripts/brew-bundle.sh preview all
+#   ./scripts/brew-bundle.sh preview home
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CORE_BREWFILE="${REPO_ROOT}/home/dot_Brewfile.core"
 WORK_BREWFILE="${REPO_ROOT}/home/dot_Brewfile.work"
-PERSONAL_BREWFILE="${REPO_ROOT}/home/dot_Brewfile.personal"
+HOME_BREWFILE="${REPO_ROOT}/home/dot_Brewfile.home"
 
 MODE="${1:-sync}"
 PROFILE="${2:-core}"
@@ -36,23 +36,23 @@ case "${MODE}" in
 esac
 
 case "${PROFILE}" in
-  core|work|personal|all) ;;
-  *) die "Unsupported profile '${PROFILE}' (expected: core, work, personal, or all)" ;;
+  core|work|home) ;;
+  *) die "Unsupported profile '${PROFILE}' (expected: core, work, or home)" ;;
 esac
 
 effective_brewfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-brewfile.XXXXXX")"
 trap 'rm -f "${effective_brewfile}"' EXIT
 
 cat "${CORE_BREWFILE}" > "${effective_brewfile}"
-if [[ "${PROFILE}" == "work" || "${PROFILE}" == "all" ]]; then
+if [[ "${PROFILE}" == "work" ]]; then
   [[ -f "${WORK_BREWFILE}" ]] || die "Missing work Brewfile: ${WORK_BREWFILE}"
   printf '\n' >> "${effective_brewfile}"
   cat "${WORK_BREWFILE}" >> "${effective_brewfile}"
 fi
-if [[ "${PROFILE}" == "personal" || "${PROFILE}" == "all" ]]; then
-  [[ -f "${PERSONAL_BREWFILE}" ]] || die "Missing personal Brewfile: ${PERSONAL_BREWFILE}"
+if [[ "${PROFILE}" == "home" ]]; then
+  [[ -f "${HOME_BREWFILE}" ]] || die "Missing home Brewfile: ${HOME_BREWFILE}"
   printf '\n' >> "${effective_brewfile}"
-  cat "${PERSONAL_BREWFILE}" >> "${effective_brewfile}"
+  cat "${HOME_BREWFILE}" >> "${effective_brewfile}"
 fi
 
 if [[ "${MODE}" == "sync" ]]; then

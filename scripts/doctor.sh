@@ -19,6 +19,84 @@ warn()    { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 fail()    { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=1; }
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
 strip_codex_path_warning() { sed '/^WARNING: proceeding, even though we could not update PATH:/d'; }
+extract_brewfile_entries() {
+  local kind="$1"
+  local file="$2"
+
+  case "${kind}" in
+    formula)
+      sed -nE 's/^[[:space:]]*brew[[:space:]]+"([^"]+)".*/\1/p' "${file}" | sort -u
+      ;;
+    cask)
+      sed -nE 's/^[[:space:]]*cask[[:space:]]+"([^"]+)".*/\1/p' "${file}" | sort -u
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+forbidden_profile_entries() {
+  local kind="$1"
+  local work_entries home_entries
+
+  work_entries="$(extract_brewfile_entries "${kind}" "${REPO_ROOT}/home/dot_Brewfile.work")"
+  home_entries="$(extract_brewfile_entries "${kind}" "${REPO_ROOT}/home/dot_Brewfile.home")"
+
+  case "${ACTIVE_PROFILE}" in
+    core)
+      printf '%s\n%s\n' "${work_entries}" "${home_entries}" | sed '/^$/d' | sort -u
+      ;;
+    work)
+      comm -23 <(printf '%s\n' "${home_entries}" | sed '/^$/d' | sort -u) <(printf '%s\n' "${work_entries}" | sed '/^$/d' | sort -u)
+      ;;
+    home)
+      comm -23 <(printf '%s\n' "${work_entries}" | sed '/^$/d' | sort -u) <(printf '%s\n' "${home_entries}" | sed '/^$/d' | sort -u)
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+installed_brew_entries() {
+  local kind="$1"
+
+  case "${kind}" in
+    formula)
+      brew list --formula | sort -u
+      ;;
+    cask)
+      brew list --cask | sort -u
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+report_profile_drift() {
+  local kind="$1"
+  local label forbidden installed unexpected
+
+  case "${kind}" in
+    formula) label="formulae" ;;
+    cask) label="casks" ;;
+    *) return 1 ;;
+  esac
+
+  forbidden="$(forbidden_profile_entries "${kind}")"
+  [[ -n "${forbidden}" ]] || return 0
+
+  installed="$(installed_brew_entries "${kind}")"
+  unexpected="$(comm -12 <(printf '%s\n' "${forbidden}" | sort -u) <(printf '%s\n' "${installed}" | sort -u))"
+
+  if [[ -n "${unexpected}" ]]; then
+    warn "Brew profile drift: ${label} installed outside '${ACTIVE_PROFILE}' profile"
+    printf '%s\n' "${unexpected}" | sed 's/^/    /'
+    warn "  Preview cleanup with: ./scripts/brew-bundle.sh preview ${ACTIVE_PROFILE}"
+    return 0
+  fi
+
+  return 1
+}
 run_with_timeout() {
   local timeout_seconds="$1"
   shift
@@ -102,6 +180,23 @@ if printf '%s\n' "$brew_check_out" | grep -q "The Brewfile's dependencies are sa
 else
   fail "${ACTIVE_PROFILE} Brew profile: missing packages — run: ./scripts/brew-bundle.sh sync ${ACTIVE_PROFILE}"
   printf '%s\n' "$brew_check_out" | grep -v '^Using ' | sed 's/^/    /' || true
+fi
+
+section "Brew profile drift (optional)"
+if [[ "${PROFILE_IS_EXPLICIT}" -ne 1 ]]; then
+  warn "skipped until a machine profile is explicitly saved"
+else
+  drift_found=0
+  if report_profile_drift formula; then
+    drift_found=1
+  fi
+  if report_profile_drift cask; then
+    drift_found=1
+  fi
+  if [[ "${drift_found}" -eq 0 ]]; then
+    ok "No work/home-only Brew packages are installed outside '${ACTIVE_PROFILE}' profile"
+  fi
+  unset drift_found
 fi
 
 section "Git identity/privacy (required)"
@@ -202,8 +297,12 @@ section "navi (optional)"
 if command -v navi &>/dev/null; then
   ok "$(navi --version 2>&1 | head -1)"
   _navi_cheats="${HOME}/.local/share/navi/cheats/dotfiles"
-  _navi_cheat_count="$(find "${_navi_cheats}" -maxdepth 1 -type f -name '*.cheat' | wc -l | tr -d ' ')"
-  if [[ -d "$_navi_cheats" ]] && [[ "${_navi_cheat_count}" != "0" ]]; then
+  if [[ -d "$_navi_cheats" ]]; then
+    _navi_cheat_count="$(find "${_navi_cheats}" -maxdepth 1 -type f -name '*.cheat' | wc -l | tr -d ' ')"
+  else
+    _navi_cheat_count="0"
+  fi
+  if [[ "${_navi_cheat_count}" != "0" ]]; then
     ok "navi cheatsheets: present (${_navi_cheat_count} files)"
   else
     warn "navi cheatsheets not found — run: chezmoi apply"
