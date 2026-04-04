@@ -1,5 +1,7 @@
 # ~/.Brewfile.home — managed by chezmoi (source: home/dot_Brewfile.home)
-# Optional home/local layer on top of the core profile.
+# Personal/home layer on top of the core profile.
+# Put packages here when they are personal, home-machine-specific, or
+# even used for work but already auto-deployed on the work laptop.
 # Install: make install-home
 # Update:  make update-home
 

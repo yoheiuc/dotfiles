@@ -19,6 +19,11 @@ Git identity (`~/.gitconfig`) も chezmoi 管理です。既定では `yoheiuc <
 Homebrew の構成は `home/dot_Brewfile.core` と `home/dot_Brewfile.home` に分かれています。  
 `bootstrap.sh` が入れるのは `core` プロファイルだけです。
 
+境界は「仕事でも使うか / プライベートか」だけではなく、`その仕事用ツールを自分で配る必要があるか` です。
+
+- `core`: 自分で手動インストールして全マシンに揃えたい共通基盤。仕事で使うツールでも、会社 PC に自動配布されないならここに入れます。
+- `home`: 私用のもの、自宅マシン固有のもの、または仕事でも使うが会社 PC には自動配布されるものを入れます。
+
 アクティブなマシンプロファイルは `~/.config/dotfiles/profile` に保存します。  
 `make install-home`、`make update-home` などの明示的なターゲットを実行すると、この値も切り替わります。
 `make install` は profile 未設定の初回だけ `core` を保存し、既存の `home` は上書きしません。
@@ -227,8 +232,8 @@ chezmoi apply
 
 | Brewfile | 用途 |
 |---|---|
-| `dot_Brewfile.core` | 全マシン共通のベース |
-| `dot_Brewfile.home` | 自宅用の追加レイヤー |
+| `dot_Brewfile.core` | 自分で配る共通基盤。仕事で使い、会社 PC に自動配布されないものも含む |
+| `dot_Brewfile.home` | 私用 / 自宅用レイヤー。仕事でも会社 PC に自動配布されるものはここに置く |
 
 `cleanup` はプロファイル全体に対して実行されるため、`make` 経由で使う前提です。  
 `make install-*` / `make update-*` は `~/.config/dotfiles/profile` を更新し、その値を日常運用の既定にします。  

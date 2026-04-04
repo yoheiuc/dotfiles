@@ -1,5 +1,8 @@
 # ~/.Brewfile.core — managed by chezmoi (source: home/dot_Brewfile.core)
-# Minimal machine baseline used by bootstrap / doctor.
+# Manual baseline for tools I want on every machine.
+# Put packages here when they are part of my own shared dev baseline:
+#   - I use them for work and want to install them myself
+#   - they are not simply "already on the work laptop via company auto-deploy"
 # Install: make install
 # Update:  make update
 
