@@ -356,14 +356,9 @@ config-file = local.ghostty
 
 ## Claude Code / Codex / MCP
 
-`~/.claude/settings.json` は chezmoi 管理で、主に次を設定しています。
+`~/.claude/settings.json` はローカル管理にしています。権限設定や許可ルールは運用しながら変わりやすいため、dotfiles では配りません。
 
-- 破壊的なシェルコマンド (`curl`, `wget`, `rm`, `sudo`, `chmod`, `chown`) は既定 deny
-- 認証情報に近いパス (`.env`, `secrets/**`, `~/.ssh/**`) は既定 deny
-- `git push` と `WebFetch` は確認つき
-- 読み取り専用の git コマンドや `--version` / `--help` は自動許可
-
-`~/.claude/CLAUDE.md` も chezmoi 管理にしており、個人用の共通メモと運用方針を置きます。
+`~/.claude/CLAUDE.md` は chezmoi 管理にしており、個人用の共通メモと運用方針を置きます。
 
 `~/.codex/config.toml` はローカル管理にしています。モデル選択、profile、plugin、project trust などの変わりやすい設定は Codex 側で更新されることがあるため、dotfiles では配りません。
 
@@ -420,17 +415,15 @@ python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp --acti
 
 Claude Code と Gemini CLI は、共通設定とローカル state を分けて管理します。
 
-- Claude Code は `~/.claude/settings.json` だけを dotfiles 管理する
-- `~/.claude/CLAUDE.md` は共通メモとして dotfiles 管理する
+- Claude Code は `~/.claude/CLAUDE.md` だけを dotfiles 管理する
+- `~/.claude/settings.json` はローカル管理にして、permissions / allowlist / denylist などの変わりやすい設定は各マシンで持つ
 - `~/.claude/history.jsonl`、`projects/`、`sessions/`、`cache/`、`plugins/` などの運用データは管理しない
 - Codex は `~/AGENTS.md` と zsh alias / completion を dotfiles 管理する
 - `~/.codex/config.toml` はローカル管理にして、model / profile / plugin / project trust などの変わりやすい設定は各マシンで持つ
 - Codex の zsh alias / completion も dotfiles 管理する
 - `~/.codex/auth.json`、`sessions/`、`history.jsonl`、`cache/`、`log/`、`sqlite` 系、`tmp/` などの運用データは管理しない
-- Gemini CLI は `~/.gemini/settings.json` だけを dotfiles 管理する
+- Gemini CLI の `~/.gemini/settings.json` はローカル管理にする
 - `~/.gemini/oauth_creds.json`、`google_accounts.json`、`history/`、`projects.json`、`state.json`、`trustedFolders.json`、`tmp/` などは管理しない
-
-Gemini の `settings.json` は chezmoi テンプレートで管理し、既存の認証方式 (`selectedAuthType`) だけはローカル値を温存します。これにより、UI 設定は揃えつつ認証状態は壊しません。
 
 ---
 
@@ -449,11 +442,9 @@ dotfiles/
 │   ├── dot_zshrc                   # -> ~/.zshrc
 │   ├── dot_claude/
 │   │   ├── CLAUDE.md               # -> ~/.claude/CLAUDE.md
-│   │   └── settings.json           # -> ~/.claude/settings.json
 │   ├── dot_codex/
 │   │   └── skills/                 # -> ~/.codex/skills/*
-│   ├── dot_gemini/
-│   │   └── settings.json.tmpl      # -> ~/.gemini/settings.json
+│   ├── dot_gemini/                 # local settings are unmanaged
 │   ├── dot_local/share/navi/cheats/dotfiles/
 │   │   ├── git.cheat
 │   │   ├── shell.cheat

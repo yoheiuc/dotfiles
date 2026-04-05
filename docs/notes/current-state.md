@@ -6,8 +6,8 @@
 - `doctor.sh` は誤検知とハングしやすい箇所を修正済みで、required は通る。
 - Codex skill は repo 同梱方式に統一済みで、`post-setup.sh` で外部 clone しない。
 - 同梱 skill は `playwright`, `screenshot`, `doc`, `pdf`, `spreadsheet`, `jupyter-notebook`, `security-best-practices`。
-- Claude Code は `~/.claude/settings.json` と `~/.claude/CLAUDE.md` だけ管理し、履歴や cache は管理しない。
-- Gemini CLI は `~/.gemini/settings.json` だけ管理し、認証・履歴・state は管理しない。
+- Claude Code は `~/.claude/CLAUDE.md` だけ管理し、`~/.claude/settings.json` はローカル管理にする。履歴や cache も管理しない。
+- Gemini CLI は `~/.gemini/settings.json` をローカル管理にし、認証・履歴・state も管理しない。
 - Codex は `~/AGENTS.md` と skill/alias を管理し、`~/.codex/config.toml` はローカル管理にする。auth や sessions も管理しない。
 - Codex には `fast` / `review` / `deep` profile と `cx` / `cxf` / `cxr` / `cxd` / `cxl` alias を入れている。
 - マシン role は `core` / `home` の 2 層に整理し、`~/.config/dotfiles/profile` に保存する。`make preview` / `make update` / `make doctor` はその値を既定で使う。
