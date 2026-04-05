@@ -41,6 +41,12 @@ claude status
 # MCP サーバーの状態を確認
 claude mcp list
 
+# Serena のプロジェクト index を更新 (dotfiles helper)
+make -C ~/dotfiles serena-index DIR="$PWD"
+
+# Serena 初期 instructions を読み込む
+/mcp__serena__initial_instructions
+
 # Claude Code の設定を管理
 claude config <key> <value>
 

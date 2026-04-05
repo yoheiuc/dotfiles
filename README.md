@@ -96,6 +96,7 @@ make help
 | `make brew-diff-home` | home とローカル Brew 実体の差分確認 | ✓ |
 | `make brew-add-core KIND=... NAME=...` | core Brewfile に 1 件追加 | ✓ |
 | `make brew-add-home KIND=... NAME=...` | home Brewfile に 1 件追加 | ✓ |
+| `make serena-index DIR=...` | Serena のプロジェクト初期化と index-project 実行 | ✓ |
 | `make tips` | よく使う dotfiles コマンドのヒント表示 | ✓ |
 | `make doctor` | 現在のプロファイルで設定と依存の健全性確認 | ✓ |
 | `make test` | shell ベースの回帰テスト | ✓ |
@@ -398,7 +399,18 @@ Gemini は補助用途の one-shot コマンドを用意しています。
 **Codex CLI** は `post-setup.sh` が公式 npm パッケージ経由で導入します。  
 `node` は core Brew プロファイルに含めているので、新規マシンでもこの導線がそのまま使えます。
 
-**Serena MCP** は Claude Code / Codex の両方で使う前提です。`~/.local/bin/serena-mcp` wrapper 経由で起動し、Homebrew の `uvx` とブラウザ自動起動抑止を明示しています。
+**Serena MCP** は Claude Code / Codex の両方で使う前提です。`~/.local/bin/serena-mcp` wrapper 経由で起動し、Homebrew の `uvx` とブラウザ自動起動抑止を明示しています。wrapper はデフォルトで `index-project` も先に実行するため、普段は index 更新を手で貼り付けなくても追従します（失敗時は MCP 起動を優先して継続）。
+
+note のセットアップ手順を日常運用へ落とし込むために、dotfiles 側では `scripts/serena-bootstrap.sh`（`make serena-index`）を用意しています。任意のプロジェクトで次を実行すると、`index-project` と MCP 接続確認をまとめて実行します。
+
+```bash
+cd /path/to/your/project
+make -C ~/dotfiles serena-index DIR="$PWD"
+```
+
+実行後は表示された 2 つの prompt（`/mcp__serena__initial_instructions` と `プロジェクト ... を有効化してください`）を Claude/Codex 側で流せば、note 記載の初期化フローを毎回ほぼ同じ手順で再現できます。
+
+自動 index を一時的に止めたい場合は、起動前に `SERENA_AUTO_INDEX=0` を付けてください。
 
 **brew-autoupdate** は `post-setup.sh` が `domt4/autoupdate` tap 経由で導入し、24 時間ごとに `upgrade + cleanup` するよう起動します。
 
