@@ -81,6 +81,7 @@ make help
 | `make status` | 日常確認に必要な状態を短く表示 | ✓ |
 | `make ai-audit` | ローカル管理の AI 設定だけを詳しく確認 | ✓ |
 | `make dashboard` | `status` と `ai-audit` を Markdown にまとめる | ✓ |
+| `make dashboard-open` | Markdown レポートを生成して開く | ✓ |
 | `make install` | core Brew + `chezmoi apply` | ✓ |
 | `make install-home` | core + home + `post-setup` | ✓ |
 | `make preview` | `chezmoi diff` + dry-run + brew preview (現在のプロファイル) | ✓ |
@@ -109,6 +110,8 @@ cd ~/dotfiles
 make status
 make ai-audit
 make dashboard
+make dashboard OUTPUT=docs/last-dashboard.md
+make dashboard-open OUTPUT=docs/last-dashboard.md
 make preview
 make update
 make update-home
@@ -119,10 +122,13 @@ make brew-diff
 make tips
 ```
 
-ふだんは `make status` でざっと状態を見て、AI 設定を触ったあとは `make ai-audit`、共有しやすい形で残したいときは `make dashboard` を使いながら、`make preview` / `make update` で現在のプロファイルに追従します。  
+ふだんは `make status` でざっと状態を見て、AI 設定を触ったあとは `make ai-audit`、共有しやすい形で残したいときは `make dashboard OUTPUT=docs/last-dashboard.md` を使いながら、`make preview` / `make update` で現在のプロファイルに追従します。  
 別プロファイルを一時的に見たいときだけ `make preview-home` を使います。
 cleanup まで含めて Homebrew 実体を定義どおりに寄せたいときは `make sync` / `make sync-home` を使います。
 会社 PC で明示的に `core` へ寄せたいときは `make sync-core` を使います。
+
+`make dashboard` は前回の同じ出力先があれば差分要約も入れます。  
+既定の出力先は `/tmp` 配下ですが、残したいときは `OUTPUT=docs/last-dashboard.md` のように指定します。
 
 新しい package をローカルで試したあとに repo へ取り込みたいときは、`brew bundle dump` ではなく 1 件ずつ追記します。
 
@@ -158,6 +164,8 @@ dothelp
 ```bash
 make doctor
 ```
+
+`make doctor` は深い確認用です。日常確認は `make status`、AI 設定確認は `make ai-audit`、共有用の記録は `make dashboard` を先に使う想定です。
 
 `doctor.sh` は次の項目を確認します。
 

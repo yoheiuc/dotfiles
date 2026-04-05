@@ -6,6 +6,9 @@
 set -euo pipefail
 
 REPO_ROOT="${DOTFILES_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+source "${REPO_ROOT}/scripts/lib/ai-config.sh"
+source "${REPO_ROOT}/scripts/lib/brew-profile.sh"
+
 ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
 PROFILE_IS_EXPLICIT=0
 if bash "${REPO_ROOT}/scripts/profile.sh" exists; then
@@ -23,55 +26,9 @@ attention() {
   ATTENTION_COUNT=$((ATTENTION_COUNT + 1))
 }
 
-extract_brewfile_entries() {
-  local kind="$1"
-  local file="$2"
-
-  [[ -f "${file}" ]] || return 0
-
-  case "${kind}" in
-    formula)
-      sed -nE 's/^[[:space:]]*brew[[:space:]]+"([^"]+)".*/\1/p' "${file}" | sort -u
-      ;;
-    cask)
-      sed -nE 's/^[[:space:]]*cask[[:space:]]+"([^"]+)".*/\1/p' "${file}" | sort -u
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
-forbidden_profile_entries() {
-  local kind="$1"
-  local home_entries
-
-  [[ "${ACTIVE_PROFILE}" == "core" ]] || return 1
-
-  home_entries="$(extract_brewfile_entries "${kind}" "${REPO_ROOT}/home/dot_Brewfile.home")"
-  [[ -n "${home_entries}" ]] || return 1
-  printf '%s\n' "${home_entries}" | sed '/^$/d' | sort -u
-}
-
-installed_brew_entries() {
-  local kind="$1"
-
-  case "${kind}" in
-    formula)
-      brew list --formula | sort -u
-      ;;
-    cask)
-      brew list --cask | sort -u
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
 report_profile_drift() {
   local kind="$1"
-  local label forbidden installed unexpected
+  local label unexpected
 
   case "${kind}" in
     formula) label="formulae" ;;
@@ -79,12 +36,7 @@ report_profile_drift() {
     *) return 1 ;;
   esac
 
-  forbidden="$(forbidden_profile_entries "${kind}" || true)"
-  [[ -n "${forbidden}" ]] || return 1
-
-  installed="$(installed_brew_entries "${kind}" || true)"
-  unexpected="$(comm -12 <(printf '%s\n' "${forbidden}" | sort -u) <(printf '%s\n' "${installed}" | sort -u))"
-
+  unexpected="$(brew_profile_drift_entries "${ACTIVE_PROFILE}" "${REPO_ROOT}" "${kind}" || true)"
   [[ -n "${unexpected}" ]] || return 1
 
   attention "Brew profile drift: ${label} from 'home' are installed on a 'core' machine"
@@ -96,11 +48,7 @@ audit_local_file() {
   local label="$1"
   local path="$2"
 
-  if [[ -f "${path}" ]]; then
-    info "${label}: present (${path})"
-  else
-    info "${label}: missing (${path})"
-  fi
+  info "$(ai_config_describe_file "${label}" "${path}")"
 }
 
 echo
@@ -195,7 +143,7 @@ audit_local_file "Shared Claude guidance" "${HOME}/.claude/CLAUDE.md"
 audit_local_file "Shared AGENTS" "${HOME}/AGENTS.md"
 
 if [[ -f "${HOME}/.codex/config.toml" ]]; then
-  if grep -Eq 'approval_policy[[:space:]]*=[[:space:]]*"never"|sandbox_mode[[:space:]]*=[[:space:]]*"danger-full-access"|BEGIN CCB|END CCB|ai-bridge|cc-bridge' "${HOME}/.codex/config.toml"; then
+  if ai_config_has_legacy_settings "${HOME}/.codex/config.toml"; then
     attention "Codex config: legacy bridge/auto-approval settings detected"
   else
     ok "Codex config: no legacy bridge settings detected"

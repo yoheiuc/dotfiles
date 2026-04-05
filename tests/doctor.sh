@@ -145,8 +145,10 @@ run_doctor() {
   mkdir -p "${home_dir}/.config/git/hooks" "${home_dir}/.config/dotfiles" "${home_dir}/.codex"
   : > "${home_dir}/.config/git/hooks/pre-commit"
   chmod +x "${home_dir}/.config/git/hooks/pre-commit"
+  mkdir -p "${home_dir}/dotfiles/scripts/lib"
+  cp "${REPO_ROOT}/scripts/lib/brew-profile.sh" "${home_dir}/dotfiles/scripts/lib/brew-profile.sh"
 
-  env HOME="${home_dir}" PATH="${STUB_BIN}:${ORIGINAL_PATH}" "$@" \
+  env HOME="${home_dir}" PATH="${STUB_BIN}:${ORIGINAL_PATH}" "$@" DOTFILES_REPO_ROOT="${home_dir}/dotfiles" \
     bash "${REPO_ROOT}/scripts/doctor.sh"
 }
 
@@ -178,6 +180,7 @@ run_capture run_doctor "${home_ok}" \
   CLAUDE_MCP_LIST_STATUS=124 \
   CODEX_MCP_LIST_OUTPUT=$'Name    Command                                Args   Env  Cwd  Status   Auth\nserena  '"${home_ok}"'/.local/bin/serena-mcp  codex  -    -    enabled  Unsupported\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy home profile case"
+assert_contains "${RUN_OUTPUT}" "Daily checks live in: make status / make ai-audit / make dashboard" "doctor should point to the lighter commands"
 assert_contains "${RUN_OUTPUT}" "No Brew profile drift detected for 'home'" "doctor should report clean drift status"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered (interactive health check timed out)" "doctor should accept Claude timeout fallback when serena is registered"
 assert_contains "${RUN_OUTPUT}" "serena MCP: enabled via wrapper" "doctor should recognize Codex wrapper configuration"

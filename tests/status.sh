@@ -12,6 +12,7 @@ fake_repo="${tmpdir}/repo"
 stub_bin="${tmpdir}/bin"
 mkdir -p \
   "${fake_repo}/home" \
+  "${fake_repo}/scripts/lib" \
   "${fake_repo}/scripts" \
   "${stub_bin}" \
   "${tmpdir}/home/.config/dotfiles" \
@@ -30,6 +31,8 @@ EOF
 
 cp "${REPO_ROOT}/scripts/status.sh" "${fake_repo}/scripts/status.sh"
 cp "${REPO_ROOT}/scripts/profile.sh" "${fake_repo}/scripts/profile.sh"
+cp "${REPO_ROOT}/scripts/lib/ai-config.sh" "${fake_repo}/scripts/lib/ai-config.sh"
+cp "${REPO_ROOT}/scripts/lib/brew-profile.sh" "${fake_repo}/scripts/lib/brew-profile.sh"
 
 cat > "${fake_repo}/scripts/brew-bundle.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -104,6 +107,8 @@ EOF
 chmod +x \
   "${fake_repo}/scripts/status.sh" \
   "${fake_repo}/scripts/profile.sh" \
+  "${fake_repo}/scripts/lib/ai-config.sh" \
+  "${fake_repo}/scripts/lib/brew-profile.sh" \
   "${fake_repo}/scripts/brew-bundle.sh" \
   "${stub_bin}/git" \
   "${stub_bin}/chezmoi" \

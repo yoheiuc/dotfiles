@@ -44,6 +44,8 @@ assert_contains "${dashboard_contents}" "# Dotfiles Dashboard" "dashboard markdo
 assert_contains "${dashboard_contents}" '- Active profile: `home`' "dashboard should summarize the active profile"
 assert_contains "${dashboard_contents}" "- Status summary: 1 warning(s)" "dashboard should summarize status warnings"
 assert_contains "${dashboard_contents}" "- AI audit summary: 1 warning(s)" "dashboard should summarize audit warnings"
+assert_contains "${dashboard_contents}" "## Since Last Dashboard" "dashboard should include change tracking"
+assert_contains "${dashboard_contents}" "- Previous dashboard: none" "dashboard should report the first run"
 assert_contains "${dashboard_contents}" "## Status Highlights" "dashboard should include status highlights"
 assert_contains "${dashboard_contents}" "- git: main...origin/main" "dashboard should capture status highlights"
 assert_contains "${dashboard_contents}" "- working tree: local changes detected" "dashboard should keep warning highlights"
@@ -52,5 +54,42 @@ assert_contains "${dashboard_contents}" "- Codex config: present (/tmp/home/.cod
 assert_contains "${dashboard_contents}" "## Raw Status Output" "dashboard should include raw status output"
 assert_contains "${dashboard_contents}" "## Raw AI Audit Output" "dashboard should include raw ai output"
 assert_not_contains "${dashboard_contents}" $'\033' "dashboard markdown should not contain ANSI escapes"
+
+cat > "${fake_repo}/scripts/status.sh" <<'EOF'
+#!/usr/bin/env bash
+printf '=== dotfiles status ===\n'
+printf 'Active profile: home\n'
+printf '\n[Repo]\n'
+printf '  ✓ git: main...origin/main\n'
+printf '  ✓ working tree: clean\n'
+EOF
+
+cat > "${fake_repo}/scripts/ai-audit.sh" <<'EOF'
+#!/usr/bin/env bash
+printf '=== AI config audit ===\n'
+printf '\n[Local Config Files]\n'
+printf '  - Codex config: present (/tmp/home/.codex/config.toml, 12 bytes)\n'
+printf '  ✓ Codex config: no legacy bridge settings detected\n'
+printf '  ✓ Gemini settings: no legacy bridge settings detected\n'
+EOF
+
+cat > "${tmpdir}/open" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" > "${OPEN_LOG}"
+EOF
+chmod +x "${tmpdir}/open" "${fake_repo}/scripts/status.sh" "${fake_repo}/scripts/ai-audit.sh"
+
+run_capture env DOTFILES_REPO_ROOT="${fake_repo}" PATH="${tmpdir}:${PATH}" OPEN_LOG="${tmpdir}/open.log" OUTPUT="${output_path}" OPEN_DASHBOARD=1 bash "${fake_repo}/scripts/dashboard.sh" --open
+assert_eq "0" "${RUN_STATUS}" "dashboard should support opening the generated report"
+assert_contains "${RUN_OUTPUT}" "Opened dashboard:" "dashboard should report opening the markdown file"
+open_log_contents="$(tr -d '\r\n' < "${tmpdir}/open.log")"
+assert_contains "${open_log_contents}" "dashboard.md" "dashboard should open the generated file"
+
+dashboard_contents="$(cat "${output_path}")"
+assert_contains "${dashboard_contents}" '- Previous dashboard: found at `' "dashboard should detect an existing snapshot"
+assert_contains "${dashboard_contents}" "- Status output: changed" "dashboard should detect status changes"
+assert_contains "${dashboard_contents}" "- AI audit output: changed" "dashboard should detect audit changes"
+assert_contains "${dashboard_contents}" '```diff' "dashboard should include diff excerpts when outputs change"
 
 pass_test "tests/dashboard.sh"

@@ -27,7 +27,7 @@ assert_contains() {
   local message="${3:-expected output to contain ${needle}}"
 
   if [[ "${haystack}" != *"${needle}"* ]]; then
-    printf '--- output ---\n%s\n--------------\n' "${haystack}" >&2
+    printf -- '--- output ---\n%s\n--------------\n' "${haystack}" >&2
     fail_test "${message}"
   fi
 }
@@ -38,7 +38,7 @@ assert_not_contains() {
   local message="${3:-expected output not to contain ${needle}}"
 
   if [[ "${haystack}" == *"${needle}"* ]]; then
-    printf '--- output ---\n%s\n--------------\n' "${haystack}" >&2
+    printf -- '--- output ---\n%s\n--------------\n' "${haystack}" >&2
     fail_test "${message}"
   fi
 }

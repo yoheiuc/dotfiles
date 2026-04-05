@@ -8,6 +8,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${REPO_ROOT}/scripts/lib/brew-profile.sh"
+
 ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
 PROFILE_IS_EXPLICIT=0
 if bash "${REPO_ROOT}/scripts/profile.sh" exists; then
@@ -17,60 +19,12 @@ fi
 ok()      { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn()    { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 fail()    { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=1; }
+info()    { printf '  - %s\n' "$*"; }
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
 strip_codex_path_warning() { sed '/^WARNING: proceeding, even though we could not update PATH:/d'; }
-extract_brewfile_entries() {
-  local kind="$1"
-  local file="$2"
-
-  case "${kind}" in
-    formula)
-      sed -nE 's/^[[:space:]]*brew[[:space:]]+"([^"]+)".*/\1/p' "${file}" | sort -u
-      ;;
-    cask)
-      sed -nE 's/^[[:space:]]*cask[[:space:]]+"([^"]+)".*/\1/p' "${file}" | sort -u
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-forbidden_profile_entries() {
-  local kind="$1"
-  local home_entries
-
-  home_entries="$(extract_brewfile_entries "${kind}" "${REPO_ROOT}/home/dot_Brewfile.home")"
-
-  case "${ACTIVE_PROFILE}" in
-    core)
-      printf '%s\n' "${home_entries}" | sed '/^$/d' | sort -u
-      ;;
-    home)
-      :
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-installed_brew_entries() {
-  local kind="$1"
-
-  case "${kind}" in
-    formula)
-      brew list --formula | sort -u
-      ;;
-    cask)
-      brew list --cask | sort -u
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
 report_profile_drift() {
   local kind="$1"
-  local label forbidden installed unexpected
+  local label unexpected
 
   case "${kind}" in
     formula) label="formulae" ;;
@@ -78,12 +32,7 @@ report_profile_drift() {
     *) return 1 ;;
   esac
 
-  forbidden="$(forbidden_profile_entries "${kind}")"
-  [[ -n "${forbidden}" ]] || return 1
-
-  installed="$(installed_brew_entries "${kind}")"
-  unexpected="$(comm -12 <(printf '%s\n' "${forbidden}" | sort -u) <(printf '%s\n' "${installed}" | sort -u))"
-
+  unexpected="$(brew_profile_drift_entries "${ACTIVE_PROFILE}" "${REPO_ROOT}" "${kind}" || true)"
   if [[ -n "${unexpected}" ]]; then
     warn "Brew profile drift: ${label} installed outside '${ACTIVE_PROFILE}' profile"
     printf '%s\n' "${unexpected}" | sed 's/^/    /'
@@ -130,6 +79,7 @@ REQUIRED_FAILED=0
 echo
 printf '\033[1m=== dotfiles doctor ===\033[0m\n'
 printf 'Active profile: %s\n' "${ACTIVE_PROFILE}"
+info "Daily checks live in: make status / make ai-audit / make dashboard"
 if [[ "${PROFILE_IS_EXPLICIT}" -ne 1 ]]; then
   warn "No persisted machine profile yet; defaulting to 'core'"
 fi
@@ -396,6 +346,7 @@ fi
 echo
 if [[ "$REQUIRED_FAILED" -eq 0 ]]; then
   printf '\033[1;32mAll required checks passed.\033[0m\n\n'
+  printf 'Use `make status` for the quick pass and `make doctor` when you want deeper verification.\n'
 else
   printf '\033[1;31m%d required check(s) failed — see above.\033[0m\n\n' "$REQUIRED_FAILED"
   exit 1

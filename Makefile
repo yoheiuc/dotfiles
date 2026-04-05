@@ -1,4 +1,4 @@
-.PHONY: help tips status ai-audit dashboard install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home doctor test test-scripts uninstall
+.PHONY: help tips status ai-audit dashboard dashboard-open install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home doctor test test-scripts uninstall
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -13,7 +13,10 @@ ai-audit: ## ローカル管理の AI 設定だけを詳しく確認
 	bash scripts/ai-audit.sh
 
 dashboard: ## status と ai-audit を Markdown にまとめる
-	bash scripts/dashboard.sh
+	OUTPUT="$(OUTPUT)" bash scripts/dashboard.sh
+
+dashboard-open: ## Markdown レポートを生成して開く
+	OUTPUT="$(OUTPUT)" OPEN_DASHBOARD=1 bash scripts/dashboard.sh --open
 
 install: ## 新しいMacのセットアップ (core のみ)
 	bash scripts/bootstrap.sh core
