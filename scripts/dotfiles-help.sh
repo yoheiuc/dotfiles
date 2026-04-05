@@ -14,6 +14,7 @@ printf '\033[1m=== dotfiles help ===\033[0m\n'
 printf 'Active profile: %s\n' "${ACTIVE_PROFILE}"
 
 section "Daily"
+printf '  make status       # 今の状態を短く確認\n'
 printf '  make preview      # 変更前の確認\n'
 printf '  make update       # pull + apply + install (cleanup なし)\n'
 printf '  make doctor       # 状態確認\n'
