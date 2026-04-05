@@ -1,4 +1,4 @@
-.PHONY: help tips status ai-audit install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home doctor test test-scripts uninstall
+.PHONY: help tips status ai-audit dashboard install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home doctor test test-scripts uninstall
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -11,6 +11,9 @@ status: ## 日常確認に必要な状態を短く表示
 
 ai-audit: ## ローカル管理の AI 設定だけを詳しく確認
 	bash scripts/ai-audit.sh
+
+dashboard: ## status と ai-audit を Markdown にまとめる
+	bash scripts/dashboard.sh
 
 install: ## 新しいMacのセットアップ (core のみ)
 	bash scripts/bootstrap.sh core
@@ -85,6 +88,7 @@ test-scripts: ## shell スクリプトの回帰テストを実行
 	bash tests/dothelp.sh
 	bash tests/status.sh
 	bash tests/ai-audit.sh
+	bash tests/dashboard.sh
 
 uninstall: ## dotfiles をアンインストール
 	bash scripts/uninstall.sh

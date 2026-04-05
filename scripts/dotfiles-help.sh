@@ -16,6 +16,7 @@ printf 'Active profile: %s\n' "${ACTIVE_PROFILE}"
 section "Daily"
 printf '  make status       # 今の状態を短く確認\n'
 printf '  make ai-audit     # AI 設定だけを詳しく確認\n'
+printf '  make dashboard    # Markdown の状態レポートを生成\n'
 printf '  make preview      # 変更前の確認\n'
 printf '  make update       # pull + apply + install (cleanup なし)\n'
 printf '  make doctor       # 状態確認\n'
