@@ -67,6 +67,7 @@ section "Local Config Files"
 describe_file "Codex config" "${HOME}/.codex/config.toml"
 describe_file "Claude settings" "${HOME}/.claude/settings.json"
 describe_file "Gemini settings" "${HOME}/.gemini/settings.json"
+describe_file "Serena config" "${HOME}/.serena/serena_config.yml"
 
 section "Shared Guidance"
 describe_file "Codex hooks" "${HOME}/.codex/hooks.json"
@@ -80,6 +81,35 @@ scan_file_for_legacy_patterns "Gemini settings" "${HOME}/.gemini/settings.json"
 scan_file_for_legacy_patterns "Codex hooks" "${HOME}/.codex/hooks.json"
 scan_file_for_legacy_patterns "Claude guidance" "${HOME}/.claude/CLAUDE.md"
 scan_file_for_legacy_patterns "AGENTS" "${HOME}/AGENTS.md"
+
+section "Serena Config"
+if [[ -f "${HOME}/.serena/serena_config.yml" ]]; then
+  if ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^language_backend:[[:space:]]*LSP([[:space:]]|$)'; then
+    ok "Serena config: language_backend is LSP"
+  else
+    attention "Serena config: language_backend should be LSP"
+  fi
+
+  if ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^web_dashboard:[[:space:]]*true([[:space:]]|$)'; then
+    ok "Serena config: web_dashboard enabled"
+  else
+    attention "Serena config: web_dashboard should be true"
+  fi
+
+  if ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^web_dashboard_open_on_launch:[[:space:]]*false([[:space:]]|$)'; then
+    ok "Serena config: dashboard auto-open disabled"
+  else
+    attention "Serena config: web_dashboard_open_on_launch should be false"
+  fi
+
+  if ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^project_serena_folder_location:[[:space:]]*"\$projectDir/\.serena"([[:space:]]|$)'; then
+    ok "Serena config: project metadata stored in-project"
+  else
+    attention 'Serena config: project_serena_folder_location should be "$projectDir/.serena"'
+  fi
+else
+  attention "Serena config: missing (${HOME}/.serena/serena_config.yml)"
+fi
 
 section "Backup Files"
 report_optional_backups "Codex config backups" "${HOME}/.codex/config.toml.pre-unmanage-*"

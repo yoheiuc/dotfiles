@@ -401,6 +401,8 @@ Gemini は補助用途の one-shot コマンドを用意しています。
 
 **Serena MCP** は Claude Code / Codex の両方で使う前提です。`~/.local/bin/serena-mcp` wrapper 経由で起動し、Homebrew の `uvx` とブラウザ自動起動抑止を明示しています。wrapper はデフォルトで `index-project` も先に実行するため、普段は index 更新を手で貼り付けなくても追従します（失敗時は MCP 起動を優先して継続）。
 
+`~/.serena/serena_config.yml` 自体は local state として各マシンに残しますが、`make status` / `make ai-audit` / `make doctor` で主要キー（`language_backend: LSP`、dashboard 設定、`project_serena_folder_location`）は監査するようにしています。
+
 note のセットアップ手順を日常運用へ落とし込むために、dotfiles 側では `scripts/serena-bootstrap.sh`（`make serena-index`）を用意しています。任意のプロジェクトで次を実行すると、`index-project` と MCP 接続確認をまとめて実行します。
 
 ```bash

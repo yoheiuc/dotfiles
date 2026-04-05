@@ -30,6 +30,14 @@ ai_config_has_legacy_settings() {
   grep -Eq "${pattern}" "${path}"
 }
 
+ai_config_file_contains_regex() {
+  local path="$1"
+  local pattern="$2"
+
+  [[ -f "${path}" ]] || return 1
+  grep -Eq "${pattern}" "${path}"
+}
+
 ai_config_backup_matches() {
   local glob_pattern="$1"
   compgen -G "${glob_pattern}" || true

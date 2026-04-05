@@ -90,6 +90,7 @@ test: test-scripts ## 回帰テストを実行
 test-scripts: ## shell スクリプトの回帰テストを実行
 	bash tests/profile.sh
 	bash tests/doctor.sh
+	bash tests/serena-bootstrap.sh
 	bash tests/serena-wrapper.sh
 	bash tests/brew-tools.sh
 	bash tests/dothelp.sh

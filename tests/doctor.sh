@@ -145,15 +145,16 @@ run_doctor() {
   mkdir -p "${home_dir}/.config/git/hooks" "${home_dir}/.config/dotfiles" "${home_dir}/.codex"
   : > "${home_dir}/.config/git/hooks/pre-commit"
   chmod +x "${home_dir}/.config/git/hooks/pre-commit"
-  mkdir -p "${home_dir}/dotfiles/scripts/lib"
+  mkdir -p "${home_dir}/dotfiles/scripts/lib" "${home_dir}/.serena"
   cp "${REPO_ROOT}/scripts/lib/brew-profile.sh" "${home_dir}/dotfiles/scripts/lib/brew-profile.sh"
+  cp "${REPO_ROOT}/scripts/lib/ai-config.sh" "${home_dir}/dotfiles/scripts/lib/ai-config.sh"
 
   env HOME="${home_dir}" PATH="${STUB_BIN}:${ORIGINAL_PATH}" "$@" DOTFILES_REPO_ROOT="${home_dir}/dotfiles" \
     bash "${REPO_ROOT}/scripts/doctor.sh"
 }
 
 home_ok="${tmpdir}/home-ok"
-mkdir -p "${home_ok}/.config/dotfiles" "${home_ok}/.codex"
+mkdir -p "${home_ok}/.config/dotfiles" "${home_ok}/.codex" "${home_ok}/.serena"
 printf 'home\n' > "${home_ok}/.config/dotfiles/profile"
 cat > "${home_ok}/.claude.json" <<'EOF'
 {
@@ -172,6 +173,12 @@ EOF
 mkdir -p "${home_ok}/.codex/skills/codex-auto-save-memory/scripts"
 : > "${home_ok}/.codex/hooks.json"
 : > "${home_ok}/.codex/skills/codex-auto-save-memory/scripts/autosave_memory.py"
+cat > "${home_ok}/.serena/serena_config.yml" <<'EOF'
+language_backend: LSP
+web_dashboard: true
+web_dashboard_open_on_launch: false
+project_serena_folder_location: "$projectDir/.serena"
+EOF
 
 run_capture run_doctor "${home_ok}" \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
@@ -182,11 +189,12 @@ run_capture run_doctor "${home_ok}" \
 assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy home profile case"
 assert_contains "${RUN_OUTPUT}" "Daily checks live in: make status / make ai-audit / make dashboard" "doctor should point to the lighter commands"
 assert_contains "${RUN_OUTPUT}" "No Brew profile drift detected for 'home'" "doctor should report clean drift status"
+assert_contains "${RUN_OUTPUT}" "serena config: language_backend = LSP" "doctor should validate Serena global config"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered (interactive health check timed out)" "doctor should accept Claude timeout fallback when serena is registered"
 assert_contains "${RUN_OUTPUT}" "serena MCP: enabled via wrapper" "doctor should recognize Codex wrapper configuration"
 
 home_drift="${tmpdir}/home-drift"
-mkdir -p "${home_drift}/.config/dotfiles" "${home_drift}/.codex"
+mkdir -p "${home_drift}/.config/dotfiles" "${home_drift}/.codex" "${home_drift}/.serena"
 printf 'core\n' > "${home_drift}/.config/dotfiles/profile"
 cat > "${home_drift}/.codex/config.toml" <<'EOF'
 [features]
@@ -195,6 +203,12 @@ EOF
 mkdir -p "${home_drift}/.codex/skills/codex-auto-save-memory/scripts"
 : > "${home_drift}/.codex/hooks.json"
 : > "${home_drift}/.codex/skills/codex-auto-save-memory/scripts/autosave_memory.py"
+cat > "${home_drift}/.serena/serena_config.yml" <<'EOF'
+language_backend: JetBrains
+web_dashboard: false
+web_dashboard_open_on_launch: true
+project_serena_folder_location: "/tmp/serena"
+EOF
 
 run_capture run_doctor "${home_drift}" \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
@@ -203,6 +217,7 @@ run_capture run_doctor "${home_drift}" \
   CODEX_MCP_LIST_OUTPUT=''
 assert_eq "0" "${RUN_STATUS}" "doctor should stay green when only optional drift warnings are present"
 assert_contains "${RUN_OUTPUT}" "Brew profile drift: casks installed outside 'core' profile" "doctor should warn on cask drift"
+assert_contains "${RUN_OUTPUT}" "serena config: language_backend is not LSP" "doctor should warn on Serena config drift"
 assert_contains "${RUN_OUTPUT}" "bitwarden" "doctor should list drifting cask names"
 
 pass_test "tests/doctor.sh"

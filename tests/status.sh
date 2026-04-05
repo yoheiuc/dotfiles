@@ -18,7 +18,8 @@ mkdir -p \
   "${tmpdir}/home/.config/dotfiles" \
   "${tmpdir}/home/.codex" \
   "${tmpdir}/home/.claude" \
-  "${tmpdir}/home/.gemini"
+  "${tmpdir}/home/.gemini" \
+  "${tmpdir}/home/.serena"
 
 cat > "${fake_repo}/home/dot_Brewfile.core" <<'EOF'
 brew "git"
@@ -124,9 +125,16 @@ model = "gpt-5.4"
 EOF
 : > "${HOME}/.claude/settings.json"
 : > "${HOME}/.gemini/settings.json"
+: > "${HOME}/.serena/serena_config.yml"
 : > "${HOME}/.codex/hooks.json"
 : > "${HOME}/.claude/CLAUDE.md"
 : > "${HOME}/AGENTS.md"
+cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
+language_backend: LSP
+web_dashboard: true
+web_dashboard_open_on_launch: false
+project_serena_folder_location: "$projectDir/.serena"
+EOF
 
 run_capture env \
   GIT_STATUS_OUT=$'## main...origin/main\n' \
@@ -141,6 +149,7 @@ assert_contains "${RUN_OUTPUT}" "working tree: clean" "status should report a cl
 assert_contains "${RUN_OUTPUT}" "chezmoi managed files: clean" "status should report a clean chezmoi state"
 assert_contains "${RUN_OUTPUT}" "home Brew profile: all declared packages present" "status should report Brew health"
 assert_contains "${RUN_OUTPUT}" "Codex config: no legacy bridge settings detected" "status should audit Codex config"
+assert_contains "${RUN_OUTPUT}" "Serena config: expected defaults detected" "status should audit Serena config"
 assert_contains "${RUN_OUTPUT}" "Status looks good." "status should summarize a clean state"
 
 cat > "${HOME}/.codex/config.toml" <<'EOF'
@@ -149,6 +158,12 @@ approval_policy = "never"
 sandbox_mode = "danger-full-access"
 EOF
 rm -f "${HOME}/.gemini/settings.json"
+cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
+language_backend: JetBrains
+web_dashboard: false
+web_dashboard_open_on_launch: true
+project_serena_folder_location: "/tmp/serena"
+EOF
 
 run_capture env \
   GIT_STATUS_OUT=$'## main...origin/main\n M README.md\n' \
@@ -163,6 +178,7 @@ assert_contains "${RUN_OUTPUT}" "chezmoi managed files: pending changes detected
 assert_contains "${RUN_OUTPUT}" "home Brew profile: missing packages or check failed" "status should warn on Brew failures"
 assert_contains "${RUN_OUTPUT}" "Gemini settings: missing" "status should report missing local settings"
 assert_contains "${RUN_OUTPUT}" "Codex config: legacy bridge/auto-approval settings detected" "status should detect legacy Codex settings"
+assert_contains "${RUN_OUTPUT}" "Serena config: expected defaults drifted" "status should detect Serena config drift"
 assert_contains "${RUN_OUTPUT}" "Attention needed:" "status should summarize warnings"
 
 pass_test "tests/status.sh"

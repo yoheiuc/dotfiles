@@ -8,6 +8,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${REPO_ROOT}/scripts/lib/ai-config.sh"
 source "${REPO_ROOT}/scripts/lib/brew-profile.sh"
 
 ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
@@ -193,6 +194,39 @@ if uv --version &>/dev/null; then
 else
   warn "uv not found — needed for Serena MCP (uvx)"
 fi
+
+section "Serena config (optional)"
+SERENA_CONFIG_PATH="${HOME}/.serena/serena_config.yml"
+if [[ -f "${SERENA_CONFIG_PATH}" ]]; then
+  ok "serena config: present (${SERENA_CONFIG_PATH})"
+
+  if ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^language_backend:[[:space:]]*LSP([[:space:]]|$)'; then
+    ok "serena config: language_backend = LSP"
+  else
+    warn "serena config: language_backend is not LSP"
+  fi
+
+  if ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^web_dashboard:[[:space:]]*true([[:space:]]|$)'; then
+    ok "serena config: web_dashboard = true"
+  else
+    warn "serena config: web_dashboard should be true"
+  fi
+
+  if ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^web_dashboard_open_on_launch:[[:space:]]*false([[:space:]]|$)'; then
+    ok "serena config: dashboard auto-open disabled"
+  else
+    warn "serena config: web_dashboard_open_on_launch should be false"
+  fi
+
+  if ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^project_serena_folder_location:[[:space:]]*"\$projectDir/\.serena"([[:space:]]|$)'; then
+    ok "serena config: project metadata stored in-project"
+  else
+    warn 'serena config: project_serena_folder_location should be "$projectDir/.serena"'
+  fi
+else
+  warn "serena config missing — expected at ${SERENA_CONFIG_PATH}"
+fi
+unset SERENA_CONFIG_PATH
 
 section "Ghostty (optional)"
 # Ghostty CLI may not be in PATH when installed as a .app bundle.
