@@ -11,6 +11,13 @@ fi
 export HOME="${HOME}"
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
 
+project_dir="$(pwd)"
+if [[ "${SERENA_AUTO_INDEX:-1}" != "0" ]] && git -C "${project_dir}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  /opt/homebrew/bin/uvx \
+    --from git+https://github.com/oraios/serena \
+    serena index-project "${project_dir}" >/dev/null 2>&1 || true
+fi
+
 exec /opt/homebrew/bin/uvx \
   --from git+https://github.com/oraios/serena \
   serena start-mcp-server \
