@@ -11,4 +11,5 @@
 - Codex は `~/AGENTS.md` と skill/alias を管理し、`~/.codex/config.toml` はローカル管理にする。auth や sessions も管理しない。
 - Codex には `fast` / `review` / `deep` profile と `cx` / `cxf` / `cxr` / `cxd` / `cxl` alias を入れている。
 - マシン role は `core` / `home` の 2 層に整理し、`~/.config/dotfiles/profile` に保存する。`make preview` / `make update` / `make doctor` はその値を既定で使う。
+- `make status` は日常確認用、`make ai-audit` はローカル管理の AI 設定確認用に使い分ける。
 - README は全面的に日本語化済みで、今の運用方針に合わせて更新済み。

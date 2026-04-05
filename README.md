@@ -79,6 +79,7 @@ make help
 | ターゲット | 内容 | 再実行 |
 |---|---|---|
 | `make status` | 日常確認に必要な状態を短く表示 | ✓ |
+| `make ai-audit` | ローカル管理の AI 設定だけを詳しく確認 | ✓ |
 | `make install` | core Brew + `chezmoi apply` | ✓ |
 | `make install-home` | core + home + `post-setup` | ✓ |
 | `make preview` | `chezmoi diff` + dry-run + brew preview (現在のプロファイル) | ✓ |
@@ -105,6 +106,7 @@ make help
 ```bash
 cd ~/dotfiles
 make status
+make ai-audit
 make preview
 make update
 make update-home
@@ -115,7 +117,7 @@ make brew-diff
 make tips
 ```
 
-ふだんは `make status` でざっと状態を見てから、`make preview` / `make update` で現在のプロファイルに追従します。  
+ふだんは `make status` でざっと状態を見て、AI 設定を触ったあとは `make ai-audit` も使いながら、`make preview` / `make update` で現在のプロファイルに追従します。  
 別プロファイルを一時的に見たいときだけ `make preview-home` を使います。
 cleanup まで含めて Homebrew 実体を定義どおりに寄せたいときは `make sync` / `make sync-home` を使います。
 会社 PC で明示的に `core` へ寄せたいときは `make sync-core` を使います。
