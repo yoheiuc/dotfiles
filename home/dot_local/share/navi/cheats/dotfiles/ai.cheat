@@ -27,6 +27,20 @@ gmr
 # 現在の diff を Gemini に要約させる
 gms
 
+% aider, ai
+
+# Aider を起動
+aider
+
+# 特定のファイルを追加して Aider を起動
+aider <file1> <file2>
+
+# OpenAI 互換 API キーで Aider を起動
+OPENAI_API_KEY=<key> aider
+
+# Aider のバージョンを確認
+aider --version
+
 % claude, ai
 
 # Claude Code を起動 (対話モード)

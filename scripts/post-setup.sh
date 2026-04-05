@@ -49,6 +49,15 @@ else
   fi
 fi
 
+# ---- Aider CLI -------------------------------------------------------------
+log "Aider CLI..."
+
+if command -v aider &>/dev/null; then
+  ok "Aider already installed: $(aider --version 2>/dev/null | head -1 || true)"
+else
+  warn "aider not found — install via Brewfile (brew \"aider\")"
+fi
+
 # ---- Serena MCP (Claude Code / Codex) -------------------------------------
 log "Serena MCP registration..."
 

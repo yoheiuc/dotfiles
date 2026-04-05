@@ -394,6 +394,8 @@ Gemini は補助用途の one-shot コマンドを用意しています。
 - `gmr [追加指示]` = 現在の git diff を Gemini にレビューさせる
 - `gms [追加指示]` = 現在の git diff を Gemini に要約させる
 
+`aider` も core Brew profile に含めています。git 管理下のコードを端末から直接編集させたいときの補助用途として使えます。
+
 `fast` は軽い確認や小修正向け、`review` は読解やレビュー向け、`deep` は長めの実装や整理向けです。
 
 **Codex CLI** は `post-setup.sh` が公式 npm パッケージ経由で導入します。  

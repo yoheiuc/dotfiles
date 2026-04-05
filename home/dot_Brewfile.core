@@ -17,6 +17,7 @@ brew "git-lfs"            # large file storage
 brew "gh"                 # GitHub CLI
 brew "ghq"                # Manage local clones
 brew "lazygit"            # TUI git client
+brew "aider"              # AI pair programming in terminal
 brew "gemini-cli"         # Gemini CLI
 brew "jq"                 # JSON processor
 brew "yq"                 # YAML/JSON/TOML processor
