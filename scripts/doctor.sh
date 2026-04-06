@@ -22,7 +22,6 @@ warn()    { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 fail()    { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=1; }
 info()    { printf '  - %s\n' "$*"; }
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
-strip_codex_path_warning() { sed '/^WARNING: proceeding, even though we could not update PATH:/d'; }
 report_profile_drift() {
   local kind="$1"
   local label unexpected
@@ -43,38 +42,6 @@ report_profile_drift() {
 
   return 1
 }
-run_with_timeout() {
-  local timeout_seconds="$1"
-  shift
-  python3 - "$timeout_seconds" "$@" <<'PY'
-import subprocess
-import sys
-
-timeout = float(sys.argv[1])
-cmd = sys.argv[2:]
-
-def write_maybe_bytes(stream, value):
-    if value is None:
-        return
-    if isinstance(value, bytes):
-        stream.write(value.decode("utf-8", errors="replace"))
-    else:
-        stream.write(value)
-
-try:
-    completed = subprocess.run(cmd, text=True, capture_output=True, timeout=timeout)
-except subprocess.TimeoutExpired as exc:
-    write_maybe_bytes(sys.stdout, exc.stdout)
-    write_maybe_bytes(sys.stderr, exc.stderr)
-    sys.stderr.write(f"Timed out after {timeout:g}s\n")
-    raise SystemExit(124)
-
-write_maybe_bytes(sys.stdout, completed.stdout)
-write_maybe_bytes(sys.stderr, completed.stderr)
-raise SystemExit(completed.returncode)
-PY
-}
-
 REQUIRED_FAILED=0
 
 echo
@@ -294,28 +261,32 @@ section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
   ok "$(claude --version 2>&1 | head -1)"
   printf '  MCP servers registered (timeout: 15s):\n'
-  claude_mcp_list_out="$(run_with_timeout 15 claude mcp list 2>&1 || true)"
+  claude_mcp_list_out="$(ai_config_run_with_timeout 15 claude mcp list 2>&1 || true)"
   printf '%s\n' "$claude_mcp_list_out" | sed 's/^/    /'
-  if printf '%s\n' "$claude_mcp_list_out" | grep -q '^Timed out after '; then
-    if rg -q '"serena"[[:space:]]*:' "${HOME}/.claude.json" 2>/dev/null; then
+  case "$(ai_config_claude_serena_registration_state "${claude_mcp_list_out}" "${HOME}/.claude.json")" in
+    connected)
+      ok "serena MCP: connected"
+      ;;
+    disconnected)
+      warn "serena MCP: found but not connected"
+      ;;
+    registered-timeout)
       ok "serena MCP: registered (interactive health check timed out)"
-    else
+      ;;
+    timeout)
       warn "serena MCP: check timed out"
-    fi
-  elif printf '%s\n' "$claude_mcp_list_out" | grep -Eq '^serena:.*- ✓ Connected$'; then
-    ok "serena MCP: connected"
-  elif printf '%s\n' "$claude_mcp_list_out" | grep -q '^serena:'; then
-    warn "serena MCP: found but not connected"
-  else
-    warn "serena MCP: not registered — run: ./scripts/post-setup.sh"
-  fi
+      ;;
+    *)
+      warn "serena MCP: not registered — run: make ai-repair"
+      ;;
+  esac
 else
   warn "claude not found — install via Brewfile (cask \"claude-code\")"
 fi
 
 section "Gemini CLI (optional)"
 if command -v gemini &>/dev/null; then
-  gemini_version_out="$(run_with_timeout 5 gemini --version 2>&1 || true)"
+  gemini_version_out="$(ai_config_run_with_timeout 5 gemini --version 2>&1 || true)"
   gemini_version_line="$(printf '%s\n' "$gemini_version_out" | head -1)"
   if printf '%s\n' "$gemini_version_out" | grep -q '^Timed out after '; then
     warn "gemini found but --version timed out"
@@ -330,7 +301,7 @@ fi
 
 section "Codex (optional)"
 if command -v codex &>/dev/null; then
-  codex_version_line="$(codex --version 2>&1 | strip_codex_path_warning | head -1)"
+  codex_version_line="$(codex --version 2>&1 | ai_config_strip_codex_path_warning | head -1)"
   if [[ -n "$codex_version_line" ]]; then
     ok "$codex_version_line"
   else
@@ -338,19 +309,26 @@ if command -v codex &>/dev/null; then
   fi
 
   printf '  MCP servers registered (timeout: 8s):\n'
-  codex_mcp_list_out="$(run_with_timeout 8 codex mcp list 2>&1 | strip_codex_path_warning || true)"
+  codex_mcp_list_out="$(ai_config_run_with_timeout 8 codex mcp list 2>&1 | ai_config_strip_codex_path_warning || true)"
   printf '%s\n' "$codex_mcp_list_out" | sed 's/^/    /'
-  if printf '%s\n' "$codex_mcp_list_out" | grep -Eq "^serena[[:space:]]+${HOME}/\\.local/bin/serena-mcp[[:space:]].*[[:space:]]enabled[[:space:]]"; then
-    ok "serena MCP: enabled via wrapper"
-  elif printf '%s\n' "$codex_mcp_list_out" | grep -Eq '^serena[[:space:]]+uvx[[:space:]].*[[:space:]]enabled[[:space:]]'; then
-    warn "serena MCP: enabled with legacy uvx command — run: chezmoi apply"
-  elif printf '%s\n' "$codex_mcp_list_out" | grep -q '^serena[[:space:]]'; then
-    warn "serena MCP: configured with unexpected command"
-  elif printf '%s\n' "$codex_mcp_list_out" | grep -q '^Timed out after '; then
-    warn "serena MCP: check timed out"
-  else
-    warn "serena MCP: not registered for Codex — run: ./scripts/post-setup.sh"
-  fi
+  case "$(ai_config_codex_serena_registration_state "${codex_mcp_list_out}" "${HOME}/.local/bin/serena-mcp")" in
+    wrapper)
+      ok "serena MCP: enabled via wrapper"
+      ;;
+    legacy-uvx)
+      warn "serena MCP: enabled with legacy uvx command — run: make ai-repair"
+      warn "  Then restart Codex and close any old terminals still using stale MCP settings"
+      ;;
+    unexpected)
+      warn "serena MCP: configured with unexpected command — run: make ai-repair"
+      ;;
+    timeout)
+      warn "serena MCP: check timed out"
+      ;;
+    *)
+      warn "serena MCP: not registered for Codex — run: make ai-repair"
+      ;;
+  esac
 
   if rg -q '^[[:space:]]*codex_hooks[[:space:]]*=[[:space:]]*true' "${HOME}/.codex/config.toml" 2>/dev/null; then
     ok "codex hooks: enabled"

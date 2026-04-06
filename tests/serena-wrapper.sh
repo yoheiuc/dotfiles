@@ -28,8 +28,8 @@ run_capture env \
   bash -lc "cd '${repo_auto_index}/subdir' && bash '${REPO_ROOT}/home/dot_local/bin/executable_serena-mcp' codex"
 assert_eq "0" "${RUN_STATUS}" "serena wrapper should succeed when auto-index is enabled"
 auto_index_log="$(cat "${tmpdir}/uvx-auto-index.log")"
-assert_contains "${auto_index_log}" "serena index-project ${repo_auto_index_real}" "wrapper should run serena index-project for the git root before starting MCP"
-assert_contains "${auto_index_log}" "serena start-mcp-server --context=codex --project-from-cwd --open-web-dashboard False" "wrapper should forward the expected Serena MCP arguments"
+assert_contains "${auto_index_log}" "-q --from git+https://github.com/oraios/serena serena index-project ${repo_auto_index_real}" "wrapper should run serena index-project quietly for the git root before starting MCP"
+assert_contains "${auto_index_log}" "-q --from git+https://github.com/oraios/serena serena start-mcp-server --context=codex --project-from-cwd --open-web-dashboard False" "wrapper should forward the expected Serena MCP arguments quietly"
 
 repo_skip_index="${tmpdir}/repo-skip-index"
 git init -q "${repo_skip_index}"
@@ -56,6 +56,6 @@ run_capture env \
 assert_eq "0" "${RUN_STATUS}" "serena wrapper should succeed outside a git repo"
 non_git_log="$(cat "${tmpdir}/uvx-non-git.log")"
 assert_not_contains "${non_git_log}" "serena index-project" "wrapper should not run index-project outside a git repo"
-assert_contains "${non_git_log}" "serena start-mcp-server --context=codex --project-from-cwd --open-web-dashboard False" "wrapper should still start MCP outside a git repo"
+assert_contains "${non_git_log}" "-q --from git+https://github.com/oraios/serena serena start-mcp-server --context=codex --project-from-cwd --open-web-dashboard False" "wrapper should still start MCP quietly outside a git repo"
 
 pass_test "tests/serena-wrapper.sh"

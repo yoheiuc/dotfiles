@@ -15,6 +15,8 @@
 # Usage: ./scripts/post-setup.sh
 set -euo pipefail
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 log()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
@@ -59,49 +61,12 @@ else
 fi
 
 # ---- Serena MCP (Claude Code / Codex) -------------------------------------
-log "Serena MCP registration..."
-
 if ! command -v uvx &>/dev/null; then
+  log "Serena MCP registration..."
   warn "uvx not found — Serena MCP skipped (install the core Brew profile first)"
 else
-
-SERENA_MCP_WRAPPER="${HOME}/.local/bin/serena-mcp"
-
-if claude mcp get serena >/dev/null 2>&1; then
-  if claude mcp get serena 2>/dev/null | grep -Fq -- "Command: ${SERENA_MCP_WRAPPER}"; then
-    ok "Claude Code: Serena already registered"
-  else
-    log "Claude Code: updating Serena wrapper..."
-    claude mcp remove serena -s user
-    claude mcp add --scope user serena -- \
-      "${SERENA_MCP_WRAPPER}" claude-code
-  fi
-else
-  log "Registering Serena for Claude Code (user scope)..."
-  claude mcp add --scope user serena -- \
-    "${SERENA_MCP_WRAPPER}" claude-code
+  bash "${REPO_ROOT}/scripts/ai-repair.sh"
 fi
-ok "Claude Code: Serena registered"
-
-if command -v codex &>/dev/null; then
-  if codex mcp get serena --json >/dev/null 2>&1; then
-    if codex mcp get serena --json 2>/dev/null | grep -Fq -- "\"${SERENA_MCP_WRAPPER}\""; then
-      ok "Codex: Serena already registered"
-    else
-      log "Codex: updating Serena wrapper..."
-      codex mcp remove serena
-      codex mcp add serena -- "${SERENA_MCP_WRAPPER}" codex
-    fi
-  else
-    log "Registering Serena for Codex..."
-    codex mcp add serena -- "${SERENA_MCP_WRAPPER}" codex
-  fi
-  ok "Codex: Serena registered"
-else
-  warn "codex not found — Serena for Codex skipped"
-fi
-
-fi  # end uvx check
 
 # ---- Sequential Thinking MCP (Claude Code / Codex) ------------------------
 log "Sequential Thinking MCP..."

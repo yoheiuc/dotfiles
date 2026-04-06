@@ -80,6 +80,7 @@ make help
 |---|---|---|
 | `make status` | 日常確認に必要な状態を短く表示 | ✓ |
 | `make ai-audit` | ローカル管理の AI 設定だけを詳しく確認 | ✓ |
+| `make ai-repair` | AI 周りの local drift を修復 (`Serena config` / MCP registration) | ✓ |
 | `make dashboard` | `status` と `ai-audit` を Markdown にまとめる | ✓ |
 | `make dashboard-open` | Markdown レポートを生成して開く | ✓ |
 | `make install` | core Brew + `chezmoi apply` | ✓ |
@@ -110,6 +111,7 @@ make help
 cd ~/dotfiles
 make status
 make ai-audit
+make ai-repair
 make dashboard
 make dashboard OUTPUT=docs/last-dashboard.md
 make dashboard-open OUTPUT=docs/last-dashboard.md
@@ -123,7 +125,7 @@ make brew-diff
 make tips
 ```
 
-ふだんは `make status` でざっと状態を見て、AI 設定を触ったあとは `make ai-audit`、共有しやすい形で残したいときは `make dashboard OUTPUT=docs/last-dashboard.md` を使いながら、`make preview` / `make update` で現在のプロファイルに追従します。  
+ふだんは `make status` でざっと状態を見て、AI 設定を触ったあとは `make ai-audit`、Serena や MCP 登録が怪しいときは `make ai-repair`、共有しやすい形で残したいときは `make dashboard OUTPUT=docs/last-dashboard.md` を使いながら、`make preview` / `make update` で現在のプロファイルに追従します。  
 別プロファイルを一時的に見たいときだけ `make preview-home` を使います。
 cleanup まで含めて Homebrew 実体を定義どおりに寄せたいときは `make sync` / `make sync-home` を使います。
 会社 PC で明示的に `core` へ寄せたいときは `make sync-core` を使います。
@@ -166,7 +168,7 @@ dothelp
 make doctor
 ```
 
-`make doctor` は深い確認用です。日常確認は `make status`、AI 設定確認は `make ai-audit`、共有用の記録は `make dashboard` を先に使う想定です。
+`make doctor` は深い確認用です。日常確認は `make status`、AI 設定確認は `make ai-audit`、修復は `make ai-repair`、共有用の記録は `make dashboard` を先に使う想定です。
 
 `doctor.sh` は次の項目を確認します。
 
@@ -405,6 +407,8 @@ Gemini は補助用途の one-shot コマンドを用意しています。
 
 `~/.serena/serena_config.yml` 自体は local state として各マシンに残しますが、`make status` / `make ai-audit` / `make doctor` で主要キー（`language_backend: LSP`、dashboard 設定、`project_serena_folder_location`）は監査するようにしています。
 
+`make ai-repair` は `~/.serena/serena_config.yml` の期待値を再生成し、Claude Code / Codex の Serena MCP 登録を wrapper に戻します。古い端末が legacy な MCP 設定を握っている場合は、修復後にその端末ごと再起動してください。
+
 note のセットアップ手順を日常運用へ落とし込むために、dotfiles 側では `scripts/serena-bootstrap.sh`（`make serena-index`）を用意しています。任意のプロジェクトで次を実行すると、`index-project` と MCP 接続確認をまとめて実行します。
 
 ```bash
@@ -427,12 +431,13 @@ codex mcp list
 
 セットアップ系のスクリプトは Bash 前提で書いているので、呼び出しは `bash` 明示です。日常利用は普段どおり `zsh` のままで問題ありません。
 
-同梱している skill は `~/.codex/skills` に入り、`chezmoi apply` で反映されます。現在は `playwright`、`screenshot`、`doc`、`pdf`、`spreadsheet`、`jupyter-notebook`、`security-best-practices` を同梱しています。たとえば:
+同梱している skill は `~/.codex/skills` に入り、`chezmoi apply` で反映されます。現在は `playwright`、`screenshot`、`doc`、`pdf`、`spreadsheet`、`jupyter-notebook`、`security-best-practices`、`ui-ux-pro-max` を同梱しています。`ui-ux-pro-max` は `nextlevelbuilder/ui-ux-pro-max-skill` の Codex 向け構成を repo 同梱化したものです。たとえば:
 
 ```zsh
 ~/.codex/skills/playwright/scripts/playwright_cli.sh open https://example.com
 ~/.codex/skills/playwright/scripts/playwright_cli.sh snapshot
 python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp --active-window
+python3 ~/.codex/skills/ui-ux-pro-max/scripts/search.py "SaaS B2B analytics" --design-system -f markdown
 ```
 
 **Superpowers plugin** は Claude Code セッション内で手動インストールです。

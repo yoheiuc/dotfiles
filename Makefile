@@ -1,4 +1,4 @@
-.PHONY: help tips status ai-audit dashboard dashboard-open install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home serena-index doctor test test-scripts uninstall
+.PHONY: help tips status ai-audit ai-repair dashboard dashboard-open install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home serena-index doctor test test-scripts uninstall
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -11,6 +11,9 @@ status: ## 日常確認に必要な状態を短く表示
 
 ai-audit: ## ローカル管理の AI 設定だけを詳しく確認
 	bash scripts/ai-audit.sh
+
+ai-repair: ## AI 周りのローカル drift を修復 (Serena config / MCP registration)
+	bash scripts/ai-repair.sh
 
 dashboard: ## status と ai-audit を Markdown にまとめる
 	OUTPUT="$(OUTPUT)" bash scripts/dashboard.sh
@@ -92,6 +95,7 @@ test-scripts: ## shell スクリプトの回帰テストを実行
 	bash tests/doctor.sh
 	bash tests/serena-bootstrap.sh
 	bash tests/serena-wrapper.sh
+	bash tests/ai-repair.sh
 	bash tests/brew-tools.sh
 	bash tests/dothelp.sh
 	bash tests/status.sh

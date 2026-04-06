@@ -21,11 +21,13 @@ fi
 
 if [[ "${SERENA_AUTO_INDEX:-1}" != "0" ]] && [[ "${is_git_repo}" == "1" ]]; then
   "${SERENA_UVX_BIN}" \
+    -q \
     --from git+https://github.com/oraios/serena \
     serena index-project "${project_dir}" >/dev/null 2>&1 || true
 fi
 
 exec "${SERENA_UVX_BIN}" \
+  -q \
   --from git+https://github.com/oraios/serena \
   serena start-mcp-server \
   --context="${context}" \
