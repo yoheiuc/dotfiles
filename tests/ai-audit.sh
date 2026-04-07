@@ -19,8 +19,22 @@ chmod +x "${tmpdir}/scripts/ai-audit.sh" "${tmpdir}/scripts/lib/ai-config.sh"
 # ---- Scenario 1: clean case ----
 cat > "${HOME}/.codex/config.toml" <<'EOF'
 model = "gpt-5.4"
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[features]
+multi_agent = true
+codex_hooks = true
+
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
 EOF
-: > "${HOME}/.claude/settings.json"
+cat > "${HOME}/.claude/settings.json" <<'EOF'
+{
+  "autoUpdatesChannel": "latest"
+}
+EOF
 : > "${HOME}/.gemini/settings.json"
 : > "${HOME}/.codex/hooks.json"
 : > "${HOME}/.claude/CLAUDE.md"
@@ -37,6 +51,9 @@ assert_eq "0" "${RUN_STATUS}" "ai-audit should succeed in the clean case"
 assert_contains "${RUN_OUTPUT}" "Codex config: present" "ai-audit should report local codex config"
 assert_contains "${RUN_OUTPUT}" "Claude settings: present" "ai-audit should report local claude settings"
 assert_contains "${RUN_OUTPUT}" "Codex config: no legacy bridge settings detected" "ai-audit should scan codex config"
+assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai-audit should validate Claude channel"
+assert_contains "${RUN_OUTPUT}" "Codex: sandbox mode is workspace-write" "ai-audit should validate Codex sandbox"
+assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: registered" "ai-audit should validate Docs MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: web_dashboard enabled" "ai-audit should validate Serena config"
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: missing" "ai-audit should report missing Claude MCP registration"
 assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: missing" "ai-audit should report missing Codex MCP registration"
@@ -52,7 +69,12 @@ sandbox_mode = "danger-full-access"
 command = "${HOME}/.local/bin/serena-mcp"
 args = ["codex"]
 EOF
-printf 'cc-bridge\n' > "${HOME}/.claude/settings.json"
+cat > "${HOME}/.claude/settings.json" <<'EOF'
+{
+  "autoUpdatesChannel": "stable"
+}
+cc-bridge
+EOF
 rm -f "${HOME}/.gemini/settings.json"
 : > "${HOME}/.codex/config.toml.pre-unmanage-test"
 cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
@@ -79,9 +101,11 @@ assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational with warnings"
 assert_contains "${RUN_OUTPUT}" "Gemini settings: missing" "ai-audit should warn on missing gemini settings"
 assert_contains "${RUN_OUTPUT}" "Codex config: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy codex settings"
 assert_contains "${RUN_OUTPUT}" "Claude settings: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy claude settings"
+assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be latest" "ai-audit should detect Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "Serena config: language_backend should be LSP" "ai-audit should detect Serena config drift"
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should detect Claude MCP registration"
 assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: registered via wrapper" "ai-audit should detect Codex wrapper registration"
+assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: missing" "ai-audit should detect missing Docs MCP"
 assert_contains "${RUN_OUTPUT}" "Codex config backups: found backup files to review or delete" "ai-audit should report backup files"
 assert_contains "${RUN_OUTPUT}" "AI config audit needs attention:" "ai-audit should summarize warnings"
 

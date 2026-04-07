@@ -9,6 +9,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
+source "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh"
 source "${REPO_ROOT}/scripts/lib/brew-profile.sh"
 
 ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
@@ -162,6 +163,29 @@ else
   warn "uv not found — needed for Serena MCP (uvx)"
 fi
 
+section "brew-autoupdate (optional)"
+if command -v launchctl >/dev/null 2>&1 && command -v plutil >/dev/null 2>&1; then
+  autoupdate_mode_summary="$(brew_autoupdate_mode_summary 2>/dev/null || printf 'without sudo support')"
+  if brew_autoupdate_matches_dotfiles_baseline 3600; then
+    ok "brew autoupdate: running (every 1h, all formulae/casks, ${autoupdate_mode_summary})"
+  elif brew_autoupdate_is_loaded; then
+    warn "brew autoupdate: loaded, but not at the dotfiles baseline"
+  elif [[ -f "$(brew_autoupdate_plist_path)" ]]; then
+    warn "brew autoupdate: plist exists, but the launch agent is not loaded"
+  else
+    warn "brew autoupdate: not configured — run: ./scripts/post-setup.sh"
+  fi
+
+  if brew_autoupdate_pinentry_available; then
+    ok "pinentry-mac: present"
+  else
+    warn "pinentry-mac: missing — sudo-required casks cannot auto-upgrade"
+  fi
+  unset autoupdate_mode_summary
+else
+  warn "brew autoupdate audit skipped — launchctl/plutil unavailable"
+fi
+
 section "Serena config (optional)"
 SERENA_CONFIG_PATH="${HOME}/.serena/serena_config.yml"
 if [[ -f "${SERENA_CONFIG_PATH}" ]]; then
@@ -260,6 +284,11 @@ fi
 section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
   ok "$(claude --version 2>&1 | head -1)"
+  if [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('autoUpdatesChannel','')" 2>/dev/null || true)" == "latest" ]]; then
+    ok "auto-update channel: latest"
+  else
+    warn "auto-update channel should be latest — run: ./scripts/post-setup.sh"
+  fi
   _claude_json="${HOME}/.claude.json"
   case "$(ai_config_mcp_registration_state "${_claude_json}" serena "${HOME}/.local/bin/serena-mcp")" in
     ok)
@@ -274,7 +303,7 @@ if command -v claude &>/dev/null; then
   esac
   unset _claude_json
 else
-  warn "claude not found — install via Brewfile (cask \"claude-code\")"
+  warn "claude not found — run: ./scripts/post-setup.sh"
 fi
 
 section "Gemini CLI (optional)"
@@ -294,6 +323,24 @@ if command -v codex &>/dev/null; then
   fi
 
   _codex_config="${HOME}/.codex/config.toml"
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('model','')" 2>/dev/null || true)" == "gpt-5.4" ]]; then
+    ok "default model: gpt-5.4"
+  else
+    warn "default model should be gpt-5.4 — run: make ai-repair"
+  fi
+
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('sandbox_mode','')" 2>/dev/null || true)" == "workspace-write" ]]; then
+    ok "sandbox mode: workspace-write"
+  else
+    warn "sandbox mode should be workspace-write — run: make ai-repair"
+  fi
+
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('approval_policy','')" 2>/dev/null || true)" == "on-request" ]]; then
+    ok "approval policy: on-request"
+  else
+    warn "approval policy should be on-request — run: make ai-repair"
+  fi
+
   case "$(ai_config_codex_mcp_state "${_codex_config}" "${HOME}/.local/bin/serena-mcp")" in
     ok)
       ok "serena MCP: registered via wrapper"
@@ -311,6 +358,18 @@ if command -v codex &>/dev/null; then
   else
     warn "codex hooks: disabled — set [features].codex_hooks = true"
   fi
+
+  case "$(ai_config_codex_mcp_url_state "${_codex_config}" openaiDeveloperDocs "https://developers.openai.com/mcp")" in
+    ok)
+      ok "OpenAI Docs MCP: registered"
+      ;;
+    wrong-url)
+      warn "OpenAI Docs MCP: wrong URL — run: make ai-repair"
+      ;;
+    missing)
+      warn "OpenAI Docs MCP: missing — run: make ai-repair"
+      ;;
+  esac
   unset _codex_config
 
   if [[ -f "${HOME}/.codex/hooks.json" ]]; then

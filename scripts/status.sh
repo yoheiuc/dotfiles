@@ -7,6 +7,7 @@ set -euo pipefail
 
 REPO_ROOT="${DOTFILES_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
+source "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh"
 source "${REPO_ROOT}/scripts/lib/brew-profile.sh"
 
 ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
@@ -134,6 +135,29 @@ fi
 
 unset brew_check_code
 
+section "brew-autoupdate"
+if command -v brew >/dev/null 2>&1 && command -v launchctl >/dev/null 2>&1 && command -v plutil >/dev/null 2>&1; then
+  autoupdate_mode_summary="$(brew_autoupdate_mode_summary 2>/dev/null || printf 'without sudo support')"
+  if brew_autoupdate_matches_dotfiles_baseline 3600; then
+    ok "brew autoupdate: running (every 1h, all formulae/casks, ${autoupdate_mode_summary})"
+  elif brew_autoupdate_is_loaded; then
+    attention "brew autoupdate: loaded, but not at the dotfiles baseline (expected 1h + upgrade + greedy cask upgrade + cleanup)"
+  elif [[ -f "$(brew_autoupdate_plist_path)" ]]; then
+    attention "brew autoupdate: plist exists, but the launch agent is not loaded"
+  else
+    attention "brew autoupdate: not configured — run: ./scripts/post-setup.sh"
+  fi
+
+  if brew_autoupdate_pinentry_available; then
+    ok "pinentry-mac: present"
+  else
+    attention "pinentry-mac: missing — sudo-required casks cannot auto-upgrade"
+  fi
+  unset autoupdate_mode_summary
+else
+  info "brew autoupdate audit skipped: brew/launchctl/plutil unavailable"
+fi
+
 section "AI Config"
 audit_local_file "Codex config" "${HOME}/.codex/config.toml"
 audit_local_file "Claude settings" "${HOME}/.claude/settings.json"
@@ -149,8 +173,37 @@ if [[ -f "${HOME}/.codex/config.toml" ]]; then
   else
     ok "Codex config: no legacy bridge settings detected"
   fi
+
+  if [[ "$(ai_config_toml_read "${HOME}/.codex/config.toml" "d.get('sandbox_mode','')" 2>/dev/null || true)" == "workspace-write" ]]; then
+    ok "Codex config: sandbox mode is workspace-write"
+  else
+    attention "Codex config: sandbox mode should be workspace-write"
+  fi
+
+  if [[ "$(ai_config_toml_read "${HOME}/.codex/config.toml" "d.get('approval_policy','')" 2>/dev/null || true)" == "on-request" ]]; then
+    ok "Codex config: approval policy is on-request"
+  else
+    attention "Codex config: approval policy should be on-request"
+  fi
+
+  case "$(ai_config_codex_mcp_url_state "${HOME}/.codex/config.toml" openaiDeveloperDocs "https://developers.openai.com/mcp")" in
+    ok)
+      ok "Codex OpenAI Docs MCP: registered"
+      ;;
+    wrong-url|missing)
+      attention "Codex OpenAI Docs MCP: missing or wrong URL"
+      ;;
+  esac
 else
   info "Codex config audit skipped: file is missing"
+fi
+
+if [[ -f "${HOME}/.claude/settings.json" ]]; then
+  if [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('autoUpdatesChannel','')" 2>/dev/null || true)" == "latest" ]]; then
+    ok "Claude settings: auto-update channel is latest"
+  else
+    attention "Claude settings: auto-update channel should be latest"
+  fi
 fi
 
 if [[ -f "${HOME}/.serena/serena_config.yml" ]]; then

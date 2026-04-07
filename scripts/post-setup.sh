@@ -2,12 +2,12 @@
 # post-setup.sh — additional setup that runs after dotfiles are applied
 #
 # Responsibility:
-#   - Install Claude Code CLI (via https://claude.ai/install.sh)
+#   - Install/update Claude Code CLI via native installer and keep it on latest
 #   - Install Codex CLI (via npm install -g @openai/codex)
 #   - Register Serena MCP server into Claude Code and Codex (idempotent)
 #   - Register Sequential Thinking MCP into Claude Code and Codex (idempotent)
 #   - Rely on chezmoi-managed Codex skills bundled in this repository
-#   - Set up brew-autoupdate (tap domt4/autoupdate + start 24h schedule)
+#   - Set up brew-autoupdate (all formulae/casks, every hour, with sudo support when available)
 #
 # Safe to re-run: already-configured items are skipped.
 # Called automatically by: make install-home
@@ -17,6 +17,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
+source "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh"
 
 log()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
@@ -25,11 +26,26 @@ warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 # ---- Claude Code CLI -------------------------------------------------------
 log "Claude Code CLI..."
 
+CLAUDE_SETTINGS_JSON="${HOME}/.claude/settings.json"
+mkdir -p "$(dirname "${CLAUDE_SETTINGS_JSON}")"
+ai_config_json_upsert_key "${CLAUDE_SETTINGS_JSON}" autoUpdatesChannel '"latest"'
+
 if command -v claude &>/dev/null; then
-  ok "Claude Code already installed: $(claude --version 2>/dev/null | head -1 || true)"
+  claude_path="$(command -v claude)"
+  if [[ "${claude_path}" == "/opt/homebrew/bin/claude" ]]; then
+    log "Migrating Claude Code from Homebrew to native latest..."
+    claude install latest
+    hash -r
+  fi
+  ok "Claude Code available: $(claude --version 2>/dev/null | head -1 || true)"
 else
-  warn "claude CLI not found — install via Brewfile (cask \"claude-code\")"
+  log "Installing Claude Code native latest..."
+  curl -fsSL https://claude.ai/install.sh | bash
+  hash -r
+  ok "Claude Code installed: $(claude --version 2>/dev/null | head -1 || true)"
 fi
+ok "Claude Code auto-update channel: latest"
+unset CLAUDE_SETTINGS_JSON claude_path
 
 # ---- Codex CLI -------------------------------------------------------------
 log "Codex CLI..."
@@ -97,13 +113,23 @@ if ! brew tap | grep -q "domt4/autoupdate"; then
   brew tap domt4/autoupdate
 fi
 
-if brew autoupdate status 2>/dev/null | grep -q "Autoupdate is installed and running"; then
-  ok "brew autoupdate: already running"
+AUTOUPDATE_INTERVAL_SECONDS=3600
+autoupdate_args=(autoupdate start "${AUTOUPDATE_INTERVAL_SECONDS}" --upgrade --greedy --cleanup --immediate)
+if brew_autoupdate_pinentry_available; then
+  autoupdate_args+=(--sudo)
 else
-  log "Starting brew autoupdate (every 24h)..."
-  brew autoupdate start 86400 --upgrade --cleanup
-  ok "brew autoupdate: started (every 24h, with upgrade + cleanup)"
+  warn "pinentry-mac not found — sudo-required casks will not auto-upgrade until the core Brew profile is synced"
 fi
+
+if brew_autoupdate_matches_dotfiles_baseline "${AUTOUPDATE_INTERVAL_SECONDS}"; then
+  ok "brew autoupdate: running (every 1h, all formulae/casks, $(brew_autoupdate_mode_summary | tr -d '\n'))"
+else
+  log "Configuring brew autoupdate (every 1h, all formulae/casks)..."
+  brew autoupdate delete >/dev/null 2>&1 || true
+  brew "${autoupdate_args[@]}"
+  ok "brew autoupdate: configured (every 1h, all formulae/casks, $(brew_autoupdate_mode_summary | tr -d '\n'))"
+fi
+unset AUTOUPDATE_INTERVAL_SECONDS autoupdate_args
 
 printf '\nVerify with: make doctor\n'
 printf '             codex login    (one-time auth)\n'

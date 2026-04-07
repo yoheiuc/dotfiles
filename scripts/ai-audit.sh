@@ -82,6 +82,71 @@ scan_file_for_legacy_patterns "Codex hooks" "${HOME}/.codex/hooks.json"
 scan_file_for_legacy_patterns "Claude guidance" "${HOME}/.claude/CLAUDE.md"
 scan_file_for_legacy_patterns "AGENTS" "${HOME}/AGENTS.md"
 
+section "Claude Code Baseline"
+if [[ -f "${HOME}/.claude/settings.json" ]]; then
+  if [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('autoUpdatesChannel','')" 2>/dev/null || true)" == "latest" ]]; then
+    ok "Claude Code: auto-update channel is latest"
+  else
+    attention "Claude Code: auto-update channel should be latest"
+  fi
+else
+  attention "Claude Code settings: missing (${HOME}/.claude/settings.json)"
+fi
+
+section "Codex Baseline"
+_codex_config="${HOME}/.codex/config.toml"
+if [[ -f "${_codex_config}" ]]; then
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('model','')" 2>/dev/null || true)" == "gpt-5.4" ]]; then
+    ok "Codex: model is gpt-5.4"
+  else
+    attention "Codex: model should be gpt-5.4"
+  fi
+
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('model_reasoning_effort','')" 2>/dev/null || true)" == "high" ]]; then
+    ok "Codex: default reasoning effort is high"
+  else
+    attention "Codex: default reasoning effort should be high"
+  fi
+
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('sandbox_mode','')" 2>/dev/null || true)" == "workspace-write" ]]; then
+    ok "Codex: sandbox mode is workspace-write"
+  else
+    attention "Codex: sandbox mode should be workspace-write"
+  fi
+
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('approval_policy','')" 2>/dev/null || true)" == "on-request" ]]; then
+    ok "Codex: approval policy is on-request"
+  else
+    attention "Codex: approval policy should be on-request"
+  fi
+
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('features',{}).get('codex_hooks',False)" 2>/dev/null || true)" == "True" ]]; then
+    ok "Codex: hooks enabled"
+  else
+    attention "Codex: hooks should be enabled"
+  fi
+
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('features',{}).get('multi_agent',False)" 2>/dev/null || true)" == "True" ]]; then
+    ok "Codex: multi-agent enabled"
+  else
+    attention "Codex: multi-agent should be enabled"
+  fi
+
+  case "$(ai_config_codex_mcp_url_state "${_codex_config}" openaiDeveloperDocs "https://developers.openai.com/mcp")" in
+    ok)
+      ok "Codex OpenAI Docs MCP: registered"
+      ;;
+    wrong-url)
+      attention "Codex OpenAI Docs MCP: wrong URL — run make ai-repair"
+      ;;
+    missing)
+      attention "Codex OpenAI Docs MCP: missing — run make ai-repair"
+      ;;
+  esac
+else
+  attention "Codex config: missing (${_codex_config})"
+fi
+
 section "Serena Config"
 if [[ -f "${HOME}/.serena/serena_config.yml" ]]; then
   if ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^language_backend:[[:space:]]*LSP([[:space:]]|$)'; then
@@ -127,7 +192,6 @@ case "$(ai_config_mcp_registration_state "${_claude_json}" serena "${_serena_wra
     ;;
 esac
 
-_codex_config="${HOME}/.codex/config.toml"
 case "$(ai_config_codex_mcp_state "${_codex_config}" "${_serena_wrapper}")" in
   ok)
     ok "Codex Serena MCP: registered via wrapper"

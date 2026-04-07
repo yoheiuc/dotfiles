@@ -18,6 +18,9 @@ SERENA_CONFIG_PATH="${SERENA_CONFIG_DIR}/serena_config.yml"
 SERENA_CONFIG_BACKUP_SUFFIX="$(date +%Y%m%d%H%M%S)"
 
 CLAUDE_JSON="${HOME}/.claude.json"
+CLAUDE_SETTINGS_JSON="${HOME}/.claude/settings.json"
+CODEX_CONFIG="${HOME}/.codex/config.toml"
+OPENAI_DOCS_MCP_URL="https://developers.openai.com/mcp"
 
 restart_needed=0
 
@@ -90,9 +93,32 @@ case "$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPP
     ;;
 esac
 
+# ---- Claude Code local settings baseline -----------------------------------
+log "Claude Code local settings..."
+mkdir -p "$(dirname "${CLAUDE_SETTINGS_JSON}")"
+if [[ "$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "d.get('autoUpdatesChannel','')" 2>/dev/null || true)" == "latest" ]]; then
+  ok "Claude Code: auto-update channel already set to latest"
+else
+  ai_config_json_upsert_key "${CLAUDE_SETTINGS_JSON}" autoUpdatesChannel '"latest"'
+  ok "Claude Code: auto-update channel set to latest"
+fi
+
+# ---- Codex baseline ---------------------------------------------------------
+log "Codex baseline..."
+mkdir -p "$(dirname "${CODEX_CONFIG}")"
+ai_config_toml_upsert_top_level "${CODEX_CONFIG}" model '"gpt-5.4"'
+ai_config_toml_upsert_top_level "${CODEX_CONFIG}" model_reasoning_effort '"high"'
+ai_config_toml_upsert_top_level "${CODEX_CONFIG}" personality '"pragmatic"'
+ai_config_toml_upsert_top_level "${CODEX_CONFIG}" sandbox_mode '"workspace-write"'
+ai_config_toml_upsert_top_level "${CODEX_CONFIG}" approval_policy '"on-request"'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[profiles.fast]" $'model = "codex-mini-latest"\nmodel_reasoning_effort = "low"\npersonality = "pragmatic"'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[profiles.review]" $'model = "gpt-5.4"\nmodel_reasoning_effort = "high"\npersonality = "pragmatic"'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[profiles.deep]" $'model = "gpt-5.4"\nmodel_reasoning_effort = "high"\npersonality = "pragmatic"'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[features]" $'multi_agent = true\ncodex_hooks = true'
+ok "Codex: baseline model/profiles/sandbox settings normalized"
+
 # ---- Codex MCP registration (TOML direct) -----------------------------------
 log "Codex MCP registration..."
-CODEX_CONFIG="${HOME}/.codex/config.toml"
 case "$(ai_config_codex_mcp_state "${CODEX_CONFIG}" "${SERENA_WRAPPER}")" in
   ok)
     ok "Codex: serena already registered with wrapper"
@@ -105,6 +131,17 @@ case "$(ai_config_codex_mcp_state "${CODEX_CONFIG}" "${SERENA_WRAPPER}")" in
   missing)
     ai_config_codex_upsert_mcp "${CODEX_CONFIG}" serena "${SERENA_WRAPPER}" codex
     ok "Codex: serena registration created"
+    restart_needed=1
+    ;;
+esac
+
+case "$(ai_config_codex_mcp_url_state "${CODEX_CONFIG}" openaiDeveloperDocs "${OPENAI_DOCS_MCP_URL}")" in
+  ok)
+    ok "Codex: OpenAI Docs MCP already registered"
+    ;;
+  wrong-url|missing)
+    ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.openaiDeveloperDocs]" "url = \"${OPENAI_DOCS_MCP_URL}\""
+    ok "Codex: OpenAI Docs MCP registered"
     restart_needed=1
     ;;
 esac

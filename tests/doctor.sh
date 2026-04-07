@@ -47,6 +47,30 @@ case "${1:-}" in
 esac
 EOF
 
+cat > "${STUB_BIN}/launchctl" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${1:-}" == "print" && "${2:-}" == "gui/$(id -u)/com.github.domt4.homebrew-autoupdate" && "${LAUNCHCTL_AUTUPDATE_LOADED:-0}" == "1" ]]; then
+  printf 'state = running\n'
+  exit 0
+fi
+
+exit 1
+EOF
+
+cat > "${STUB_BIN}/plutil" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${1:-}" == "-extract" && "${2:-}" == "StartInterval" ]]; then
+  printf '%s\n' "${PLUTIL_START_INTERVAL:-3600}"
+  exit 0
+fi
+
+exit 1
+EOF
+
 cat > "${STUB_BIN}/chezmoi" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -122,7 +146,13 @@ case "${1:-}" in
 esac
 EOF
 
-chmod +x "${STUB_BIN}/brew" "${STUB_BIN}/chezmoi" "${STUB_BIN}/git" "${STUB_BIN}/claude" "${STUB_BIN}/codex"
+cat > "${STUB_BIN}/pinentry-mac" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+exit 0
+EOF
+
+chmod +x "${STUB_BIN}/brew" "${STUB_BIN}/chezmoi" "${STUB_BIN}/git" "${STUB_BIN}/claude" "${STUB_BIN}/codex" "${STUB_BIN}/launchctl" "${STUB_BIN}/plutil" "${STUB_BIN}/pinentry-mac"
 
 run_doctor() {
   local home_dir="$1"
@@ -131,9 +161,10 @@ run_doctor() {
   mkdir -p "${home_dir}/.config/git/hooks" "${home_dir}/.config/dotfiles" "${home_dir}/.codex"
   : > "${home_dir}/.config/git/hooks/pre-commit"
   chmod +x "${home_dir}/.config/git/hooks/pre-commit"
-  mkdir -p "${home_dir}/dotfiles/scripts/lib" "${home_dir}/.serena"
+  mkdir -p "${home_dir}/dotfiles/scripts/lib" "${home_dir}/.serena" "${home_dir}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_dir}/Library/LaunchAgents"
   cp "${REPO_ROOT}/scripts/lib/brew-profile.sh" "${home_dir}/dotfiles/scripts/lib/brew-profile.sh"
   cp "${REPO_ROOT}/scripts/lib/ai-config.sh" "${home_dir}/dotfiles/scripts/lib/ai-config.sh"
+  cp "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh" "${home_dir}/dotfiles/scripts/lib/brew-autoupdate.sh"
 
   env HOME="${home_dir}" PATH="${STUB_BIN}:${ORIGINAL_PATH}" "$@" DOTFILES_REPO_ROOT="${home_dir}/dotfiles" \
     bash "${REPO_ROOT}/scripts/doctor.sh"
@@ -141,7 +172,7 @@ run_doctor() {
 
 # ---- Scenario 1: healthy home profile ----
 home_ok="${tmpdir}/home-ok"
-mkdir -p "${home_ok}/.config/dotfiles" "${home_ok}/.codex" "${home_ok}/.serena" "${home_ok}/.local/bin"
+mkdir -p "${home_ok}/.config/dotfiles" "${home_ok}/.codex" "${home_ok}/.serena" "${home_ok}/.local/bin" "${home_ok}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_ok}/Library/LaunchAgents"
 printf 'home\n' > "${home_ok}/.config/dotfiles/profile"
 cat > "${home_ok}/.claude.json" <<EOF
 {
@@ -156,12 +187,33 @@ cat > "${home_ok}/.claude.json" <<EOF
 }
 EOF
 cat > "${home_ok}/.codex/config.toml" <<EOF
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[profiles.fast]
+model = "codex-mini-latest"
+model_reasoning_effort = "low"
+personality = "pragmatic"
+
 [features]
+multi_agent = true
 codex_hooks = true
 
 [mcp_servers.serena]
 command = "${home_ok}/.local/bin/serena-mcp"
 args = ["codex"]
+
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+EOF
+mkdir -p "${home_ok}/.claude"
+cat > "${home_ok}/.claude/settings.json" <<'EOF'
+{
+  "autoUpdatesChannel": "latest"
+}
 EOF
 mkdir -p "${home_ok}/.codex/skills/codex-auto-save-memory/scripts"
 : > "${home_ok}/.codex/hooks.json"
@@ -172,13 +224,31 @@ web_dashboard: true
 web_dashboard_open_on_launch: false
 project_serena_folder_location: "$projectDir/.serena"
 EOF
+cat > "${home_ok}/Library/Application Support/com.github.domt4.homebrew-autoupdate/brew_autoupdate" <<'EOF'
+#!/bin/sh
+export SUDO_ASKPASS='/tmp/brew_autoupdate_sudo_gui'
+/opt/homebrew/bin/brew update && /opt/homebrew/bin/brew upgrade --formula -v && /opt/homebrew/bin/brew upgrade --cask -v --greedy && /opt/homebrew/bin/brew cleanup
+EOF
+cat > "${home_ok}/Library/LaunchAgents/com.github.domt4.homebrew-autoupdate.plist" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict><key>StartInterval</key><integer>3600</integer></dict></plist>
+EOF
 
 run_capture run_doctor "${home_ok}" \
+  LAUNCHCTL_AUTUPDATE_LOADED=1 \
+  PLUTIL_START_INTERVAL=3600 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy home profile case"
 assert_contains "${RUN_OUTPUT}" "Daily checks live in: make status / make ai-audit / make dashboard" "doctor should point to the lighter commands"
 assert_contains "${RUN_OUTPUT}" "No Brew profile drift detected for 'home'" "doctor should report clean drift status"
+assert_contains "${RUN_OUTPUT}" "auto-update channel: latest" "doctor should validate Claude channel"
+assert_contains "${RUN_OUTPUT}" "default model: gpt-5.4" "doctor should validate Codex model baseline"
+assert_contains "${RUN_OUTPUT}" "sandbox mode: workspace-write" "doctor should validate Codex sandbox baseline"
+assert_contains "${RUN_OUTPUT}" "approval policy: on-request" "doctor should validate Codex approval baseline"
+assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP: registered" "doctor should validate Docs MCP"
+assert_contains "${RUN_OUTPUT}" "brew autoupdate: running (every 1h, all formulae/casks, with sudo support)" "doctor should validate brew autoupdate baseline"
+assert_contains "${RUN_OUTPUT}" "pinentry-mac: present" "doctor should validate pinentry availability"
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend = LSP" "doctor should validate Serena global config"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered" "doctor should detect Claude serena registration"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered via wrapper" "doctor should detect Codex wrapper registration"
@@ -188,8 +258,15 @@ home_drift="${tmpdir}/home-drift"
 mkdir -p "${home_drift}/.config/dotfiles" "${home_drift}/.codex" "${home_drift}/.serena"
 printf 'core\n' > "${home_drift}/.config/dotfiles/profile"
 cat > "${home_drift}/.codex/config.toml" <<'EOF'
+model = "codex-mini-latest"
 [features]
 codex_hooks = true
+EOF
+mkdir -p "${home_drift}/.claude"
+cat > "${home_drift}/.claude/settings.json" <<'EOF'
+{
+  "autoUpdatesChannel": "stable"
+}
 EOF
 mkdir -p "${home_drift}/.codex/skills/codex-auto-save-memory/scripts"
 : > "${home_drift}/.codex/hooks.json"
@@ -200,12 +277,20 @@ web_dashboard: false
 web_dashboard_open_on_launch: true
 project_serena_folder_location: "/tmp/serena"
 EOF
-
 run_capture run_doctor "${home_drift}" \
+  BREW_AUTOUPDATE_FORCE_PINENTRY_MISSING=1 \
+  LAUNCHCTL_AUTUPDATE_LOADED=0 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\nbitwarden\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should stay green when only optional drift warnings are present"
 assert_contains "${RUN_OUTPUT}" "Brew profile drift: casks installed outside 'core' profile" "doctor should warn on cask drift"
+assert_contains "${RUN_OUTPUT}" "auto-update channel should be latest" "doctor should warn on Claude channel drift"
+assert_contains "${RUN_OUTPUT}" "default model should be gpt-5.4" "doctor should warn on Codex model drift"
+assert_contains "${RUN_OUTPUT}" "sandbox mode should be workspace-write" "doctor should warn on Codex sandbox drift"
+assert_contains "${RUN_OUTPUT}" "approval policy should be on-request" "doctor should warn on Codex approval drift"
+assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP: missing" "doctor should warn on missing Docs MCP"
+assert_contains "${RUN_OUTPUT}" "brew autoupdate: not configured" "doctor should warn on missing brew autoupdate"
+assert_contains "${RUN_OUTPUT}" "pinentry-mac: missing" "doctor should warn on missing pinentry"
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend is not LSP" "doctor should warn on Serena config drift"
 assert_contains "${RUN_OUTPUT}" "bitwarden" "doctor should list drifting cask names"
 assert_contains "${RUN_OUTPUT}" "serena MCP: not registered" "doctor should warn about missing serena MCP"

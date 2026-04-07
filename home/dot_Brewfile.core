@@ -50,6 +50,7 @@ brew "zellij"             # terminal multiplexer
 # ---------- Runtimes / package managers ----------
 brew "node"               # npm runtime for Codex CLI
 brew "uv"                 # fast Python package manager
+brew "pinentry-mac"       # askpass backend for brew-autoupdate --sudo
 
 # ---------- Misc CLI ----------
 brew "shellcheck"         # shell script linter (used in CI)
@@ -61,7 +62,6 @@ brew "tfenv"              # Terraform version manager
 # ---------- Casks: terminal / AI ----------
 cask "ghostty"            # GPU-accelerated terminal
 cask "claude"             # Claude desktop
-cask "claude-code"        # Claude CLI
 cask "visual-studio-code", args: { appdir: "/Applications" }
 cask "codex-app"                 # OpenAI Codex desktop app
 cask "aws-vault-binary", args: { appdir: "/Applications" }

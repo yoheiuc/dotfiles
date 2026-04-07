@@ -38,6 +38,32 @@ ai_config_file_contains_regex() {
   grep -Eq "${pattern}" "${path}"
 }
 
+# Read a field from a TOML file using python3/tomllib.
+# Usage: ai_config_toml_read <file> <python_expr>
+#   python_expr receives the parsed TOML as `d`.
+ai_config_toml_read() {
+  local file="$1"
+  local expr="$2"
+  [[ -f "${file}" ]] || return 1
+  python3 -c "
+import sys
+try:
+    import tomllib
+except ModuleNotFoundError:
+    sys.exit(1)
+
+try:
+    with open(sys.argv[1], 'rb') as f:
+        d = tomllib.load(f)
+    v = ${expr}
+    if v is None or v == '':
+        sys.exit(1)
+    print(v)
+except Exception:
+    sys.exit(1)
+" "${file}"
+}
+
 ai_config_backup_matches() {
   local glob_pattern="$1"
   compgen -G "${glob_pattern}" || true
@@ -94,6 +120,97 @@ with open(fpath, 'w') as f:
 " "${file}" "${name}" "${value}"
 }
 
+# Upsert a top-level JSON key.
+# Usage: ai_config_json_upsert_key <file> <key> <json_value>
+ai_config_json_upsert_key() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+  python3 -c "
+import json, sys, os
+
+fpath = sys.argv[1]
+key = sys.argv[2]
+value = json.loads(sys.argv[3])
+
+if os.path.isfile(fpath):
+    with open(fpath) as f:
+        d = json.load(f)
+else:
+    d = {}
+
+d[key] = value
+
+with open(fpath, 'w') as f:
+    json.dump(d, f, indent=2)
+    f.write('\n')
+" "${file}" "${key}" "${value}"
+}
+
+ai_config_toml_upsert_top_level() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+  python3 -c "
+import pathlib, re, sys
+
+fpath = pathlib.Path(sys.argv[1]).expanduser()
+key = sys.argv[2]
+value = sys.argv[3]
+
+content = fpath.read_text() if fpath.exists() else ''
+section_match = re.search(r'(?m)^\[', content)
+prefix_end = section_match.start() if section_match else len(content)
+prefix = content[:prefix_end]
+suffix = content[prefix_end:]
+line = f'{key} = {value}'
+
+pattern = re.compile(rf'(?m)^{re.escape(key)}\s*=.*$')
+if pattern.search(prefix):
+    prefix = pattern.sub(line, prefix, count=1)
+else:
+    stripped = prefix.rstrip('\n')
+    if stripped:
+        prefix = stripped + '\n' + line + '\n\n'
+    else:
+        prefix = line + '\n\n'
+
+fpath.parent.mkdir(parents=True, exist_ok=True)
+fpath.write_text(prefix + suffix.lstrip('\n'))
+" "${file}" "${key}" "${value}"
+}
+
+ai_config_toml_upsert_section_block() {
+  local file="$1"
+  local section_header="$2"
+  local body="$3"
+  python3 -c "
+import pathlib, re, sys
+
+fpath = pathlib.Path(sys.argv[1]).expanduser()
+section_header = sys.argv[2]
+body = sys.argv[3].rstrip('\n')
+
+content = fpath.read_text() if fpath.exists() else ''
+new_block = f'{section_header}\n{body}\n'
+pattern = re.compile(
+    rf'(?m)^{re.escape(section_header)}\s*\n(?:^(?!\[).*(?:\n|$))*'
+)
+
+if pattern.search(content):
+    content = pattern.sub(new_block, content, count=1)
+else:
+    stripped = content.rstrip('\n')
+    if stripped:
+      content = stripped + '\n\n' + new_block
+    else:
+      content = new_block
+
+fpath.parent.mkdir(parents=True, exist_ok=True)
+fpath.write_text(content.rstrip('\n') + '\n')
+" "${file}" "${section_header}" "${body}"
+}
+
 # Check MCP registration state in a JSON file.
 # Usage: ai_config_mcp_registration_state <file> <server_name> <expected_command>
 # Prints one of: ok, wrong-command, missing
@@ -121,24 +238,28 @@ ai_config_codex_mcp_state() {
   local file="$1"
   local expected_command="$2"
 
-  [[ -f "${file}" ]] || { printf 'missing\n'; return; }
-
   local actual_command
-  actual_command="$(python3 -c "
-import sys, re
-content = open(sys.argv[1]).read()
-# Simple TOML parsing for [mcp_servers.serena] command
-m = re.search(r'^\[mcp_servers\.serena\]\s*\n(?:.*\n)*?command\s*=\s*\"([^\"]+)\"', content, re.MULTILINE)
-if m:
-    print(m.group(1))
-else:
-    sys.exit(1)
-" "${file}" 2>/dev/null)" || { printf 'missing\n'; return; }
+  actual_command="$(ai_config_toml_read "${file}" "d.get('mcp_servers',{}).get('serena',{}).get('command','')" 2>/dev/null)" || { printf 'missing\n'; return; }
 
   if [[ "${actual_command}" == "${expected_command}" ]]; then
     printf 'ok\n'
   else
     printf 'wrong-command\n'
+  fi
+}
+
+ai_config_codex_mcp_url_state() {
+  local file="$1"
+  local server_name="$2"
+  local expected_url="$3"
+
+  local actual_url
+  actual_url="$(ai_config_toml_read "${file}" "d.get('mcp_servers',{}).get('${server_name}',{}).get('url','')" 2>/dev/null)" || { printf 'missing\n'; return; }
+
+  if [[ "${actual_url}" == "${expected_url}" ]]; then
+    printf 'ok\n'
+  else
+    printf 'wrong-url\n'
   fi
 }
 
