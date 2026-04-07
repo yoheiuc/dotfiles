@@ -25,6 +25,17 @@ case "${PROFILE}" in
   *) die "Unsupported profile '${PROFILE}' (expected: core or home)" ;;
 esac
 
+# ---- 0. Xcode Command Line Tools -------------------------------------------
+if ! xcode-select -p &>/dev/null; then
+  log "Xcode Command Line Tools not found. Starting installation..."
+  xcode-select --install
+  printf 'Waiting for CLT installation to finish... (Press any key when done)\n'
+  read -n 1 -s -r
+  if ! xcode-select -p &>/dev/null; then
+    die "CLT installation not detected. Please install and try again."
+  fi
+fi
+
 # ---- 1. Homebrew -----------------------------------------------------------
 command -v brew &>/dev/null \
   || die "Homebrew not found. Install: https://brew.sh"

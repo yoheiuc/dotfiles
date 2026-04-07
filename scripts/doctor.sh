@@ -57,6 +57,20 @@ fi
 # REQUIRED checks — failures increment REQUIRED_FAILED and affect exit code
 # ===========================================================================
 
+section "Xcode Command Line Tools (required)"
+if xcode-select -p &>/dev/null; then
+  clt_path="$(xcode-select -p)"
+  ok "CLT installed: ${clt_path}"
+
+  # Check for the specific issue reported by brew doctor: Swift compilation
+  # This often fails when CLT is outdated or broken after a macOS update.
+  if ! /usr/bin/swift --version &>/dev/null; then
+    fail "CLT is installed but broken (Swift check failed) — run: sudo rm -rf ${clt_path} && xcode-select --install"
+  fi
+else
+  fail "CLT not found — run: xcode-select --install"
+fi
+
 section "Homebrew (required)"
 if brew --version &>/dev/null; then
   ok "brew $(brew --version | head -1)"

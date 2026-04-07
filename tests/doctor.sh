@@ -152,7 +152,27 @@ set -euo pipefail
 exit 0
 EOF
 
-chmod +x "${STUB_BIN}/brew" "${STUB_BIN}/chezmoi" "${STUB_BIN}/git" "${STUB_BIN}/claude" "${STUB_BIN}/codex" "${STUB_BIN}/launchctl" "${STUB_BIN}/plutil" "${STUB_BIN}/pinentry-mac"
+cat > "${STUB_BIN}/xcode-select" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == "-p" ]]; then
+  printf '/Library/Developer/CommandLineTools\n'
+  exit 0
+fi
+exit 1
+EOF
+
+cat > "${STUB_BIN}/swift" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == "--version" ]]; then
+  printf 'swift 5.9\n'
+  exit 0
+fi
+exit 1
+EOF
+
+chmod +x "${STUB_BIN}/brew" "${STUB_BIN}/chezmoi" "${STUB_BIN}/git" "${STUB_BIN}/claude" "${STUB_BIN}/codex" "${STUB_BIN}/launchctl" "${STUB_BIN}/plutil" "${STUB_BIN}/pinentry-mac" "${STUB_BIN}/xcode-select" "${STUB_BIN}/swift"
 
 run_doctor() {
   local home_dir="$1"
