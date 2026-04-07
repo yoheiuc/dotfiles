@@ -16,6 +16,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${REPO_ROOT}/scripts/lib/ai-config.sh"
 
 log()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
@@ -68,30 +69,21 @@ else
   bash "${REPO_ROOT}/scripts/ai-repair.sh"
 fi
 
-# ---- Sequential Thinking MCP (Claude Code / Codex) ------------------------
+# ---- Sequential Thinking MCP (Claude Code) --------------------------------
 log "Sequential Thinking MCP..."
 
-if command -v claude &>/dev/null; then
-  if claude mcp get sequential-thinking >/dev/null 2>&1; then
-    ok "Claude Code: sequential-thinking already registered"
-  else
-    log "Registering sequential-thinking for Claude Code..."
-    claude mcp add --scope user sequential-thinking -- \
-      npx -y @modelcontextprotocol/server-sequential-thinking
-    ok "Claude Code: sequential-thinking registered"
-  fi
-fi
+CLAUDE_JSON="${HOME}/.claude.json"
+SEQ_THINK_ENTRY='{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-sequential-thinking"],"env":{}}'
 
-if command -v codex &>/dev/null; then
-  if codex mcp get sequential-thinking --json >/dev/null 2>&1; then
-    ok "Codex: sequential-thinking already registered"
-  else
-    log "Registering sequential-thinking for Codex..."
-    codex mcp add sequential-thinking -- \
-      npx -y @modelcontextprotocol/server-sequential-thinking
-    ok "Codex: sequential-thinking registered"
-  fi
-fi
+case "$(ai_config_mcp_registration_state "${CLAUDE_JSON}" sequential-thinking npx)" in
+  ok)
+    ok "Claude Code: sequential-thinking already registered"
+    ;;
+  *)
+    ai_config_json_upsert_mcp "${CLAUDE_JSON}" sequential-thinking "${SEQ_THINK_ENTRY}"
+    ok "Claude Code: sequential-thinking registered"
+    ;;
+esac
 
 # ---- Codex skills ----------------------------------------------------------
 log "Codex skills..."

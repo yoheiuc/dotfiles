@@ -43,74 +43,140 @@ ai_config_backup_matches() {
   compgen -G "${glob_pattern}" || true
 }
 
-ai_config_strip_codex_path_warning() {
-  sed '/^WARNING: proceeding, even though we could not update PATH:/d'
-}
-
-ai_config_run_with_timeout() {
-  local timeout_seconds="$1"
-  shift
-  python3 - "$timeout_seconds" "$@" <<'PY'
-import subprocess
-import sys
-
-timeout = float(sys.argv[1])
-cmd = sys.argv[2:]
-
-def write_maybe_bytes(stream, value):
-    if value is None:
-        return
-    if isinstance(value, bytes):
-        stream.write(value.decode("utf-8", errors="replace"))
-    else:
-        stream.write(value)
-
+# Read a field from a JSON file using python3.
+# Usage: ai_config_json_read <file> <python_expr>
+#   python_expr receives the parsed JSON as `d`.
+#   Example: ai_config_json_read ~/.claude.json 'd.get("mcpServers",{}).get("serena",{}).get("command","")'
+# Returns empty string and exit 1 if file missing or field absent.
+ai_config_json_read() {
+  local file="$1"
+  local expr="$2"
+  [[ -f "${file}" ]] || return 1
+  python3 -c "
+import json, sys
 try:
-    completed = subprocess.run(cmd, text=True, capture_output=True, timeout=timeout)
-except subprocess.TimeoutExpired as exc:
-    write_maybe_bytes(sys.stdout, exc.stdout)
-    write_maybe_bytes(sys.stderr, exc.stderr)
-    sys.stderr.write(f"Timed out after {timeout:g}s\n")
-    raise SystemExit(124)
-
-write_maybe_bytes(sys.stdout, completed.stdout)
-write_maybe_bytes(sys.stderr, completed.stderr)
-raise SystemExit(completed.returncode)
-PY
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    v = ${expr}
+    if v is None or v == '':
+        sys.exit(1)
+    print(v)
+except Exception:
+    sys.exit(1)
+" "${file}"
 }
 
-ai_config_codex_serena_registration_state() {
-  local output="$1"
-  local wrapper_path="$2"
+# Upsert a key into a JSON file's mcpServers map.
+# Usage: ai_config_json_upsert_mcp <file> <server_name> <json_value>
+#   Creates the file (with mcpServers only) if it doesn't exist.
+ai_config_json_upsert_mcp() {
+  local file="$1"
+  local name="$2"
+  local value="$3"
+  python3 -c "
+import json, sys, os
 
-  if printf '%s\n' "${output}" | grep -Eq "^serena[[:space:]]+${wrapper_path//\//\\/}[[:space:]].*[[:space:]]enabled[[:space:]]"; then
-    printf 'wrapper\n'
-  elif printf '%s\n' "${output}" | grep -Eq '^serena[[:space:]]+uvx[[:space:]].*[[:space:]]enabled[[:space:]]'; then
-    printf 'legacy-uvx\n'
-  elif printf '%s\n' "${output}" | grep -q '^serena[[:space:]]'; then
-    printf 'unexpected\n'
-  elif printf '%s\n' "${output}" | grep -q '^Timed out after '; then
-    printf 'timeout\n'
-  else
-    printf 'missing\n'
-  fi
+fpath = sys.argv[1]
+name  = sys.argv[2]
+value = json.loads(sys.argv[3])
+
+if os.path.isfile(fpath):
+    with open(fpath) as f:
+        d = json.load(f)
+else:
+    d = {}
+
+d.setdefault('mcpServers', {})[name] = value
+
+with open(fpath, 'w') as f:
+    json.dump(d, f, indent=2)
+    f.write('\n')
+" "${file}" "${name}" "${value}"
 }
 
-ai_config_claude_serena_registration_state() {
-  local output="$1"
-  local claude_json_path="$2"
+# Check MCP registration state in a JSON file.
+# Usage: ai_config_mcp_registration_state <file> <server_name> <expected_command>
+# Prints one of: ok, wrong-command, missing
+ai_config_mcp_registration_state() {
+  local file="$1"
+  local name="$2"
+  local expected_command="$3"
 
-  if printf '%s\n' "${output}" | grep -q '^Timed out after '; then
-    if rg -q '"serena"[[:space:]]*:' "${claude_json_path}" 2>/dev/null; then
-      printf 'registered-timeout\n'
+  local actual_command
+  if actual_command="$(ai_config_json_read "${file}" "d.get('mcpServers',{}).get('${name}',{}).get('command','')")"; then
+    if [[ "${actual_command}" == "${expected_command}" ]]; then
+      printf 'ok\n'
     else
-      printf 'timeout\n'
+      printf 'wrong-command\n'
     fi
-  elif printf '%s\n' "${output}" | grep -Eq '^serena:.*- ✓ Connected$'; then
-    printf 'connected\n'
-  elif printf '%s\n' "${output}" | grep -q '^serena:'; then
-    printf 'disconnected\n'
   else
     printf 'missing\n'
   fi
+}
+
+# Check Codex serena MCP state in config.toml.
+# Usage: ai_config_codex_mcp_state <config_toml> <expected_command>
+# Prints one of: ok, wrong-command, missing
+ai_config_codex_mcp_state() {
+  local file="$1"
+  local expected_command="$2"
+
+  [[ -f "${file}" ]] || { printf 'missing\n'; return; }
+
+  local actual_command
+  actual_command="$(python3 -c "
+import sys, re
+content = open(sys.argv[1]).read()
+# Simple TOML parsing for [mcp_servers.serena] command
+m = re.search(r'^\[mcp_servers\.serena\]\s*\n(?:.*\n)*?command\s*=\s*\"([^\"]+)\"', content, re.MULTILINE)
+if m:
+    print(m.group(1))
+else:
+    sys.exit(1)
+" "${file}" 2>/dev/null)" || { printf 'missing\n'; return; }
+
+  if [[ "${actual_command}" == "${expected_command}" ]]; then
+    printf 'ok\n'
+  else
+    printf 'wrong-command\n'
+  fi
+}
+
+# Upsert serena MCP entry in Codex config.toml.
+# Usage: ai_config_codex_upsert_mcp <config_toml> <server_name> <command> <arg>
+ai_config_codex_upsert_mcp() {
+  local file="$1"
+  local name="$2"
+  local command="$3"
+  local arg="$4"
+
+  python3 -c "
+import sys, re, os
+
+fpath   = sys.argv[1]
+name    = sys.argv[2]
+command = sys.argv[3]
+arg     = sys.argv[4]
+
+section_header = f'[mcp_servers.{name}]'
+new_block = f'{section_header}\ncommand = \"{command}\"\nargs = [\"{arg}\"]\n'
+
+if os.path.isfile(fpath):
+    content = open(fpath).read()
+else:
+    content = ''
+
+# Replace existing section or append
+pattern = re.compile(
+    r'^\[mcp_servers\.' + re.escape(name) + r'\]\s*\n(?:(?!\[).*\n)*',
+    re.MULTILINE,
+)
+if pattern.search(content):
+    content = pattern.sub(new_block, content)
+else:
+    content = content.rstrip('\n') + '\n\n' + new_block
+
+with open(fpath, 'w') as f:
+    f.write(content)
+" "${file}" "${name}" "${command}" "${arg}"
 }

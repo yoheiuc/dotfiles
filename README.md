@@ -183,9 +183,9 @@ make doctor
 | `uv --version` | Optional | Serena MCP に必要な `uv` がある |
 | `ghostty --version` | Optional | Ghostty CLI が存在し、バージョンが取得できる |
 | `claude --version` | Optional | Claude Code CLI がある |
-| `claude mcp list` | Optional | Claude Code 側で Serena MCP が見える |
+| `~/.claude.json` serena | Optional | Claude Code 側で Serena MCP が登録されている |
 | `codex --version` | Optional | Codex CLI がある |
-| `codex mcp list` | Optional | Codex 側で Serena MCP が見える |
+| `~/.codex/config.toml` serena | Optional | Codex 側で Serena MCP が登録されている |
 | `ghq --version` | Optional | `ghq` がある |
 | `zellij --version` | Optional | `zellij` がある |
 | `navi --version` | Optional | `navi` と cheatsheet がある |
@@ -403,30 +403,25 @@ Gemini は補助用途の one-shot コマンドを用意しています。
 **Codex CLI** は `post-setup.sh` が公式 npm パッケージ経由で導入します。  
 `node` は core Brew プロファイルに含めているので、新規マシンでもこの導線がそのまま使えます。
 
-**Serena MCP** は Claude Code / Codex の両方で使う前提です。`~/.local/bin/serena-mcp` wrapper 経由で起動し、Homebrew の `uvx` とブラウザ自動起動抑止を明示しています。wrapper はデフォルトで `index-project` も先に実行するため、普段は index 更新を手で貼り付けなくても追従します（失敗時は MCP 起動を優先して継続）。
+**Serena MCP** は Claude Code / Codex の両方で使う前提です。`~/.local/bin/serena-mcp` wrapper 経由で起動し、Homebrew の `uvx` とブラウザ自動起動抑止を明示しています。
 
 `~/.serena/serena_config.yml` 自体は local state として各マシンに残しますが、`make status` / `make ai-audit` / `make doctor` で主要キー（`language_backend: LSP`、dashboard 設定、`project_serena_folder_location`）は監査するようにしています。
 
-`make ai-repair` は `~/.serena/serena_config.yml` の期待値を再生成し、Claude Code / Codex の Serena MCP 登録を wrapper に戻します。古い端末が legacy な MCP 設定を握っている場合は、修復後にその端末ごと再起動してください。
+`make ai-repair` は `~/.serena/serena_config.yml` の期待値を再生成し、`~/.claude.json` と `~/.codex/config.toml` の Serena MCP 登録を wrapper に書き込みます。CLI（`claude mcp add` 等）は使わず JSON / TOML を直接操作するため、MCP サーバーの起動やヘルスチェックによるタイムアウトが起きません。修復後は Claude Code / Codex を再起動してください。
 
-note のセットアップ手順を日常運用へ落とし込むために、dotfiles 側では `scripts/serena-bootstrap.sh`（`make serena-index`）を用意しています。任意のプロジェクトで次を実行すると、`index-project` と MCP 接続確認をまとめて実行します。
+プロジェクトごとの Serena インデックスは `make serena-index` で明示的に実行します。
 
 ```bash
 cd /path/to/your/project
 make -C ~/dotfiles serena-index DIR="$PWD"
 ```
 
-実行後は表示された 2 つの prompt（`/mcp__serena__initial_instructions` と `プロジェクト ... を有効化してください`）を Claude/Codex 側で流せば、note 記載の初期化フローを毎回ほぼ同じ手順で再現できます。
-
-自動 index を一時的に止めたい場合は、起動前に `SERENA_AUTO_INDEX=0` を付けてください。
-
 **brew-autoupdate** は `post-setup.sh` が `domt4/autoupdate` tap 経由で導入し、24 時間ごとに `upgrade + cleanup` するよう起動します。
 
 ```bash
 ./scripts/post-setup.sh
 codex login
-claude mcp list
-codex mcp list
+make doctor
 ```
 
 セットアップ系のスクリプトは Bash 前提で書いているので、呼び出しは `bash` 明示です。日常利用は普段どおり `zsh` のままで問題ありません。

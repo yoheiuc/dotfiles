@@ -17,13 +17,9 @@ SERENA_CONFIG_DIR="${HOME}/.serena"
 SERENA_CONFIG_PATH="${SERENA_CONFIG_DIR}/serena_config.yml"
 SERENA_CONFIG_BACKUP_SUFFIX="$(date +%Y%m%d%H%M%S)"
 
-restart_needed=0
+CLAUDE_JSON="${HOME}/.claude.json"
 
-run_mcp() {
-  local timeout_seconds="$1"
-  shift
-  ai_config_run_with_timeout "${timeout_seconds}" "$@"
-}
+restart_needed=0
 
 write_serena_config() {
   mkdir -p "${SERENA_CONFIG_DIR}"
@@ -35,6 +31,7 @@ project_serena_folder_location: "$projectDir/.serena"
 EOF
 }
 
+# ---- Serena local config -----------------------------------------------------
 log "Serena local config..."
 if [[ ! -f "${SERENA_CONFIG_PATH}" ]]; then
   write_serena_config
@@ -65,6 +62,7 @@ else
   unset serena_config_ok
 fi
 
+# ---- Serena wrapper ----------------------------------------------------------
 log "Serena wrapper..."
 if [[ -x "${SERENA_WRAPPER}" ]]; then
   ok "Wrapper present: ${SERENA_WRAPPER}"
@@ -73,57 +71,43 @@ else
   warn "  Run: chezmoi apply"
 fi
 
+# ---- Claude Code MCP registration (JSON direct) -----------------------------
 log "Claude Code MCP registration..."
-if command -v claude >/dev/null 2>&1; then
-  if run_mcp 10 claude mcp get serena >/dev/null 2>&1; then
-    if run_mcp 10 claude mcp get serena 2>/dev/null | grep -Fq -- "Command: ${SERENA_WRAPPER}"; then
-      ok "Claude Code already uses the Serena wrapper"
-    else
-      if run_mcp 10 claude mcp remove serena -s user >/dev/null 2>&1 && \
-         run_mcp 10 claude mcp add --scope user serena -- "${SERENA_WRAPPER}" claude-code >/dev/null 2>&1; then
-        ok "Claude Code Serena registration repaired"
-        restart_needed=1
-      else
-        warn "Claude Code Serena registration repair failed or timed out"
-      fi
-    fi
-  else
-    if run_mcp 10 claude mcp add --scope user serena -- "${SERENA_WRAPPER}" claude-code >/dev/null 2>&1; then
-      ok "Claude Code Serena registration created"
-      restart_needed=1
-    else
-      warn "Claude Code Serena registration create failed or timed out"
-    fi
-  fi
-else
-  warn "claude CLI not found — skipped"
-fi
+SERENA_CLAUDE_ENTRY='{"type":"stdio","command":"'"${SERENA_WRAPPER}"'","args":["claude-code"],"env":{}}'
+case "$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")" in
+  ok)
+    ok "Claude Code: serena already registered with wrapper"
+    ;;
+  wrong-command)
+    ai_config_json_upsert_mcp "${CLAUDE_JSON}" serena "${SERENA_CLAUDE_ENTRY}"
+    ok "Claude Code: serena registration repaired"
+    restart_needed=1
+    ;;
+  missing)
+    ai_config_json_upsert_mcp "${CLAUDE_JSON}" serena "${SERENA_CLAUDE_ENTRY}"
+    ok "Claude Code: serena registration created"
+    restart_needed=1
+    ;;
+esac
 
+# ---- Codex MCP registration (TOML direct) -----------------------------------
 log "Codex MCP registration..."
-if command -v codex >/dev/null 2>&1; then
-  if run_mcp 10 codex mcp get serena --json >/dev/null 2>&1; then
-    if run_mcp 10 codex mcp get serena --json 2>/dev/null | grep -Fq -- "\"${SERENA_WRAPPER}\""; then
-      ok "Codex already uses the Serena wrapper"
-    else
-      if run_mcp 10 codex mcp remove serena >/dev/null 2>&1 && \
-         run_mcp 10 codex mcp add serena -- "${SERENA_WRAPPER}" codex >/dev/null 2>&1; then
-        ok "Codex Serena registration repaired"
-        restart_needed=1
-      else
-        warn "Codex Serena registration repair failed or timed out"
-      fi
-    fi
-  else
-    if run_mcp 10 codex mcp add serena -- "${SERENA_WRAPPER}" codex >/dev/null 2>&1; then
-      ok "Codex Serena registration created"
-      restart_needed=1
-    else
-      warn "Codex Serena registration create failed or timed out"
-    fi
-  fi
-else
-  warn "codex CLI not found — skipped"
-fi
+CODEX_CONFIG="${HOME}/.codex/config.toml"
+case "$(ai_config_codex_mcp_state "${CODEX_CONFIG}" "${SERENA_WRAPPER}")" in
+  ok)
+    ok "Codex: serena already registered with wrapper"
+    ;;
+  wrong-command)
+    ai_config_codex_upsert_mcp "${CODEX_CONFIG}" serena "${SERENA_WRAPPER}" codex
+    ok "Codex: serena registration repaired"
+    restart_needed=1
+    ;;
+  missing)
+    ai_config_codex_upsert_mcp "${CODEX_CONFIG}" serena "${SERENA_WRAPPER}" codex
+    ok "Codex: serena registration created"
+    restart_needed=1
+    ;;
+esac
 
 printf '\nVerify with: make ai-audit\n'
 if [[ "${restart_needed}" == "1" ]]; then

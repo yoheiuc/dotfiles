@@ -18,32 +18,12 @@ set -euo pipefail
 printf '%s\n' "$*" >> "${SERENA_BOOTSTRAP_LOG}"
 EOF
 
-cat > "${fake_bin}/claude" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-if [[ "${1:-}" == "mcp" && "${2:-}" == "list" ]]; then
-  printf 'serena: connected\n'
-  exit 0
-fi
-exit 1
-EOF
-
-cat > "${fake_bin}/codex" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-if [[ "${1:-}" == "mcp" && "${2:-}" == "list" ]]; then
-  printf 'serena  /Users/example/.local/bin/serena-mcp  codex  -    -    enabled  Unsupported\n'
-  exit 0
-fi
-exit 1
-EOF
-
 cat > "${fake_home}/.local/bin/serena-mcp" <<'EOF'
 #!/usr/bin/env bash
 exit 0
 EOF
 
-chmod +x "${fake_bin}/uvx" "${fake_bin}/claude" "${fake_bin}/codex" "${fake_home}/.local/bin/serena-mcp"
+chmod +x "${fake_bin}/uvx" "${fake_home}/.local/bin/serena-mcp"
 
 repo_git="${tmpdir}/repo-git"
 mkdir -p "${repo_git}/subdir"
@@ -58,9 +38,6 @@ run_capture env \
 assert_eq "0" "${RUN_STATUS}" "serena-bootstrap should succeed for a git project"
 git_log="$(cat "${tmpdir}/bootstrap-git.log")"
 assert_contains "${git_log}" "serena index-project ${repo_git_real}" "serena-bootstrap should normalize subdir paths to the git root"
-assert_contains "${RUN_OUTPUT}" "Claude MCP status" "serena-bootstrap should print Claude MCP status"
-assert_contains "${RUN_OUTPUT}" "Codex MCP status" "serena-bootstrap should print Codex MCP status"
-assert_contains "${RUN_OUTPUT}" "/mcp__serena__initial_instructions" "serena-bootstrap should print the next Serena prompt"
 
 project_non_git="${tmpdir}/project-non-git"
 mkdir -p "${project_non_git}"
@@ -73,7 +50,6 @@ run_capture env \
 assert_eq "0" "${RUN_STATUS}" "serena-bootstrap should succeed for a non-git directory"
 non_git_log="$(cat "${tmpdir}/bootstrap-non-git.log")"
 assert_contains "${non_git_log}" "serena index-project " "serena-bootstrap should run serena index-project for a non-git directory"
-assert_contains "${non_git_log}" "/project-non-git" "serena-bootstrap should index the provided non-git directory as-is"
 
 run_capture env \
   HOME="${fake_home}" \

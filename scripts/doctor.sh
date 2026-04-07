@@ -260,81 +260,58 @@ fi
 section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
   ok "$(claude --version 2>&1 | head -1)"
-  printf '  MCP servers registered (timeout: 15s):\n'
-  claude_mcp_list_out="$(ai_config_run_with_timeout 15 claude mcp list 2>&1 || true)"
-  printf '%s\n' "$claude_mcp_list_out" | sed 's/^/    /'
-  case "$(ai_config_claude_serena_registration_state "${claude_mcp_list_out}" "${HOME}/.claude.json")" in
-    connected)
-      ok "serena MCP: connected"
+  _claude_json="${HOME}/.claude.json"
+  case "$(ai_config_mcp_registration_state "${_claude_json}" serena "${HOME}/.local/bin/serena-mcp")" in
+    ok)
+      ok "serena MCP: registered"
       ;;
-    disconnected)
-      warn "serena MCP: found but not connected"
+    wrong-command)
+      warn "serena MCP: registered with wrong command — run: make ai-repair"
       ;;
-    registered-timeout)
-      ok "serena MCP: registered (interactive health check timed out)"
-      ;;
-    timeout)
-      warn "serena MCP: check timed out"
-      ;;
-    *)
+    missing)
       warn "serena MCP: not registered — run: make ai-repair"
       ;;
   esac
+  unset _claude_json
 else
   warn "claude not found — install via Brewfile (cask \"claude-code\")"
 fi
 
 section "Gemini CLI (optional)"
 if command -v gemini &>/dev/null; then
-  gemini_version_out="$(ai_config_run_with_timeout 5 gemini --version 2>&1 || true)"
-  gemini_version_line="$(printf '%s\n' "$gemini_version_out" | head -1)"
-  if printf '%s\n' "$gemini_version_out" | grep -q '^Timed out after '; then
-    warn "gemini found but --version timed out"
-  elif [[ -n "$gemini_version_line" ]]; then
-    ok "$gemini_version_line"
-  else
-    warn "gemini found but --version returned no usable output"
-  fi
+  ok "$(gemini --version 2>&1 | head -1 || true)"
 else
   warn "gemini not found — install via Brewfile (brew \"gemini-cli\")"
 fi
 
 section "Codex (optional)"
 if command -v codex &>/dev/null; then
-  codex_version_line="$(codex --version 2>&1 | ai_config_strip_codex_path_warning | head -1)"
+  codex_version_line="$(codex --version 2>&1 | head -1)"
   if [[ -n "$codex_version_line" ]]; then
     ok "$codex_version_line"
   else
     warn "codex found but --version returned no usable output"
   fi
 
-  printf '  MCP servers registered (timeout: 8s):\n'
-  codex_mcp_list_out="$(ai_config_run_with_timeout 8 codex mcp list 2>&1 | ai_config_strip_codex_path_warning || true)"
-  printf '%s\n' "$codex_mcp_list_out" | sed 's/^/    /'
-  case "$(ai_config_codex_serena_registration_state "${codex_mcp_list_out}" "${HOME}/.local/bin/serena-mcp")" in
-    wrapper)
-      ok "serena MCP: enabled via wrapper"
+  _codex_config="${HOME}/.codex/config.toml"
+  case "$(ai_config_codex_mcp_state "${_codex_config}" "${HOME}/.local/bin/serena-mcp")" in
+    ok)
+      ok "serena MCP: registered via wrapper"
       ;;
-    legacy-uvx)
-      warn "serena MCP: enabled with legacy uvx command — run: make ai-repair"
-      warn "  Then restart Codex and close any old terminals still using stale MCP settings"
+    wrong-command)
+      warn "serena MCP: registered with wrong command — run: make ai-repair"
       ;;
-    unexpected)
-      warn "serena MCP: configured with unexpected command — run: make ai-repair"
-      ;;
-    timeout)
-      warn "serena MCP: check timed out"
-      ;;
-    *)
-      warn "serena MCP: not registered for Codex — run: make ai-repair"
+    missing)
+      warn "serena MCP: not registered — run: make ai-repair"
       ;;
   esac
 
-  if rg -q '^[[:space:]]*codex_hooks[[:space:]]*=[[:space:]]*true' "${HOME}/.codex/config.toml" 2>/dev/null; then
+  if grep -q 'codex_hooks[[:space:]]*=[[:space:]]*true' "${_codex_config}" 2>/dev/null; then
     ok "codex hooks: enabled"
   else
     warn "codex hooks: disabled — set [features].codex_hooks = true"
   fi
+  unset _codex_config
 
   if [[ -f "${HOME}/.codex/hooks.json" ]]; then
     ok "codex hooks.json: present"

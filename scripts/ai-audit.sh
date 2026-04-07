@@ -112,51 +112,34 @@ else
 fi
 
 section "MCP Registration"
-if command -v claude >/dev/null 2>&1; then
-  claude_mcp_list_out="$(ai_config_run_with_timeout 15 claude mcp list 2>&1 || true)"
-  case "$(ai_config_claude_serena_registration_state "${claude_mcp_list_out}" "${HOME}/.claude.json")" in
-    connected)
-      ok "Claude Code Serena MCP: connected"
-      ;;
-    disconnected)
-      attention "Claude Code Serena MCP: found but not connected"
-      ;;
-    registered-timeout)
-      ok "Claude Code Serena MCP: registered (interactive health check timed out)"
-      ;;
-    timeout)
-      attention "Claude Code Serena MCP: check timed out"
-      ;;
-    *)
-      attention "Claude Code Serena MCP: missing — run make ai-repair"
-      ;;
-  esac
-else
-  info "Claude Code MCP audit skipped: claude is missing"
-fi
+_serena_wrapper="${HOME}/.local/bin/serena-mcp"
 
-if command -v codex >/dev/null 2>&1; then
-  codex_mcp_list_out="$(ai_config_run_with_timeout 8 codex mcp list 2>&1 | ai_config_strip_codex_path_warning || true)"
-  case "$(ai_config_codex_serena_registration_state "${codex_mcp_list_out}" "${HOME}/.local/bin/serena-mcp")" in
-    wrapper)
-      ok "Codex Serena MCP: wrapper registration detected"
-      ;;
-    legacy-uvx)
-      attention "Codex Serena MCP: legacy uvx registration detected — run make ai-repair, then restart old terminals"
-      ;;
-    unexpected)
-      attention "Codex Serena MCP: unexpected command detected — run make ai-repair"
-      ;;
-    timeout)
-      attention "Codex Serena MCP: check timed out"
-      ;;
-    *)
-      attention "Codex Serena MCP: missing — run make ai-repair"
-      ;;
-  esac
-else
-  info "Codex MCP audit skipped: codex is missing"
-fi
+_claude_json="${HOME}/.claude.json"
+case "$(ai_config_mcp_registration_state "${_claude_json}" serena "${_serena_wrapper}")" in
+  ok)
+    ok "Claude Code Serena MCP: registered"
+    ;;
+  wrong-command)
+    attention "Claude Code Serena MCP: wrong command — run make ai-repair"
+    ;;
+  missing)
+    attention "Claude Code Serena MCP: missing — run make ai-repair"
+    ;;
+esac
+
+_codex_config="${HOME}/.codex/config.toml"
+case "$(ai_config_codex_mcp_state "${_codex_config}" "${_serena_wrapper}")" in
+  ok)
+    ok "Codex Serena MCP: registered via wrapper"
+    ;;
+  wrong-command)
+    attention "Codex Serena MCP: wrong command — run make ai-repair"
+    ;;
+  missing)
+    attention "Codex Serena MCP: missing — run make ai-repair"
+    ;;
+esac
+unset _serena_wrapper _claude_json _codex_config
 
 section "Backup Files"
 report_optional_backups "Codex config backups" "${HOME}/.codex/config.toml.pre-unmanage-*"

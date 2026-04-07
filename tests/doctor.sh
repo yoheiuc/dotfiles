@@ -102,13 +102,6 @@ case "${1:-}" in
   --version)
     printf '2.1.84 (Claude Code)\n'
     ;;
-  mcp)
-    if [[ "${2:-}" == "list" ]]; then
-      printf '%s' "${CLAUDE_MCP_LIST_OUTPUT:-}"
-      exit "${CLAUDE_MCP_LIST_STATUS:-0}"
-    fi
-    exit 1
-    ;;
   *)
     exit 1
     ;;
@@ -122,13 +115,6 @@ set -euo pipefail
 case "${1:-}" in
   --version)
     printf 'codex-cli 0.118.0\n'
-    ;;
-  mcp)
-    if [[ "${2:-}" == "list" ]]; then
-      printf '%s' "${CODEX_MCP_LIST_OUTPUT:-}"
-      exit "${CODEX_MCP_LIST_STATUS:-0}"
-    fi
-    exit 1
     ;;
   *)
     exit 1
@@ -153,22 +139,29 @@ run_doctor() {
     bash "${REPO_ROOT}/scripts/doctor.sh"
 }
 
+# ---- Scenario 1: healthy home profile ----
 home_ok="${tmpdir}/home-ok"
-mkdir -p "${home_ok}/.config/dotfiles" "${home_ok}/.codex" "${home_ok}/.serena"
+mkdir -p "${home_ok}/.config/dotfiles" "${home_ok}/.codex" "${home_ok}/.serena" "${home_ok}/.local/bin"
 printf 'home\n' > "${home_ok}/.config/dotfiles/profile"
-cat > "${home_ok}/.claude.json" <<'EOF'
+cat > "${home_ok}/.claude.json" <<EOF
 {
   "mcpServers": {
     "serena": {
-      "command": "/Users/example/.local/bin/serena-mcp",
-      "args": ["claude-code"]
+      "type": "stdio",
+      "command": "${home_ok}/.local/bin/serena-mcp",
+      "args": ["claude-code"],
+      "env": {}
     }
   }
 }
 EOF
-cat > "${home_ok}/.codex/config.toml" <<'EOF'
+cat > "${home_ok}/.codex/config.toml" <<EOF
 [features]
 codex_hooks = true
+
+[mcp_servers.serena]
+command = "${home_ok}/.local/bin/serena-mcp"
+args = ["codex"]
 EOF
 mkdir -p "${home_ok}/.codex/skills/codex-auto-save-memory/scripts"
 : > "${home_ok}/.codex/hooks.json"
@@ -182,17 +175,15 @@ EOF
 
 run_capture run_doctor "${home_ok}" \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
-  BREW_CASKS=$'ghostty\n' \
-  CLAUDE_MCP_LIST_OUTPUT=$'Timed out after 15s\n' \
-  CLAUDE_MCP_LIST_STATUS=124 \
-  CODEX_MCP_LIST_OUTPUT=$'Name    Command                                Args   Env  Cwd  Status   Auth\nserena  '"${home_ok}"'/.local/bin/serena-mcp  codex  -    -    enabled  Unsupported\n'
+  BREW_CASKS=$'ghostty\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy home profile case"
 assert_contains "${RUN_OUTPUT}" "Daily checks live in: make status / make ai-audit / make dashboard" "doctor should point to the lighter commands"
 assert_contains "${RUN_OUTPUT}" "No Brew profile drift detected for 'home'" "doctor should report clean drift status"
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend = LSP" "doctor should validate Serena global config"
-assert_contains "${RUN_OUTPUT}" "serena MCP: registered (interactive health check timed out)" "doctor should accept Claude timeout fallback when serena is registered"
-assert_contains "${RUN_OUTPUT}" "serena MCP: enabled via wrapper" "doctor should recognize Codex wrapper configuration"
+assert_contains "${RUN_OUTPUT}" "serena MCP: registered" "doctor should detect Claude serena registration"
+assert_contains "${RUN_OUTPUT}" "serena MCP: registered via wrapper" "doctor should detect Codex wrapper registration"
 
+# ---- Scenario 2: drift ----
 home_drift="${tmpdir}/home-drift"
 mkdir -p "${home_drift}/.config/dotfiles" "${home_drift}/.codex" "${home_drift}/.serena"
 printf 'core\n' > "${home_drift}/.config/dotfiles/profile"
@@ -212,12 +203,11 @@ EOF
 
 run_capture run_doctor "${home_drift}" \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
-  BREW_CASKS=$'ghostty\nbitwarden\n' \
-  CLAUDE_MCP_LIST_OUTPUT='' \
-  CODEX_MCP_LIST_OUTPUT=''
+  BREW_CASKS=$'ghostty\nbitwarden\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should stay green when only optional drift warnings are present"
 assert_contains "${RUN_OUTPUT}" "Brew profile drift: casks installed outside 'core' profile" "doctor should warn on cask drift"
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend is not LSP" "doctor should warn on Serena config drift"
 assert_contains "${RUN_OUTPUT}" "bitwarden" "doctor should list drifting cask names"
+assert_contains "${RUN_OUTPUT}" "serena MCP: not registered" "doctor should warn about missing serena MCP"
 
 pass_test "tests/doctor.sh"
