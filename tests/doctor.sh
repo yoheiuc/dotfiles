@@ -300,9 +300,12 @@ EOF
 run_capture run_doctor "${home_drift}" \
   BREW_AUTOUPDATE_FORCE_PINENTRY_MISSING=1 \
   LAUNCHCTL_AUTUPDATE_LOADED=0 \
+  BREW_DOCTOR_CLT_WARN=1 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\nbitwarden\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should stay green when only optional drift warnings are present"
+assert_contains "${RUN_OUTPUT}" "Homebrew reported CLT issues or updates" "doctor should catch CLT/Swift issues from brew doctor"
+assert_contains "${RUN_OUTPUT}" "A newer Command Line Tools release is available" "doctor should report the specific CLT warning"
 assert_contains "${RUN_OUTPUT}" "Brew profile drift: casks installed outside 'core' profile" "doctor should warn on cask drift"
 assert_contains "${RUN_OUTPUT}" "auto-update channel should be latest" "doctor should warn on Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "default model should be gpt-5.4" "doctor should warn on Codex model drift"

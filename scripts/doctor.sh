@@ -62,10 +62,19 @@ if xcode-select -p &>/dev/null; then
   clt_path="$(xcode-select -p)"
   ok "CLT installed: ${clt_path}"
 
-  # Check for the specific issue reported by brew doctor: Swift compilation
-  # This often fails when CLT is outdated or broken after a macOS update.
-  if ! /usr/bin/swift --version &>/dev/null; then
-    fail "CLT is installed but broken (Swift check failed) — run: sudo rm -rf ${clt_path} && xcode-select --install"
+  # Check for Swift execution (basic JIT/REPL test)
+  if ! /usr/bin/swift -e "print(0)" &>/dev/null; then
+    fail "CLT is installed but broken (Swift execution failed) — run: sudo rm -rf ${clt_path} && xcode-select --install"
+  fi
+
+  # Check if brew doctor reports deeper CLT/Swift issues or updates.
+  # Since brew doctor can be slow, we'll only scan for specific CLT-related strings.
+  # This catches the "No Cask quarantine support available" and "A newer release is available" cases.
+  clt_brew_warnings="$(brew doctor 2>&1 | grep -Ei "Command Line Tools|Swift compilation failed" || true)"
+  if [[ -n "${clt_brew_warnings}" ]]; then
+    warn "Homebrew reported CLT issues or updates:"
+    printf '%s\n' "${clt_brew_warnings}" | sed 's/^/    /'
+    warn "  Recommended: update from Software Update or run: sudo rm -rf ${clt_path} && xcode-select --install"
   fi
 else
   fail "CLT not found — run: xcode-select --install"
