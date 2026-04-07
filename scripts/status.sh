@@ -138,10 +138,10 @@ unset brew_check_code
 section "brew-autoupdate"
 if command -v brew >/dev/null 2>&1 && command -v launchctl >/dev/null 2>&1 && command -v plutil >/dev/null 2>&1; then
   autoupdate_mode_summary="$(brew_autoupdate_mode_summary 2>/dev/null || printf 'without sudo support')"
-  if brew_autoupdate_matches_dotfiles_baseline 3600; then
-    ok "brew autoupdate: running (every 1h, all formulae/casks, ${autoupdate_mode_summary})"
+  if brew_autoupdate_matches_dotfiles_baseline 86400; then
+    ok "brew autoupdate: running (every 24h, all formulae/casks, ${autoupdate_mode_summary})"
   elif brew_autoupdate_is_loaded; then
-    attention "brew autoupdate: loaded, but not at the dotfiles baseline (expected 1h + upgrade + greedy cask upgrade + cleanup)"
+    attention "brew autoupdate: loaded, but not at the dotfiles baseline (expected 24h + upgrade + greedy cask upgrade + cleanup)"
   elif [[ -f "$(brew_autoupdate_plist_path)" ]]; then
     attention "brew autoupdate: plist exists, but the launch agent is not loaded"
   else

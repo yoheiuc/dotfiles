@@ -420,7 +420,7 @@ make -C ~/dotfiles serena-index DIR="$PWD"
 
 **Claude Code CLI** は native install を正とし、`post-setup.sh` が `latest` チャンネルで導入します。Claude Code docs どおり native install はバックグラウンド自動更新に対応しているため、Homebrew cask では管理しません。
 
-**brew-autoupdate** は `post-setup.sh` が `domt4/autoupdate` tap 経由で設定し、1 時間ごとに Homebrew 管理下の formula / cask 全体へ `upgrade + greedy cask upgrade + cleanup` を流します。`pinentry-mac` が入っている前提で `--sudo` も有効にするので、sudo が必要な cask も同じ運用に寄せます。
+**brew-autoupdate** は `post-setup.sh` が `domt4/autoupdate` tap 経由で設定し、24 時間ごとに Homebrew 管理下の formula / cask 全体へ `upgrade + greedy cask upgrade + cleanup` を流します。`pinentry-mac` が入っている前提で `--sudo` も有効にするので、sudo が必要な cask も同じ運用に寄せます。
 
 ```bash
 ./scripts/post-setup.sh

@@ -125,7 +125,7 @@ cat > "${stub_bin}/plutil" <<'EOF'
 set -euo pipefail
 
 if [[ "${1:-}" == "-extract" && "${2:-}" == "StartInterval" ]]; then
-  printf '%s\n' "${PLUTIL_START_INTERVAL:-3600}"
+  printf '%s\n' "${PLUTIL_START_INTERVAL:-86400}"
   exit 0
 fi
 
@@ -193,7 +193,7 @@ export SUDO_ASKPASS='/tmp/brew_autoupdate_sudo_gui'
 EOF
 cat > "${HOME}/Library/LaunchAgents/com.github.domt4.homebrew-autoupdate.plist" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
-<plist version="1.0"><dict><key>StartInterval</key><integer>3600</integer></dict></plist>
+<plist version="1.0"><dict><key>StartInterval</key><integer>86400</integer></dict></plist>
 EOF
 
 run_capture env \
@@ -203,14 +203,14 @@ run_capture env \
   BREW_LIST_FORMULA=$'git\n' \
   BREW_LIST_CASK=$'ghostty\nbitwarden\n' \
   LAUNCHCTL_AUTUPDATE_LOADED=1 \
-  PLUTIL_START_INTERVAL=3600 \
+  PLUTIL_START_INTERVAL=86400 \
   bash "${fake_repo}/scripts/status.sh"
 assert_eq "0" "${RUN_STATUS}" "status should succeed in the clean case"
 assert_contains "${RUN_OUTPUT}" "Active profile: home" "status should print the active profile"
 assert_contains "${RUN_OUTPUT}" "working tree: clean" "status should report a clean worktree"
 assert_contains "${RUN_OUTPUT}" "chezmoi managed files: clean" "status should report a clean chezmoi state"
 assert_contains "${RUN_OUTPUT}" "home Brew profile: all declared packages present" "status should report Brew health"
-assert_contains "${RUN_OUTPUT}" "brew autoupdate: running (every 1h, all formulae/casks, with sudo support)" "status should audit brew autoupdate"
+assert_contains "${RUN_OUTPUT}" "brew autoupdate: running (every 24h, all formulae/casks, with sudo support)" "status should audit brew autoupdate"
 assert_contains "${RUN_OUTPUT}" "pinentry-mac: present" "status should report pinentry availability"
 assert_contains "${RUN_OUTPUT}" "Codex config: no legacy bridge settings detected" "status should audit Codex config"
 assert_contains "${RUN_OUTPUT}" "Codex config: sandbox mode is workspace-write" "status should validate Codex sandbox"

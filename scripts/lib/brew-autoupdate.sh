@@ -52,7 +52,7 @@ brew_autoupdate_mode_summary() {
 }
 
 brew_autoupdate_matches_dotfiles_baseline() {
-  local expected_interval="${1:-3600}"
+  local expected_interval="${1:-86400}"
 
   brew_autoupdate_is_loaded || return 1
   [[ "$(brew_autoupdate_interval 2>/dev/null || true)" == "${expected_interval}" ]] || return 1

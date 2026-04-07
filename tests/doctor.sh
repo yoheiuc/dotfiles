@@ -64,7 +64,7 @@ cat > "${STUB_BIN}/plutil" <<'EOF'
 set -euo pipefail
 
 if [[ "${1:-}" == "-extract" && "${2:-}" == "StartInterval" ]]; then
-  printf '%s\n' "${PLUTIL_START_INTERVAL:-3600}"
+  printf '%s\n' "${PLUTIL_START_INTERVAL:-86400}"
   exit 0
 fi
 
@@ -231,12 +231,12 @@ export SUDO_ASKPASS='/tmp/brew_autoupdate_sudo_gui'
 EOF
 cat > "${home_ok}/Library/LaunchAgents/com.github.domt4.homebrew-autoupdate.plist" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
-<plist version="1.0"><dict><key>StartInterval</key><integer>3600</integer></dict></plist>
+<plist version="1.0"><dict><key>StartInterval</key><integer>86400</integer></dict></plist>
 EOF
 
 run_capture run_doctor "${home_ok}" \
   LAUNCHCTL_AUTUPDATE_LOADED=1 \
-  PLUTIL_START_INTERVAL=3600 \
+  PLUTIL_START_INTERVAL=86400 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy home profile case"
@@ -247,7 +247,7 @@ assert_contains "${RUN_OUTPUT}" "default model: gpt-5.4" "doctor should validate
 assert_contains "${RUN_OUTPUT}" "sandbox mode: workspace-write" "doctor should validate Codex sandbox baseline"
 assert_contains "${RUN_OUTPUT}" "approval policy: on-request" "doctor should validate Codex approval baseline"
 assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP: registered" "doctor should validate Docs MCP"
-assert_contains "${RUN_OUTPUT}" "brew autoupdate: running (every 1h, all formulae/casks, with sudo support)" "doctor should validate brew autoupdate baseline"
+assert_contains "${RUN_OUTPUT}" "brew autoupdate: running (every 24h, all formulae/casks, with sudo support)" "doctor should validate brew autoupdate baseline"
 assert_contains "${RUN_OUTPUT}" "pinentry-mac: present" "doctor should validate pinentry availability"
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend = LSP" "doctor should validate Serena global config"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered" "doctor should detect Claude serena registration"

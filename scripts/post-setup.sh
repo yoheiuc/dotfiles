@@ -113,7 +113,7 @@ if ! brew tap | grep -q "domt4/autoupdate"; then
   brew tap domt4/autoupdate
 fi
 
-AUTOUPDATE_INTERVAL_SECONDS=3600
+AUTOUPDATE_INTERVAL_SECONDS=86400
 autoupdate_args=(autoupdate start "${AUTOUPDATE_INTERVAL_SECONDS}" --upgrade --greedy --cleanup --immediate)
 if brew_autoupdate_pinentry_available; then
   autoupdate_args+=(--sudo)
@@ -122,12 +122,12 @@ else
 fi
 
 if brew_autoupdate_matches_dotfiles_baseline "${AUTOUPDATE_INTERVAL_SECONDS}"; then
-  ok "brew autoupdate: running (every 1h, all formulae/casks, $(brew_autoupdate_mode_summary | tr -d '\n'))"
+  ok "brew autoupdate: running (every 24h, all formulae/casks, $(brew_autoupdate_mode_summary | tr -d '\n'))"
 else
-  log "Configuring brew autoupdate (every 1h, all formulae/casks)..."
+  log "Configuring brew autoupdate (every 24h, all formulae/casks)..."
   brew autoupdate delete >/dev/null 2>&1 || true
   brew "${autoupdate_args[@]}"
-  ok "brew autoupdate: configured (every 1h, all formulae/casks, $(brew_autoupdate_mode_summary | tr -d '\n'))"
+  ok "brew autoupdate: configured (every 24h, all formulae/casks, $(brew_autoupdate_mode_summary | tr -d '\n'))"
 fi
 unset AUTOUPDATE_INTERVAL_SECONDS autoupdate_args
 
