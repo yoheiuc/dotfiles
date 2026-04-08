@@ -31,6 +31,7 @@ language_backend: LSP
 web_dashboard: true
 web_dashboard_open_on_launch: false
 project_serena_folder_location: "$projectDir/.serena"
+projects: []
 EOF
 }
 
@@ -51,6 +52,9 @@ else
     serena_config_ok=0
   fi
   if ! ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^project_serena_folder_location:[[:space:]]*"\$projectDir/\.serena"([[:space:]]|$)'; then
+    serena_config_ok=0
+  fi
+  if ! ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^projects:'; then
     serena_config_ok=0
   fi
 
@@ -76,22 +80,22 @@ fi
 
 # ---- Claude Code MCP registration (JSON direct) -----------------------------
 log "Claude Code MCP registration..."
-SERENA_CLAUDE_ENTRY='{"type":"stdio","command":"'"${SERENA_WRAPPER}"'","args":["claude-code"],"env":{}}'
-case "$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")" in
-  ok)
-    ok "Claude Code: serena already registered with wrapper"
-    ;;
-  wrong-command)
-    ai_config_json_upsert_mcp "${CLAUDE_JSON}" serena "${SERENA_CLAUDE_ENTRY}"
-    ok "Claude Code: serena registration repaired"
-    restart_needed=1
-    ;;
-  missing)
-    ai_config_json_upsert_mcp "${CLAUDE_JSON}" serena "${SERENA_CLAUDE_ENTRY}"
-    ok "Claude Code: serena registration created"
-    restart_needed=1
-    ;;
-esac
+SERENA_CLAUDE_ENTRY='{"type":"stdio","command":"'"${SERENA_WRAPPER}"'","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}'
+serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
+serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
+
+if [[ "${serena_cmd_state}" == "ok" && "${serena_uv_tls}" == "true" ]]; then
+  ok "Claude Code: serena already registered with wrapper and UV_NATIVE_TLS"
+else
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" serena "${SERENA_CLAUDE_ENTRY}"
+  if [[ "${serena_cmd_state}" != "ok" ]]; then
+    ok "Claude Code: serena registration repaired/created"
+  else
+    ok "Claude Code: serena UV_NATIVE_TLS env added"
+  fi
+  restart_needed=1
+fi
+unset serena_cmd_state serena_uv_tls
 
 # ---- Claude Code local settings baseline -----------------------------------
 log "Claude Code local settings..."
