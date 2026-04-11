@@ -1,0 +1,37 @@
+{
+  "env": {
+    "ENABLE_TOOL_SEARCH": "auto:5"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(* --version)",
+      "Bash(* --help)"
+    ],
+    "deny": [
+      "Bash(curl*)",
+      "Bash(wget*)",
+      "Bash(rm*)",
+      "Bash(sudo*)",
+      "Bash(chmod*)",
+      "Bash(chown*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(secrets/**)",
+      "Read(~/.ssh/**)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "WebFetch(*)"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "/Users/y.uchiyama/.claude/statusline.sh"
+  },
+  "effortLevel": "high",
+  "autoUpdatesChannel": "latest",
+  "model": "opus[1m]"
+}
