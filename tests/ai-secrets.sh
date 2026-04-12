@@ -80,16 +80,14 @@ exit 0
 EOF
 chmod +x "${HOME}/.local/bin/serena-mcp"
 
-run_capture bash -lc "printf 'ghp_prompted_token\nbrave_prompted_key\n' | bash '${REPO_ROOT}/scripts/ai-secrets.sh'"
+run_capture bash -lc "printf 'ghp_prompted_token\n' | bash '${REPO_ROOT}/scripts/ai-secrets.sh'"
 assert_eq "0" "${RUN_STATUS}" "ai-secrets should succeed with piped input"
-assert_contains "${RUN_OUTPUT}" "Saved GitHub/Brave credentials to Keychain service dotfiles.ai.mcp" "ai-secrets should report keychain save"
+assert_contains "${RUN_OUTPUT}" "Saved GitHub credential to Keychain service dotfiles.ai.mcp" "ai-secrets should report keychain save"
 assert_not_contains "${RUN_OUTPUT}" "ghp_prompted_token" "ai-secrets should not print the GitHub token"
-assert_not_contains "${RUN_OUTPUT}" "brave_prompted_key" "ai-secrets should not print the Brave key"
 
 assert_contains "$(cat "${FAKE_SECURITY_DB}")" $'dotfiles.ai.mcp\tgithub-personal-access-token\tghp_prompted_token' "ai-secrets should persist the GitHub token to Keychain"
-assert_contains "$(cat "${FAKE_SECURITY_DB}")" $'dotfiles.ai.mcp\tbrave-api-key\tbrave_prompted_key' "ai-secrets should persist the Brave key to Keychain"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" 'mcp-with-keychain-secret' "ai-secrets should configure Codex to use the keychain wrapper"
-assert_contains "$(cat "${HOME}/.claude.json")" 'mcp-with-keychain-secret' "ai-secrets should configure Claude to use the keychain wrapper"
+assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-secrets should keep Exa registered for Claude Code"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'ghp_prompted_token' "ai-secrets should not write the GitHub token into Codex config"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'ghp_prompted_token' "ai-secrets should not write the GitHub token into Claude config"
 assert_not_contains "$(ls -a "${HOME}/.config/dotfiles" 2>/dev/null || true)" 'ai-secrets.env' "ai-secrets should not leave a plaintext secrets file"

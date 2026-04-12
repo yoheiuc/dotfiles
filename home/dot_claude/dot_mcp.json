@@ -18,16 +18,9 @@
         "@modelcontextprotocol/server-github"
       ]
     },
-    "brave-search": {
-      "command": "$HOME/.local/bin/mcp-with-keychain-secret",
-      "args": [
-        "BRAVE_API_KEY",
-        "dotfiles.ai.mcp",
-        "brave-api-key",
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-brave-search"
-      ]
+    "exa": {
+      "type": "http",
+      "url": "https://mcp.exa.ai/mcp"
     },
     "drawio": {
       "command": "npx",
@@ -41,6 +34,13 @@
       "args": [
         "-y",
         "@playwright/mcp@latest"
+      ]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
       ]
     },
     "serena": {

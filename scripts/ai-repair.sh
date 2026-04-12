@@ -22,14 +22,11 @@ AI_SHARED_ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ai-secrets.env"
 AI_SHARED_ENV_FALLBACK_FILE="${HOME}/.config/dotfiles/ai-secrets.env"
 KEYCHAIN_SERVICE="dotfiles.ai.mcp"
 GITHUB_KEYCHAIN_ACCOUNT="github-personal-access-token"
-BRAVE_KEYCHAIN_ACCOUNT="brave-api-key"
 
 CLAUDE_JSON="${HOME}/.claude.json"
 CLAUDE_SETTINGS_JSON="${HOME}/.claude/settings.json"
 CODEX_CONFIG="${HOME}/.codex/config.toml"
 OPENAI_DOCS_MCP_URL="https://developers.openai.com/mcp"
-GITHUB_TOKEN_PLACEHOLDER="<YOUR_GITHUB_TOKEN>"
-BRAVE_API_KEY_PLACEHOLDER="<YOUR_BRAVE_API_KEY>"
 
 restart_needed=0
 
@@ -135,9 +132,10 @@ log "Claude Code MCP registration..."
 FILESYSTEM_CLAUDE_ENTRY='{"type":"stdio","command":"bash","args":["-lc","npx -y @modelcontextprotocol/server-filesystem \"$HOME\""]}'
 SERENA_CLAUDE_ENTRY='{"type":"stdio","command":"'"${SERENA_WRAPPER}"'","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}'
 GITHUB_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["GITHUB_PERSONAL_ACCESS_TOKEN","'"${KEYCHAIN_SERVICE}"'","'"${GITHUB_KEYCHAIN_ACCOUNT}"'","npx","-y","@modelcontextprotocol/server-github"]}'
-BRAVE_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["BRAVE_API_KEY","'"${KEYCHAIN_SERVICE}"'","'"${BRAVE_KEYCHAIN_ACCOUNT}"'","npx","-y","@modelcontextprotocol/server-brave-search"]}'
+EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
 DRAWIO_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@drawio/mcp@latest"]}'
 PLAYWRIGHT_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@playwright/mcp@latest"]}'
+CHROME_DEVTOOLS_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@latest"]}'
 serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
 serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
 claude_filesystem_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('filesystem',{}).get('command','')" 2>/dev/null || true)"
@@ -146,6 +144,10 @@ claude_drawio_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}
 claude_drawio_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('drawio',{}).get('args',[]))" 2>/dev/null || true)"
 claude_playwright_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('playwright',{}).get('command','')" 2>/dev/null || true)"
 claude_playwright_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('playwright',{}).get('args',[]))" 2>/dev/null || true)"
+claude_chrome_devtools_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
+claude_chrome_devtools_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
+claude_github_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('github',{}).get('command','')" 2>/dev/null || true)"
+claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 
 if [[ "${serena_cmd_state}" == "ok" && "${serena_uv_tls}" == "true" ]]; then
   ok "Claude Code: serena already registered with wrapper and UV_NATIVE_TLS"
@@ -178,10 +180,26 @@ if [[ "${claude_playwright_cmd}" != "npx" || "${claude_playwright_args}" != '-y|
   restart_needed=1
 fi
 
-ai_config_json_upsert_mcp "${CLAUDE_JSON}" github "${GITHUB_CLAUDE_ENTRY}"
-ai_config_json_upsert_mcp "${CLAUDE_JSON}" brave-search "${BRAVE_CLAUDE_ENTRY}"
-ok "Claude Code: baseline MCP servers (filesystem/github/brave-search/drawio/playwright) normalized"
-unset claude_filesystem_cmd claude_filesystem_args claude_drawio_cmd claude_drawio_args claude_playwright_cmd claude_playwright_args
+if [[ "${claude_chrome_devtools_cmd}" != "npx" || "${claude_chrome_devtools_args}" != '-y|chrome-devtools-mcp@latest' ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" chrome-devtools "${CHROME_DEVTOOLS_CLAUDE_ENTRY}"
+  ok "Claude Code: chrome-devtools MCP registered"
+  restart_needed=1
+fi
+
+if [[ "${claude_github_cmd}" != *"mcp-with-keychain-secret"* ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" github "${GITHUB_CLAUDE_ENTRY}"
+  ok "Claude Code: github MCP registered"
+  restart_needed=1
+fi
+
+if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" exa "${EXA_CLAUDE_ENTRY}"
+  ok "Claude Code: exa MCP registered"
+  restart_needed=1
+fi
+
+ok "Claude Code: baseline MCP servers (filesystem/github/exa/drawio/playwright/chrome-devtools) normalized"
+unset claude_filesystem_cmd claude_filesystem_args claude_drawio_cmd claude_drawio_args claude_playwright_cmd claude_playwright_args claude_chrome_devtools_cmd claude_chrome_devtools_args claude_github_cmd claude_exa_url
 
 # ---- Claude Code local settings baseline -----------------------------------
 log "Claude Code local settings..."
@@ -239,25 +257,18 @@ esac
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.filesystem]" $'command = "bash"\nargs = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \\\"$HOME\\\""]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.drawio]" $'command = "npx"\nargs = ["-y", "@drawio/mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.playwright]" $'command = "npx"\nargs = ["-y", "@playwright/mcp@latest"]'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.chrome-devtools]" $'command = "npx"\nargs = ["-y", "chrome-devtools-mcp@latest"]'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
 github_codex_mcp_body="$(cat <<EOF
 command = "${KEYCHAIN_ENV_WRAPPER}"
 args = ["GITHUB_PERSONAL_ACCESS_TOKEN", "${KEYCHAIN_SERVICE}", "${GITHUB_KEYCHAIN_ACCOUNT}", "npx", "-y", "@modelcontextprotocol/server-github"]
 EOF
 )"
-brave_codex_mcp_body="$(cat <<EOF
-command = "${KEYCHAIN_ENV_WRAPPER}"
-args = ["BRAVE_API_KEY", "${KEYCHAIN_SERVICE}", "${BRAVE_KEYCHAIN_ACCOUNT}", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
-EOF
-)"
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.github]" "${github_codex_mcp_body}"
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" "${brave_codex_mcp_body}"
-ok "Codex: baseline MCP servers (filesystem/github/brave-search/drawio/playwright) registered"
+ok "Codex: baseline MCP servers (filesystem/github/exa/drawio/playwright/chrome-devtools) registered"
 
 if [[ -z "$(resolve_ai_secret "GITHUB_PERSONAL_ACCESS_TOKEN" "${GITHUB_KEYCHAIN_ACCOUNT}")" ]]; then
   warn "Codex GitHub MCP: GitHub token is not set in Keychain (server may fail until configured)"
-fi
-if [[ -z "$(resolve_ai_secret "BRAVE_API_KEY" "${BRAVE_KEYCHAIN_ACCOUNT}")" ]]; then
-  warn "Codex Brave MCP: Brave API key is not set in Keychain (server may fail until configured)"
 fi
 
 printf '\nVerify with: make ai-audit\n'

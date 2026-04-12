@@ -11,7 +11,6 @@ source "${SCRIPT_DIR}/lib/ai-config.sh"
 SECURITY_BIN="${SECURITY_BIN:-security}"
 KEYCHAIN_SERVICE="dotfiles.ai.mcp"
 GITHUB_KEYCHAIN_ACCOUNT="github-personal-access-token"
-BRAVE_KEYCHAIN_ACCOUNT="brave-api-key"
 AI_SHARED_ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ai-secrets.env"
 AI_SHARED_ENV_FALLBACK_FILE="${HOME}/.config/dotfiles/ai-secrets.env"
 
@@ -167,6 +166,14 @@ if [[ -f "${_claude_json}" ]]; then
     attention "Claude Code playwright MCP: missing or drifted — run make ai-repair"
   fi
 
+  _claude_chrome_devtools_cmd="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
+  _claude_chrome_devtools_args="$(ai_config_json_read "${_claude_json}" "'|'.join(d.get('mcpServers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
+  if [[ "${_claude_chrome_devtools_cmd}" == "npx" && "${_claude_chrome_devtools_args}" == '-y|chrome-devtools-mcp@latest' ]]; then
+    ok "Claude Code chrome-devtools MCP: registered"
+  else
+    attention "Claude Code chrome-devtools MCP: missing or drifted — run make ai-repair"
+  fi
+
   _claude_github_command="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('github',{}).get('command','')" 2>/dev/null || true)"
   if [[ "${_claude_github_command}" == *"mcp-with-keychain-secret"* ]]; then
     if [[ -n "$(resolve_ai_secret "GITHUB_PERSONAL_ACCESS_TOKEN" "${GITHUB_KEYCHAIN_ACCOUNT}")" ]]; then
@@ -178,17 +185,14 @@ if [[ -f "${_claude_json}" ]]; then
     attention "Claude Code github MCP: missing or drifted — run make ai-repair"
   fi
 
-  _claude_brave_command="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
-  if [[ "${_claude_brave_command}" == *"mcp-with-keychain-secret"* ]]; then
-    if [[ -n "$(resolve_ai_secret "BRAVE_API_KEY" "${BRAVE_KEYCHAIN_ACCOUNT}")" ]]; then
-      ok "Claude Code brave-search MCP: Brave API key is available via Keychain"
-    else
-      attention "Claude Code brave-search MCP: Brave API key missing from Keychain"
-    fi
+  _claude_exa_url="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
+  _claude_exa_type="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('exa',{}).get('type','')" 2>/dev/null || true)"
+  if [[ "${_claude_exa_url}" == "https://mcp.exa.ai/mcp" && "${_claude_exa_type}" == "http" ]]; then
+    ok "Claude Code exa MCP: registered"
   else
-    attention "Claude Code brave-search MCP: missing or drifted — run make ai-repair"
+    attention "Claude Code exa MCP: missing or drifted — run make ai-repair"
   fi
-  unset _claude_filesystem_cmd _claude_filesystem_args _claude_drawio_cmd _claude_drawio_args _claude_playwright_cmd _claude_playwright_args _claude_github_command _claude_brave_command
+  unset _claude_filesystem_cmd _claude_filesystem_args _claude_drawio_cmd _claude_drawio_args _claude_playwright_cmd _claude_playwright_args _claude_chrome_devtools_cmd _claude_chrome_devtools_args _claude_github_command _claude_exa_url _claude_exa_type
 else
   attention "Claude Code MCP config: missing (${_claude_json})"
 fi
@@ -244,7 +248,7 @@ if [[ -f "${_codex_config}" ]]; then
       ;;
   esac
 
-  for _server in filesystem github brave-search drawio playwright; do
+  for _server in filesystem github drawio playwright chrome-devtools; do
     case "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('${_server}',{}).get('command','')" 2>/dev/null || true)" in
       "")
         attention "Codex ${_server} MCP: missing — run make ai-repair"
@@ -254,6 +258,12 @@ if [[ -f "${_codex_config}" ]]; then
         ;;
     esac
   done
+
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)" == "https://mcp.exa.ai/mcp" ]]; then
+    ok "Codex exa MCP: registered"
+  else
+    attention "Codex exa MCP: missing — run make ai-repair"
+  fi
 
   _codex_github_command="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('github',{}).get('command','')" 2>/dev/null || true)"
   if [[ "${_codex_github_command}" == *"mcp-with-keychain-secret"* ]]; then
@@ -273,24 +283,7 @@ if [[ -f "${_codex_config}" ]]; then
     fi
   fi
 
-  _codex_brave_command="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
-  if [[ "${_codex_brave_command}" == *"mcp-with-keychain-secret"* ]]; then
-    if [[ -n "$(resolve_ai_secret "BRAVE_API_KEY" "${BRAVE_KEYCHAIN_ACCOUNT}")" ]]; then
-      ok "Codex brave-search MCP: Brave API key is available via Keychain"
-    else
-      attention "Codex brave-search MCP: Brave API key missing from Keychain"
-    fi
-  else
-    _codex_brave_key="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('brave-search',{}).get('env',{}).get('BRAVE_API_KEY','')" 2>/dev/null || true)"
-    if [[ -z "${_codex_brave_key}" ]]; then
-      attention "Codex brave-search MCP: BRAVE_API_KEY is missing in config — run make ai-repair"
-    elif [[ "${_codex_brave_key}" == "<YOUR_BRAVE_API_KEY>" ]]; then
-      attention "Codex brave-search MCP: BRAVE_API_KEY is placeholder — set a real key"
-    else
-      ok "Codex brave-search MCP: BRAVE_API_KEY is configured"
-    fi
-  fi
-  unset _codex_github_token _codex_brave_key _codex_github_command _codex_brave_command
+  unset _codex_github_token _codex_github_command
 else
   attention "Codex config: missing (${_codex_config})"
 fi

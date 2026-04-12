@@ -11,7 +11,6 @@ AI_SHARED_ENV_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles"
 AI_SHARED_ENV_FILE="${AI_SHARED_ENV_DIR}/ai-secrets.env"
 KEYCHAIN_SERVICE="dotfiles.ai.mcp"
 GITHUB_KEYCHAIN_ACCOUNT="github-personal-access-token"
-BRAVE_KEYCHAIN_ACCOUNT="brave-api-key"
 
 log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 ok() { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
@@ -99,31 +98,23 @@ remove_legacy_env_file() {
 
 main() {
   local github_current=""
-  local brave_current=""
   local github_next=""
-  local brave_next=""
 
   github_current="$(read_keychain_secret "${GITHUB_KEYCHAIN_ACCOUNT}")"
-  brave_current="$(read_keychain_secret "${BRAVE_KEYCHAIN_ACCOUNT}")"
   if [[ -z "${github_current}" ]]; then
     github_current="$(read_legacy_env_secret "GITHUB_PERSONAL_ACCESS_TOKEN")"
-  fi
-  if [[ -z "${brave_current}" ]]; then
-    brave_current="$(read_legacy_env_secret "BRAVE_API_KEY")"
   fi
 
   echo
   printf '\033[1m=== AI shared secrets ===\033[0m\n'
-  printf 'Claude Code / Codex 共通で使う credential を macOS Keychain に保存します。\n'
+  printf 'Claude Code / Codex 共通で使う GitHub credential を macOS Keychain に保存します。\n'
   printf '入力は表示されず、shell history にも残りません。\n\n'
 
   github_next="$(prompt_secret 'GitHub Personal Access Token' "${github_current}")"
-  brave_next="$(prompt_secret 'Brave API Key (任意)' "${brave_current}")"
 
   log "Writing AI secrets to macOS Keychain..."
   write_keychain_secret "${GITHUB_KEYCHAIN_ACCOUNT}" "${github_next}"
-  write_keychain_secret "${BRAVE_KEYCHAIN_ACCOUNT}" "${brave_next}"
-  ok "Saved GitHub/Brave credentials to Keychain service ${KEYCHAIN_SERVICE}"
+  ok "Saved GitHub credential to Keychain service ${KEYCHAIN_SERVICE}"
   remove_legacy_env_file
 
   log "Refreshing Claude Code / Codex MCP config..."
