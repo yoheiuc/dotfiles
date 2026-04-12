@@ -13,7 +13,6 @@ stub_bin="${tmpdir}/bin"
 mkdir -p "${fake_repo}/home" "${fake_repo}/scripts" "${stub_bin}" "${tmpdir}/home/.config/dotfiles"
 
 cat > "${fake_repo}/home/dot_Brewfile.core" <<'EOF'
-tap "domt4/autoupdate"
 brew "git"
 cask "ghostty"
 EOF
@@ -79,7 +78,6 @@ assert_contains "${RUN_OUTPUT}" "already declared" "brew-add should explain dupl
 run_capture env \
   BREW_LEAVES=$'git\njq\n' \
   BREW_LIST_CASK=$'ghostty\ngoogle-chrome\n' \
-  BREW_TAPS=$'domt4/autoupdate\n' \
   bash "${REPO_ROOT}/scripts/brew-diff.sh" home
 assert_eq "1" "${RUN_STATUS}" "brew-diff should return non-zero when tracking drift exists"
 assert_contains "${RUN_OUTPUT}" "google-chrome" "brew-diff should report untracked local casks"
@@ -88,7 +86,6 @@ assert_contains "${RUN_OUTPUT}" "bitwarden" "brew-diff should report declared bu
 run_capture env \
   BREW_LEAVES=$'git\njq\n' \
   BREW_LIST_CASK=$'ghostty\nbitwarden\n' \
-  BREW_TAPS=$'domt4/autoupdate\n' \
   bash "${REPO_ROOT}/scripts/brew-diff.sh" home
 assert_eq "0" "${RUN_STATUS}" "brew-diff should return zero when no tracking diff exists"
 assert_contains "${RUN_OUTPUT}" "No Brew tracking diff." "brew-diff should report clean state"

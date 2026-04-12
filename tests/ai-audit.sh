@@ -29,6 +29,28 @@ codex_hooks = true
 
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
+
+[mcp_servers.filesystem]
+command = "bash"
+args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"$HOME\" \"$HOME/ghq\""]
+
+[mcp_servers.github]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-github"]
+env = { GITHUB_PERSONAL_ACCESS_TOKEN = "<YOUR_GITHUB_TOKEN>" }
+
+[mcp_servers.brave-search]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-brave-search"]
+env = { BRAVE_API_KEY = "<YOUR_BRAVE_API_KEY>" }
+
+[mcp_servers.drawio]
+command = "npx"
+args = ["-y", "@drawio/mcp@latest"]
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
 EOF
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
@@ -54,6 +76,13 @@ assert_contains "${RUN_OUTPUT}" "Codex config: no legacy bridge settings detecte
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai-audit should validate Claude channel"
 assert_contains "${RUN_OUTPUT}" "Codex: sandbox mode is workspace-write" "ai-audit should validate Codex sandbox"
 assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: registered" "ai-audit should validate Docs MCP"
+assert_contains "${RUN_OUTPUT}" "Codex filesystem MCP: registered" "ai-audit should validate filesystem MCP"
+assert_contains "${RUN_OUTPUT}" "Codex github MCP: registered" "ai-audit should validate GitHub MCP"
+assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: registered" "ai-audit should validate Brave MCP"
+assert_contains "${RUN_OUTPUT}" "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is placeholder" "ai-audit should warn for placeholder GitHub token"
+assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: BRAVE_API_KEY is placeholder" "ai-audit should warn for placeholder Brave key"
+assert_contains "${RUN_OUTPUT}" "Codex drawio MCP: registered" "ai-audit should validate drawio MCP"
+assert_contains "${RUN_OUTPUT}" "Codex playwright MCP: registered" "ai-audit should validate Playwright MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: web_dashboard enabled" "ai-audit should validate Serena config"
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: missing" "ai-audit should report missing Claude MCP registration"
 assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: missing" "ai-audit should report missing Codex MCP registration"
@@ -106,6 +135,13 @@ assert_contains "${RUN_OUTPUT}" "Serena config: language_backend should be LSP" 
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should detect Claude MCP registration"
 assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: registered via wrapper" "ai-audit should detect Codex wrapper registration"
 assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: missing" "ai-audit should detect missing Docs MCP"
+assert_contains "${RUN_OUTPUT}" "Codex filesystem MCP: missing" "ai-audit should detect missing filesystem MCP"
+assert_contains "${RUN_OUTPUT}" "Codex github MCP: missing" "ai-audit should detect missing GitHub MCP"
+assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: missing" "ai-audit should detect missing Brave MCP"
+assert_contains "${RUN_OUTPUT}" "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is missing in config" "ai-audit should detect missing GitHub token config"
+assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: BRAVE_API_KEY is missing in config" "ai-audit should detect missing Brave key config"
+assert_contains "${RUN_OUTPUT}" "Codex drawio MCP: missing" "ai-audit should detect missing drawio MCP"
+assert_contains "${RUN_OUTPUT}" "Codex playwright MCP: missing" "ai-audit should detect missing Playwright MCP"
 assert_contains "${RUN_OUTPUT}" "Codex config backups: found backup files to review or delete" "ai-audit should report backup files"
 assert_contains "${RUN_OUTPUT}" "AI config audit needs attention:" "ai-audit should summarize warnings"
 

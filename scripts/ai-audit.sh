@@ -143,6 +143,36 @@ if [[ -f "${_codex_config}" ]]; then
       attention "Codex OpenAI Docs MCP: missing — run make ai-repair"
       ;;
   esac
+
+  for _server in filesystem github brave-search drawio playwright; do
+    case "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('${_server}',{}).get('command','')" 2>/dev/null || true)" in
+      "")
+        attention "Codex ${_server} MCP: missing — run make ai-repair"
+        ;;
+      *)
+        ok "Codex ${_server} MCP: registered"
+        ;;
+    esac
+  done
+
+  _codex_github_token="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('github',{}).get('env',{}).get('GITHUB_PERSONAL_ACCESS_TOKEN','')" 2>/dev/null || true)"
+  if [[ -z "${_codex_github_token}" ]]; then
+    attention "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is missing in config — run make ai-repair"
+  elif [[ "${_codex_github_token}" == "<YOUR_GITHUB_TOKEN>" ]]; then
+    attention "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is placeholder — set a real token"
+  else
+    ok "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is configured"
+  fi
+
+  _codex_brave_key="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('brave-search',{}).get('env',{}).get('BRAVE_API_KEY','')" 2>/dev/null || true)"
+  if [[ -z "${_codex_brave_key}" ]]; then
+    attention "Codex brave-search MCP: BRAVE_API_KEY is missing in config — run make ai-repair"
+  elif [[ "${_codex_brave_key}" == "<YOUR_BRAVE_API_KEY>" ]]; then
+    attention "Codex brave-search MCP: BRAVE_API_KEY is placeholder — set a real key"
+  else
+    ok "Codex brave-search MCP: BRAVE_API_KEY is configured"
+  fi
+  unset _codex_github_token _codex_brave_key
 else
   attention "Codex config: missing (${_codex_config})"
 fi
