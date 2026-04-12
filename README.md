@@ -81,6 +81,7 @@ make help
 | `make status` | 日常確認に必要な状態を短く表示 | ✓ |
 | `make ai-audit` | ローカル管理の AI 設定だけを詳しく確認 | ✓ |
 | `make ai-repair` | AI 周りの local drift を修復 (`Serena config` / MCP registration) | ✓ |
+| `make ai-secrets` | Claude Code / Codex 共通の credential を Keychain に保存 | ✓ |
 | `make dashboard` | `status` と `ai-audit` を Markdown にまとめる | ✓ |
 | `make dashboard-open` | Markdown レポートを生成して開く | ✓ |
 | `make install` | core Brew + `chezmoi apply` | ✓ |
@@ -221,10 +222,15 @@ ghq get git@github.com:owner/repo.git
 - `serena`
 - `playwright`
 
-`github` と `brave-search` は token / API key が必要なので、`<YOUR_...>` を実値に置き換えて使ってください。
-同じ構成は `make ai-repair` 実行時に Codex の `~/.codex/config.toml` にも **同じ env placeholder 付き** で登録されます。
-`filesystem` は `"$HOME"` のみを root にし、存在しない optional directory を起動引数に含めない前提です。
-`make ai-audit` は Codex 側の `GITHUB_PERSONAL_ACCESS_TOKEN` / `BRAVE_API_KEY` が placeholder や未設定なら warning を出します。
+`github` と `brave-search` は credential が必要ですが、今は placeholder を設定ファイルへ埋め込まず、`mcp-with-keychain-secret` wrapper 経由で macOS Keychain から読み出す構成です。登録は `ai-secrets` または `make ai-secrets` を使います。
+
+同じ baseline は `make ai-repair` 実行時に Claude Code の `~/.claude.json` と Codex の `~/.codex/config.toml` に再生成されます。`filesystem` は `"$HOME"` のみを root にし、存在しない optional directory は起動引数へ入れません。`make ai-audit` は Keychain に GitHub token / Brave API key が無い場合や、MCP 登録が壊れている場合に warning を出します。
+
+```bash
+ai-secrets
+make ai-audit
+make ai-repair
+```
 
 ## AI セッション
 
@@ -431,7 +437,33 @@ GitHub / Brave の credential を Claude Code と Codex で共有したい場合
 
 ```bash
 ai-secrets
+make ai-secrets
+make ai-audit
 ```
+
+`ai-secrets` の挙動は次のとおりです。
+
+- GitHub Personal Access Token と Brave API Key を hidden 入力で受け取る
+- 保存先は Keychain service `dotfiles.ai.mcp`
+- account 名は `github-personal-access-token` / `brave-api-key`
+- Enter で現状維持、`-` で削除
+- 保存後に `scripts/ai-repair.sh` を自動実行する
+
+`make ai-audit` は次の観点をまとめて確認します。
+
+- `~/.claude.json` / `~/.codex/config.toml` の baseline
+- Serena wrapper / OpenAI Docs MCP / filesystem/github/brave-search/drawio/playwright の登録有無
+- GitHub / Brave credential が Keychain に存在するか
+- 古い bridge 設定や危険な approval 設定が残っていないか
+
+よくあるトラブルは次の 3 つです。
+
+1. `filesystem` MCP が `initialize` で落ちる  
+   原因の多くは存在しないディレクトリを root に渡していることです。この repo の baseline は `"$HOME"` だけを使います。`make ai-repair` で戻せます。
+2. `ai-secrets` が古い wrapper を掴んで失敗する  
+   `chezmoi apply ~/.local/bin/ai-secrets` で wrapper を再展開してください。
+3. GitHub / Brave MCP が起動しない  
+   `make ai-audit` で Keychain の有無を見て、足りなければ `ai-secrets` を再実行します。
 
 プロジェクトごとの Serena インデックスは `make serena-index` で明示的に実行します。
 
@@ -502,6 +534,10 @@ dotfiles/
 │   ├── dot_codex/
 │   │   └── skills/                 # -> ~/.codex/skills/*
 │   ├── dot_gemini/                 # local settings are unmanaged
+│   ├── dot_local/bin/
+│   │   ├── ai-secrets              # -> ~/.local/bin/ai-secrets
+│   │   ├── mcp-with-keychain-secret # -> ~/.local/bin/mcp-with-keychain-secret
+│   │   └── serena-mcp              # -> ~/.local/bin/serena-mcp
 │   ├── dot_local/share/navi/cheats/dotfiles/
 │   │   ├── git.cheat
 │   │   ├── shell.cheat
@@ -522,6 +558,9 @@ dotfiles/
 │       │   └── completion.zsh      # compinit
 │       └── starship.toml           # prompt 設定
 ├── scripts/
+│   ├── ai-audit.sh                 # AI local config / MCP baseline の監査
+│   ├── ai-repair.sh                # Serena / Claude / Codex の local drift 修復
+│   ├── ai-secrets.sh               # Keychain へ AI credential を対話保存
 │   ├── brew-bundle.sh              # Brew profile の sync / install / check
 │   ├── bootstrap.sh                # core brew + chezmoi + apply
 │   ├── profile.sh                  # active profile の保存 / 参照
