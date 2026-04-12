@@ -21,6 +21,8 @@ CLAUDE_JSON="${HOME}/.claude.json"
 CLAUDE_SETTINGS_JSON="${HOME}/.claude/settings.json"
 CODEX_CONFIG="${HOME}/.codex/config.toml"
 OPENAI_DOCS_MCP_URL="https://developers.openai.com/mcp"
+GITHUB_TOKEN_PLACEHOLDER="<YOUR_GITHUB_TOKEN>"
+BRAVE_API_KEY_PLACEHOLDER="<YOUR_BRAVE_API_KEY>"
 
 restart_needed=0
 
@@ -151,11 +153,18 @@ case "$(ai_config_codex_mcp_url_state "${CODEX_CONFIG}" openaiDeveloperDocs "${O
 esac
 
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.filesystem]" $'command = "bash"\nargs = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \\\"$HOME\\\" \\\"$HOME/ghq\\\""]'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.github]" $'command = "npx"\nargs = ["-y", "@modelcontextprotocol/server-github"]'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "npx"\nargs = ["-y", "@modelcontextprotocol/server-brave-search"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.drawio]" $'command = "npx"\nargs = ["-y", "@drawio/mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.playwright]" $'command = "npx"\nargs = ["-y", "@playwright/mcp@latest"]'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.github]" $'command = "npx"\nargs = ["-y", "@modelcontextprotocol/server-github"]\nenv = { GITHUB_PERSONAL_ACCESS_TOKEN = "'"${GITHUB_TOKEN_PLACEHOLDER}"'" }'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "npx"\nargs = ["-y", "@modelcontextprotocol/server-brave-search"]\nenv = { BRAVE_API_KEY = "'"${BRAVE_API_KEY_PLACEHOLDER}"'" }'
 ok "Codex: baseline MCP servers (filesystem/github/brave-search/drawio/playwright) registered"
+
+if [[ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]]; then
+  warn "Codex GitHub MCP: GITHUB_PERSONAL_ACCESS_TOKEN is not set (server may fail until configured)"
+fi
+if [[ -z "${BRAVE_API_KEY:-}" ]]; then
+  warn "Codex Brave MCP: BRAVE_API_KEY is not set (server may fail until configured)"
+fi
 
 printf '\nVerify with: make ai-audit\n'
 if [[ "${restart_needed}" == "1" ]]; then

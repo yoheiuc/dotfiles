@@ -221,7 +221,8 @@ ghq get git@github.com:owner/repo.git
 - `playwright`
 
 `github` と `brave-search` は token / API key が必要なので、`<YOUR_...>` を実値に置き換えて使ってください。
-同じ構成は `make ai-repair` 実行時に Codex の `~/.codex/config.toml` にも登録されます。
+同じ構成は `make ai-repair` 実行時に Codex の `~/.codex/config.toml` にも **同じ env placeholder 付き** で登録されます。
+`make ai-audit` は Codex 側の `GITHUB_PERSONAL_ACCESS_TOKEN` / `BRAVE_API_KEY` が placeholder や未設定なら warning を出します。
 
 ## AI セッション
 

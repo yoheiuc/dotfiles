@@ -37,10 +37,12 @@ args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"$HOME\" \"$HOME
 [mcp_servers.github]
 command = "npx"
 args = ["-y", "@modelcontextprotocol/server-github"]
+env = { GITHUB_PERSONAL_ACCESS_TOKEN = "<YOUR_GITHUB_TOKEN>" }
 
 [mcp_servers.brave-search]
 command = "npx"
 args = ["-y", "@modelcontextprotocol/server-brave-search"]
+env = { BRAVE_API_KEY = "<YOUR_BRAVE_API_KEY>" }
 
 [mcp_servers.drawio]
 command = "npx"
@@ -77,6 +79,8 @@ assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: registered" "ai-audit sh
 assert_contains "${RUN_OUTPUT}" "Codex filesystem MCP: registered" "ai-audit should validate filesystem MCP"
 assert_contains "${RUN_OUTPUT}" "Codex github MCP: registered" "ai-audit should validate GitHub MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: registered" "ai-audit should validate Brave MCP"
+assert_contains "${RUN_OUTPUT}" "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is placeholder" "ai-audit should warn for placeholder GitHub token"
+assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: BRAVE_API_KEY is placeholder" "ai-audit should warn for placeholder Brave key"
 assert_contains "${RUN_OUTPUT}" "Codex drawio MCP: registered" "ai-audit should validate drawio MCP"
 assert_contains "${RUN_OUTPUT}" "Codex playwright MCP: registered" "ai-audit should validate Playwright MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: web_dashboard enabled" "ai-audit should validate Serena config"
@@ -134,6 +138,8 @@ assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: missing" "ai-audit shoul
 assert_contains "${RUN_OUTPUT}" "Codex filesystem MCP: missing" "ai-audit should detect missing filesystem MCP"
 assert_contains "${RUN_OUTPUT}" "Codex github MCP: missing" "ai-audit should detect missing GitHub MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: missing" "ai-audit should detect missing Brave MCP"
+assert_contains "${RUN_OUTPUT}" "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is missing in config" "ai-audit should detect missing GitHub token config"
+assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: BRAVE_API_KEY is missing in config" "ai-audit should detect missing Brave key config"
 assert_contains "${RUN_OUTPUT}" "Codex drawio MCP: missing" "ai-audit should detect missing drawio MCP"
 assert_contains "${RUN_OUTPUT}" "Codex playwright MCP: missing" "ai-audit should detect missing Playwright MCP"
 assert_contains "${RUN_OUTPUT}" "Codex config backups: found backup files to review or delete" "ai-audit should report backup files"
