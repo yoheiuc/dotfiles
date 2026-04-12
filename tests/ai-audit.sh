@@ -11,13 +11,75 @@ trap 'rm -rf "${tmpdir}"' EXIT
 mkdir -p "${tmpdir}/home/.codex" "${tmpdir}/home/.claude" "${tmpdir}/home/.gemini" "${tmpdir}/home/.serena"
 mkdir -p "${tmpdir}/scripts/lib"
 export HOME="${tmpdir}/home"
+export XDG_CONFIG_HOME="${HOME}/.config"
+export FAKE_SECURITY_DB="${tmpdir}/security-db"
+
+cat > "${tmpdir}/security" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+db="${FAKE_SECURITY_DB:?}"
+mkdir -p "$(dirname "${db}")"
+touch "${db}"
+cmd="${1:?}"
+shift
+case "${cmd}" in
+  add-generic-password)
+    service=""
+    account=""
+    secret=""
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        -U) shift ;;
+        -s) service="$2"; shift 2 ;;
+        -a) account="$2"; shift 2 ;;
+        -w) secret="$2"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    grep -v "^${service}"$'\t'"${account}"$'\t' "${db}" > "${db}.tmp" || true
+    printf '%s\t%s\t%s\n' "${service}" "${account}" "${secret}" >> "${db}.tmp"
+    mv "${db}.tmp" "${db}"
+    ;;
+  find-generic-password)
+    service=""
+    account=""
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        -w) shift ;;
+        -s) service="$2"; shift 2 ;;
+        -a) account="$2"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    awk -F '\t' -v s="${service}" -v a="${account}" '$1==s && $2==a { print $3; found=1 } END { exit found ? 0 : 1 }' "${db}"
+    ;;
+  delete-generic-password)
+    service=""
+    account=""
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        -s) service="$2"; shift 2 ;;
+        -a) account="$2"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    grep -v "^${service}"$'\t'"${account}"$'\t' "${db}" > "${db}.tmp" || true
+    mv "${db}.tmp" "${db}"
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+EOF
+chmod +x "${tmpdir}/security"
+export SECURITY_BIN="${tmpdir}/security"
 
 cp "${REPO_ROOT}/scripts/ai-audit.sh" "${tmpdir}/scripts/ai-audit.sh"
 cp "${REPO_ROOT}/scripts/lib/ai-config.sh" "${tmpdir}/scripts/lib/ai-config.sh"
 chmod +x "${tmpdir}/scripts/ai-audit.sh" "${tmpdir}/scripts/lib/ai-config.sh"
 
 # ---- Scenario 1: clean case ----
-cat > "${HOME}/.codex/config.toml" <<'EOF'
+cat > "${HOME}/.codex/config.toml" <<EOF
 model = "gpt-5.4"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
@@ -32,17 +94,15 @@ url = "https://developers.openai.com/mcp"
 
 [mcp_servers.filesystem]
 command = "bash"
-args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"$HOME\" \"$HOME/ghq\""]
+args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]
 
 [mcp_servers.github]
-command = "npx"
-args = ["-y", "@modelcontextprotocol/server-github"]
-env = { GITHUB_PERSONAL_ACCESS_TOKEN = "<YOUR_GITHUB_TOKEN>" }
+command = "${HOME}/.local/bin/mcp-with-keychain-secret"
+args = ["GITHUB_PERSONAL_ACCESS_TOKEN", "dotfiles.ai.mcp", "github-personal-access-token", "npx", "-y", "@modelcontextprotocol/server-github"]
 
 [mcp_servers.brave-search]
-command = "npx"
-args = ["-y", "@modelcontextprotocol/server-brave-search"]
-env = { BRAVE_API_KEY = "<YOUR_BRAVE_API_KEY>" }
+command = "${HOME}/.local/bin/mcp-with-keychain-secret"
+args = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
 
 [mcp_servers.drawio]
 command = "npx"
@@ -67,6 +127,8 @@ web_dashboard: true
 web_dashboard_open_on_launch: false
 project_serena_folder_location: "$projectDir/.serena"
 EOF
+"${SECURITY_BIN}" add-generic-password -U -s dotfiles.ai.mcp -a github-personal-access-token -w ghp_audit_token
+"${SECURITY_BIN}" add-generic-password -U -s dotfiles.ai.mcp -a brave-api-key -w brave_audit_key
 
 run_capture bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should succeed in the clean case"
@@ -79,8 +141,8 @@ assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: registered" "ai-audit sh
 assert_contains "${RUN_OUTPUT}" "Codex filesystem MCP: registered" "ai-audit should validate filesystem MCP"
 assert_contains "${RUN_OUTPUT}" "Codex github MCP: registered" "ai-audit should validate GitHub MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: registered" "ai-audit should validate Brave MCP"
-assert_contains "${RUN_OUTPUT}" "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is placeholder" "ai-audit should warn for placeholder GitHub token"
-assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: BRAVE_API_KEY is placeholder" "ai-audit should warn for placeholder Brave key"
+assert_contains "${RUN_OUTPUT}" "Codex github MCP: GitHub token is available via Keychain" "ai-audit should confirm the GitHub token from Keychain"
+assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: Brave API key is available via Keychain" "ai-audit should confirm the Brave key from Keychain"
 assert_contains "${RUN_OUTPUT}" "Codex drawio MCP: registered" "ai-audit should validate drawio MCP"
 assert_contains "${RUN_OUTPUT}" "Codex playwright MCP: registered" "ai-audit should validate Playwright MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: web_dashboard enabled" "ai-audit should validate Serena config"
@@ -124,6 +186,7 @@ cat > "${HOME}/.claude.json" <<EOF
   }
 }
 EOF
+> "${FAKE_SECURITY_DB}"
 
 run_capture bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational with warnings"

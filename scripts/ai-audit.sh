@@ -8,6 +8,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/ai-config.sh"
 
+SECURITY_BIN="${SECURITY_BIN:-security}"
+KEYCHAIN_SERVICE="dotfiles.ai.mcp"
+GITHUB_KEYCHAIN_ACCOUNT="github-personal-access-token"
+BRAVE_KEYCHAIN_ACCOUNT="brave-api-key"
+AI_SHARED_ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ai-secrets.env"
+AI_SHARED_ENV_FALLBACK_FILE="${HOME}/.config/dotfiles/ai-secrets.env"
+
 ATTENTION_COUNT=0
 
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
@@ -58,6 +65,47 @@ report_optional_backups() {
 
   attention "${label}: found backup files to review or delete"
   printf '%s\n' "${matches}" | sed 's/^/    /'
+}
+
+read_legacy_env_secret() {
+  local env_name="$1"
+  local env_file="${AI_SHARED_ENV_FILE}"
+  if [[ ! -f "${env_file}" && "${AI_SHARED_ENV_FALLBACK_FILE}" != "${env_file}" && -f "${AI_SHARED_ENV_FALLBACK_FILE}" ]]; then
+    env_file="${AI_SHARED_ENV_FALLBACK_FILE}"
+  fi
+
+  if [[ ! -f "${env_file}" ]]; then
+    printf ''
+    return 0
+  fi
+
+  env -i bash -lc "
+    set -a
+    source '${env_file}'
+    set +a
+    printf '%s' \"\${${env_name}:-}\"
+  " 2>/dev/null
+}
+
+read_keychain_secret() {
+  local account="$1"
+  if ! command -v "${SECURITY_BIN}" >/dev/null 2>&1; then
+    printf ''
+    return 0
+  fi
+  "${SECURITY_BIN}" find-generic-password -w -s "${KEYCHAIN_SERVICE}" -a "${account}" 2>/dev/null || true
+}
+
+resolve_ai_secret() {
+  local env_name="$1"
+  local account="$2"
+  local secret=""
+
+  secret="$(read_keychain_secret "${account}")"
+  if [[ -z "${secret}" ]]; then
+    secret="$(read_legacy_env_secret "${env_name}")"
+  fi
+  printf '%s' "${secret}"
 }
 
 echo
@@ -155,24 +203,42 @@ if [[ -f "${_codex_config}" ]]; then
     esac
   done
 
-  _codex_github_token="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('github',{}).get('env',{}).get('GITHUB_PERSONAL_ACCESS_TOKEN','')" 2>/dev/null || true)"
-  if [[ -z "${_codex_github_token}" ]]; then
-    attention "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is missing in config — run make ai-repair"
-  elif [[ "${_codex_github_token}" == "<YOUR_GITHUB_TOKEN>" ]]; then
-    attention "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is placeholder — set a real token"
+  _codex_github_command="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('github',{}).get('command','')" 2>/dev/null || true)"
+  if [[ "${_codex_github_command}" == *"mcp-with-keychain-secret"* ]]; then
+    if [[ -n "$(resolve_ai_secret "GITHUB_PERSONAL_ACCESS_TOKEN" "${GITHUB_KEYCHAIN_ACCOUNT}")" ]]; then
+      ok "Codex github MCP: GitHub token is available via Keychain"
+    else
+      attention "Codex github MCP: GitHub token missing from Keychain"
+    fi
   else
-    ok "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is configured"
+    _codex_github_token="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('github',{}).get('env',{}).get('GITHUB_PERSONAL_ACCESS_TOKEN','')" 2>/dev/null || true)"
+    if [[ -z "${_codex_github_token}" ]]; then
+      attention "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is missing in config — run make ai-repair"
+    elif [[ "${_codex_github_token}" == "<YOUR_GITHUB_TOKEN>" ]]; then
+      attention "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is placeholder — set a real token"
+    else
+      ok "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is configured"
+    fi
   fi
 
-  _codex_brave_key="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('brave-search',{}).get('env',{}).get('BRAVE_API_KEY','')" 2>/dev/null || true)"
-  if [[ -z "${_codex_brave_key}" ]]; then
-    attention "Codex brave-search MCP: BRAVE_API_KEY is missing in config — run make ai-repair"
-  elif [[ "${_codex_brave_key}" == "<YOUR_BRAVE_API_KEY>" ]]; then
-    attention "Codex brave-search MCP: BRAVE_API_KEY is placeholder — set a real key"
+  _codex_brave_command="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
+  if [[ "${_codex_brave_command}" == *"mcp-with-keychain-secret"* ]]; then
+    if [[ -n "$(resolve_ai_secret "BRAVE_API_KEY" "${BRAVE_KEYCHAIN_ACCOUNT}")" ]]; then
+      ok "Codex brave-search MCP: Brave API key is available via Keychain"
+    else
+      attention "Codex brave-search MCP: Brave API key missing from Keychain"
+    fi
   else
-    ok "Codex brave-search MCP: BRAVE_API_KEY is configured"
+    _codex_brave_key="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('brave-search',{}).get('env',{}).get('BRAVE_API_KEY','')" 2>/dev/null || true)"
+    if [[ -z "${_codex_brave_key}" ]]; then
+      attention "Codex brave-search MCP: BRAVE_API_KEY is missing in config — run make ai-repair"
+    elif [[ "${_codex_brave_key}" == "<YOUR_BRAVE_API_KEY>" ]]; then
+      attention "Codex brave-search MCP: BRAVE_API_KEY is placeholder — set a real key"
+    else
+      ok "Codex brave-search MCP: BRAVE_API_KEY is configured"
+    fi
   fi
-  unset _codex_github_token _codex_brave_key
+  unset _codex_github_token _codex_brave_key _codex_github_command _codex_brave_command
 else
   attention "Codex config: missing (${_codex_config})"
 fi

@@ -4,28 +4,30 @@
       "command": "bash",
       "args": [
         "-lc",
-        "npx -y @modelcontextprotocol/server-filesystem \"$HOME\" \"$HOME/ghq\""
+        "npx -y @modelcontextprotocol/server-filesystem \"$HOME\""
       ]
     },
     "github": {
-      "command": "npx",
+      "command": "$HOME/.local/bin/mcp-with-keychain-secret",
       "args": [
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "dotfiles.ai.mcp",
+        "github-personal-access-token",
+        "npx",
         "-y",
         "@modelcontextprotocol/server-github"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_GITHUB_TOKEN>"
-      }
+      ]
     },
     "brave-search": {
-      "command": "npx",
+      "command": "$HOME/.local/bin/mcp-with-keychain-secret",
       "args": [
+        "BRAVE_API_KEY",
+        "dotfiles.ai.mcp",
+        "brave-api-key",
+        "npx",
         "-y",
         "@modelcontextprotocol/server-brave-search"
-      ],
-      "env": {
-        "BRAVE_API_KEY": "<YOUR_BRAVE_API_KEY>"
-      }
+      ]
     },
     "drawio": {
       "command": "npx",

@@ -12,10 +12,17 @@ log()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 
+SECURITY_BIN="${SECURITY_BIN:-security}"
 SERENA_WRAPPER="${HOME}/.local/bin/serena-mcp"
+KEYCHAIN_ENV_WRAPPER="${HOME}/.local/bin/mcp-with-keychain-secret"
 SERENA_CONFIG_DIR="${HOME}/.serena"
 SERENA_CONFIG_PATH="${SERENA_CONFIG_DIR}/serena_config.yml"
 SERENA_CONFIG_BACKUP_SUFFIX="$(date +%Y%m%d%H%M%S)"
+AI_SHARED_ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ai-secrets.env"
+AI_SHARED_ENV_FALLBACK_FILE="${HOME}/.config/dotfiles/ai-secrets.env"
+KEYCHAIN_SERVICE="dotfiles.ai.mcp"
+GITHUB_KEYCHAIN_ACCOUNT="github-personal-access-token"
+BRAVE_KEYCHAIN_ACCOUNT="brave-api-key"
 
 CLAUDE_JSON="${HOME}/.claude.json"
 CLAUDE_SETTINGS_JSON="${HOME}/.claude/settings.json"
@@ -35,6 +42,49 @@ web_dashboard_open_on_launch: false
 project_serena_folder_location: "$projectDir/.serena"
 projects: []
 EOF
+}
+
+read_legacy_env_secret() {
+  local env_name="$1"
+  local env_file="${AI_SHARED_ENV_FILE}"
+  if [[ ! -f "${env_file}" && "${AI_SHARED_ENV_FALLBACK_FILE}" != "${env_file}" && -f "${AI_SHARED_ENV_FALLBACK_FILE}" ]]; then
+    env_file="${AI_SHARED_ENV_FALLBACK_FILE}"
+  fi
+
+  if [[ ! -f "${env_file}" ]]; then
+    printf ''
+    return 0
+  fi
+
+  env -i bash -lc "
+    set -a
+    source '${env_file}'
+    set +a
+    printf '%s' \"\${${env_name}:-}\"
+  " 2>/dev/null
+}
+
+read_keychain_secret() {
+  local account="$1"
+
+  if ! command -v "${SECURITY_BIN}" >/dev/null 2>&1; then
+    printf ''
+    return 0
+  fi
+
+  "${SECURITY_BIN}" find-generic-password -w -s "${KEYCHAIN_SERVICE}" -a "${account}" 2>/dev/null || true
+}
+
+resolve_ai_secret() {
+  local env_name="$1"
+  local account="$2"
+  local secret=""
+
+  secret="$(read_keychain_secret "${account}")"
+  if [[ -z "${secret}" ]]; then
+    secret="$(read_legacy_env_secret "${env_name}")"
+  fi
+  printf '%s' "${secret}"
 }
 
 # ---- Serena local config -----------------------------------------------------
@@ -83,6 +133,8 @@ fi
 # ---- Claude Code MCP registration (JSON direct) -----------------------------
 log "Claude Code MCP registration..."
 SERENA_CLAUDE_ENTRY='{"type":"stdio","command":"'"${SERENA_WRAPPER}"'","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}'
+GITHUB_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["GITHUB_PERSONAL_ACCESS_TOKEN","'"${KEYCHAIN_SERVICE}"'","'"${GITHUB_KEYCHAIN_ACCOUNT}"'","npx","-y","@modelcontextprotocol/server-github"]}'
+BRAVE_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["BRAVE_API_KEY","'"${KEYCHAIN_SERVICE}"'","'"${BRAVE_KEYCHAIN_ACCOUNT}"'","npx","-y","@modelcontextprotocol/server-brave-search"]}'
 serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
 serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
 
@@ -98,6 +150,10 @@ else
   restart_needed=1
 fi
 unset serena_cmd_state serena_uv_tls
+
+ai_config_json_upsert_mcp "${CLAUDE_JSON}" github "${GITHUB_CLAUDE_ENTRY}"
+ai_config_json_upsert_mcp "${CLAUDE_JSON}" brave-search "${BRAVE_CLAUDE_ENTRY}"
+ok "Claude Code: shared GitHub/Brave MCP env normalized"
 
 # ---- Claude Code local settings baseline -----------------------------------
 log "Claude Code local settings..."
@@ -152,18 +208,28 @@ case "$(ai_config_codex_mcp_url_state "${CODEX_CONFIG}" openaiDeveloperDocs "${O
     ;;
 esac
 
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.filesystem]" $'command = "bash"\nargs = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \\\"$HOME\\\" \\\"$HOME/ghq\\\""]'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.filesystem]" $'command = "bash"\nargs = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \\\"$HOME\\\""]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.drawio]" $'command = "npx"\nargs = ["-y", "@drawio/mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.playwright]" $'command = "npx"\nargs = ["-y", "@playwright/mcp@latest"]'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.github]" $'command = "npx"\nargs = ["-y", "@modelcontextprotocol/server-github"]\nenv = { GITHUB_PERSONAL_ACCESS_TOKEN = "'"${GITHUB_TOKEN_PLACEHOLDER}"'" }'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "npx"\nargs = ["-y", "@modelcontextprotocol/server-brave-search"]\nenv = { BRAVE_API_KEY = "'"${BRAVE_API_KEY_PLACEHOLDER}"'" }'
+github_codex_mcp_body="$(cat <<EOF
+command = "${KEYCHAIN_ENV_WRAPPER}"
+args = ["GITHUB_PERSONAL_ACCESS_TOKEN", "${KEYCHAIN_SERVICE}", "${GITHUB_KEYCHAIN_ACCOUNT}", "npx", "-y", "@modelcontextprotocol/server-github"]
+EOF
+)"
+brave_codex_mcp_body="$(cat <<EOF
+command = "${KEYCHAIN_ENV_WRAPPER}"
+args = ["BRAVE_API_KEY", "${KEYCHAIN_SERVICE}", "${BRAVE_KEYCHAIN_ACCOUNT}", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
+EOF
+)"
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.github]" "${github_codex_mcp_body}"
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" "${brave_codex_mcp_body}"
 ok "Codex: baseline MCP servers (filesystem/github/brave-search/drawio/playwright) registered"
 
-if [[ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]]; then
-  warn "Codex GitHub MCP: GITHUB_PERSONAL_ACCESS_TOKEN is not set (server may fail until configured)"
+if [[ -z "$(resolve_ai_secret "GITHUB_PERSONAL_ACCESS_TOKEN" "${GITHUB_KEYCHAIN_ACCOUNT}")" ]]; then
+  warn "Codex GitHub MCP: GitHub token is not set in Keychain (server may fail until configured)"
 fi
-if [[ -z "${BRAVE_API_KEY:-}" ]]; then
-  warn "Codex Brave MCP: BRAVE_API_KEY is not set (server may fail until configured)"
+if [[ -z "$(resolve_ai_secret "BRAVE_API_KEY" "${BRAVE_KEYCHAIN_ACCOUNT}")" ]]; then
+  warn "Codex Brave MCP: Brave API key is not set in Keychain (server may fail until configured)"
 fi
 
 printf '\nVerify with: make ai-audit\n'

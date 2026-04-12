@@ -129,6 +129,7 @@ make tips
 別プロファイルを一時的に見たいときだけ `make preview-home` を使います。
 cleanup まで含めて Homebrew 実体を定義どおりに寄せたいときは `make sync` / `make sync-home` を使います。
 会社 PC で明示的に `core` へ寄せたいときは `make sync-core` を使います。
+Claude Code / Codex 共通の GitHub token などを安全に入れたいときは `ai-secrets` を使います。`~/.local/bin` が PATH に入っている前提なので、どのリポジトリ上でも同じコマンドで実行できます。
 
 `make dashboard` は前回の同じ出力先があれば差分要約も入れます。  
 既定の出力先は `/tmp` 配下ですが、残したいときは `OUTPUT=docs/last-dashboard.md` のように指定します。
@@ -222,6 +223,7 @@ ghq get git@github.com:owner/repo.git
 
 `github` と `brave-search` は token / API key が必要なので、`<YOUR_...>` を実値に置き換えて使ってください。
 同じ構成は `make ai-repair` 実行時に Codex の `~/.codex/config.toml` にも **同じ env placeholder 付き** で登録されます。
+`filesystem` は `"$HOME"` のみを root にし、存在しない optional directory を起動引数に含めない前提です。
 `make ai-audit` は Codex 側の `GITHUB_PERSONAL_ACCESS_TOKEN` / `BRAVE_API_KEY` が placeholder や未設定なら warning を出します。
 
 ## AI セッション
@@ -424,6 +426,12 @@ Gemini は補助用途の one-shot コマンドを用意しています。
 `~/.serena/serena_config.yml` 自体は local state として各マシンに残しますが、`make status` / `make ai-audit` / `make doctor` で主要キー（`language_backend: LSP`、dashboard 設定、`project_serena_folder_location`）は監査するようにしています。
 
 `make ai-repair` は `~/.serena/serena_config.yml` の期待値を再生成し、`~/.claude.json` と `~/.codex/config.toml` の Serena MCP 登録を wrapper に書き込みます。あわせて Codex の baseline として `model = "gpt-5.4"`、`sandbox_mode = "workspace-write"`、`approval_policy = "on-request"`、`fast/review/deep` profile、`OpenAI Docs MCP` をそろえ、Claude Code 側は `~/.claude/settings.json` の `autoUpdatesChannel=latest` を保証します。CLI（`claude mcp add` 等）は使わず JSON / TOML を直接操作するため、MCP サーバーの起動やヘルスチェックによるタイムアウトが起きません。修復後は Claude Code / Codex を再起動してください。
+
+GitHub / Brave の credential を Claude Code と Codex で共有したい場合は、`ai-secrets` を使います。対話入力は terminal 上で hidden に処理し、値は shell history に残さず macOS Keychain に保存します。その後 `make ai-repair` 相当を自動で流し、`~/.claude.json` と `~/.codex/config.toml` には平文 token を書かず、Keychain 読み出し wrapper 経由の設定だけを書き込みます。以前の `~/.config/dotfiles/ai-secrets.env` があれば、保存後に削除します。
+
+```bash
+ai-secrets
+```
 
 プロジェクトごとの Serena インデックスは `make serena-index` で明示的に実行します。
 

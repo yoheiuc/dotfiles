@@ -1,4 +1,4 @@
-.PHONY: help tips status ai-audit ai-repair dashboard dashboard-open install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home serena-index doctor test test-scripts uninstall
+.PHONY: help tips status ai-audit ai-repair ai-secrets dashboard dashboard-open install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home serena-index doctor test test-scripts uninstall
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -14,6 +14,9 @@ ai-audit: ## ローカル管理の AI 設定だけを詳しく確認
 
 ai-repair: ## AI 周りのローカル drift を修復 (Serena config / MCP registration)
 	bash scripts/ai-repair.sh
+
+ai-secrets: ## Claude Code / Codex 共通の AI credential を対話で保存
+	bash scripts/ai-secrets.sh
 
 dashboard: ## status と ai-audit を Markdown にまとめる
 	OUTPUT="$(OUTPUT)" bash scripts/dashboard.sh
@@ -96,6 +99,8 @@ test-scripts: ## shell スクリプトの回帰テストを実行
 	bash tests/serena-bootstrap.sh
 	bash tests/serena-wrapper.sh
 	bash tests/ai-repair.sh
+	bash tests/ai-secrets.sh
+	bash tests/ai-secrets-wrapper.sh
 	bash tests/brew-tools.sh
 	bash tests/dothelp.sh
 	bash tests/status.sh
