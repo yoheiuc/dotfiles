@@ -141,6 +141,58 @@ else
   attention "Claude Code settings: missing (${HOME}/.claude/settings.json)"
 fi
 
+_claude_json="${HOME}/.claude.json"
+if [[ -f "${_claude_json}" ]]; then
+  _claude_filesystem_cmd="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('filesystem',{}).get('command','')" 2>/dev/null || true)"
+  _claude_filesystem_args="$(ai_config_json_read "${_claude_json}" "'|'.join(d.get('mcpServers',{}).get('filesystem',{}).get('args',[]))" 2>/dev/null || true)"
+  if [[ "${_claude_filesystem_cmd}" == "bash" && "${_claude_filesystem_args}" == '-lc|npx -y @modelcontextprotocol/server-filesystem "$HOME"' ]]; then
+    ok "Claude Code filesystem MCP: registered"
+  else
+    attention "Claude Code filesystem MCP: missing or drifted — run make ai-repair"
+  fi
+
+  _claude_drawio_cmd="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('drawio',{}).get('command','')" 2>/dev/null || true)"
+  _claude_drawio_args="$(ai_config_json_read "${_claude_json}" "'|'.join(d.get('mcpServers',{}).get('drawio',{}).get('args',[]))" 2>/dev/null || true)"
+  if [[ "${_claude_drawio_cmd}" == "npx" && "${_claude_drawio_args}" == '-y|@drawio/mcp@latest' ]]; then
+    ok "Claude Code drawio MCP: registered"
+  else
+    attention "Claude Code drawio MCP: missing or drifted — run make ai-repair"
+  fi
+
+  _claude_playwright_cmd="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('playwright',{}).get('command','')" 2>/dev/null || true)"
+  _claude_playwright_args="$(ai_config_json_read "${_claude_json}" "'|'.join(d.get('mcpServers',{}).get('playwright',{}).get('args',[]))" 2>/dev/null || true)"
+  if [[ "${_claude_playwright_cmd}" == "npx" && "${_claude_playwright_args}" == '-y|@playwright/mcp@latest' ]]; then
+    ok "Claude Code playwright MCP: registered"
+  else
+    attention "Claude Code playwright MCP: missing or drifted — run make ai-repair"
+  fi
+
+  _claude_github_command="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('github',{}).get('command','')" 2>/dev/null || true)"
+  if [[ "${_claude_github_command}" == *"mcp-with-keychain-secret"* ]]; then
+    if [[ -n "$(resolve_ai_secret "GITHUB_PERSONAL_ACCESS_TOKEN" "${GITHUB_KEYCHAIN_ACCOUNT}")" ]]; then
+      ok "Claude Code github MCP: GitHub token is available via Keychain"
+    else
+      attention "Claude Code github MCP: GitHub token missing from Keychain"
+    fi
+  else
+    attention "Claude Code github MCP: missing or drifted — run make ai-repair"
+  fi
+
+  _claude_brave_command="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
+  if [[ "${_claude_brave_command}" == *"mcp-with-keychain-secret"* ]]; then
+    if [[ -n "$(resolve_ai_secret "BRAVE_API_KEY" "${BRAVE_KEYCHAIN_ACCOUNT}")" ]]; then
+      ok "Claude Code brave-search MCP: Brave API key is available via Keychain"
+    else
+      attention "Claude Code brave-search MCP: Brave API key missing from Keychain"
+    fi
+  else
+    attention "Claude Code brave-search MCP: missing or drifted — run make ai-repair"
+  fi
+  unset _claude_filesystem_cmd _claude_filesystem_args _claude_drawio_cmd _claude_drawio_args _claude_playwright_cmd _claude_playwright_args _claude_github_command _claude_brave_command
+else
+  attention "Claude Code MCP config: missing (${_claude_json})"
+fi
+
 section "Codex Baseline"
 _codex_config="${HOME}/.codex/config.toml"
 if [[ -f "${_codex_config}" ]]; then

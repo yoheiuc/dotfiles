@@ -132,11 +132,20 @@ fi
 
 # ---- Claude Code MCP registration (JSON direct) -----------------------------
 log "Claude Code MCP registration..."
+FILESYSTEM_CLAUDE_ENTRY='{"type":"stdio","command":"bash","args":["-lc","npx -y @modelcontextprotocol/server-filesystem \"$HOME\""]}'
 SERENA_CLAUDE_ENTRY='{"type":"stdio","command":"'"${SERENA_WRAPPER}"'","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}'
 GITHUB_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["GITHUB_PERSONAL_ACCESS_TOKEN","'"${KEYCHAIN_SERVICE}"'","'"${GITHUB_KEYCHAIN_ACCOUNT}"'","npx","-y","@modelcontextprotocol/server-github"]}'
 BRAVE_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["BRAVE_API_KEY","'"${KEYCHAIN_SERVICE}"'","'"${BRAVE_KEYCHAIN_ACCOUNT}"'","npx","-y","@modelcontextprotocol/server-brave-search"]}'
+DRAWIO_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@drawio/mcp@latest"]}'
+PLAYWRIGHT_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@playwright/mcp@latest"]}'
 serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
 serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
+claude_filesystem_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('filesystem',{}).get('command','')" 2>/dev/null || true)"
+claude_filesystem_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('filesystem',{}).get('args',[]))" 2>/dev/null || true)"
+claude_drawio_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('drawio',{}).get('command','')" 2>/dev/null || true)"
+claude_drawio_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('drawio',{}).get('args',[]))" 2>/dev/null || true)"
+claude_playwright_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('playwright',{}).get('command','')" 2>/dev/null || true)"
+claude_playwright_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('playwright',{}).get('args',[]))" 2>/dev/null || true)"
 
 if [[ "${serena_cmd_state}" == "ok" && "${serena_uv_tls}" == "true" ]]; then
   ok "Claude Code: serena already registered with wrapper and UV_NATIVE_TLS"
@@ -151,9 +160,28 @@ else
 fi
 unset serena_cmd_state serena_uv_tls
 
+if [[ "${claude_filesystem_cmd}" != "bash" || "${claude_filesystem_args}" != '-lc|npx -y @modelcontextprotocol/server-filesystem "$HOME"' ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" filesystem "${FILESYSTEM_CLAUDE_ENTRY}"
+  ok "Claude Code: filesystem MCP registered"
+  restart_needed=1
+fi
+
+if [[ "${claude_drawio_cmd}" != "npx" || "${claude_drawio_args}" != '-y|@drawio/mcp@latest' ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" drawio "${DRAWIO_CLAUDE_ENTRY}"
+  ok "Claude Code: drawio MCP registered"
+  restart_needed=1
+fi
+
+if [[ "${claude_playwright_cmd}" != "npx" || "${claude_playwright_args}" != '-y|@playwright/mcp@latest' ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" playwright "${PLAYWRIGHT_CLAUDE_ENTRY}"
+  ok "Claude Code: Playwright MCP registered"
+  restart_needed=1
+fi
+
 ai_config_json_upsert_mcp "${CLAUDE_JSON}" github "${GITHUB_CLAUDE_ENTRY}"
 ai_config_json_upsert_mcp "${CLAUDE_JSON}" brave-search "${BRAVE_CLAUDE_ENTRY}"
-ok "Claude Code: shared GitHub/Brave MCP env normalized"
+ok "Claude Code: baseline MCP servers (filesystem/github/brave-search/drawio/playwright) normalized"
+unset claude_filesystem_cmd claude_filesystem_args claude_drawio_cmd claude_drawio_args claude_playwright_cmd claude_playwright_args
 
 # ---- Claude Code local settings baseline -----------------------------------
 log "Claude Code local settings..."
