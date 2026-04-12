@@ -206,10 +206,10 @@ if [[ -f "${_codex_config}" ]]; then
     attention "Codex: model should be gpt-5.4"
   fi
 
-  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('model_reasoning_effort','')" 2>/dev/null || true)" == "high" ]]; then
-    ok "Codex: default reasoning effort is high"
+  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('model_reasoning_effort','')" 2>/dev/null || true)" == "medium" ]]; then
+    ok "Codex: default reasoning effort is medium"
   else
-    attention "Codex: default reasoning effort should be high"
+    attention "Codex: default reasoning effort should be medium"
   fi
 
   if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('sandbox_mode','')" 2>/dev/null || true)" == "workspace-write" ]]; then

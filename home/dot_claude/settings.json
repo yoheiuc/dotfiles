@@ -31,7 +31,7 @@
     "type": "command",
     "command": "/Users/y.uchiyama/.claude/statusline.sh"
   },
-  "effortLevel": "high",
+  "effortLevel": "auto",
   "autoUpdatesChannel": "latest",
   "model": "opus[1m]"
 }

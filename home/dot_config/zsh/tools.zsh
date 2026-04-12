@@ -21,41 +21,6 @@ if command -v navi &>/dev/null; then
   eval "$(navi widget zsh)"
 fi
 
-# codex — shortcuts and usage helpers
-_codex_statusline() {
-  command -v codex-usage-status >/dev/null 2>&1 || return 0
-  codex-usage-status
-}
-
-_codex_run() {
-  _codex_statusline
-  command codex "$@"
-}
-
-cx() {
-  _codex_run "$@"
-}
-
-cxf() {
-  _codex_run -p fast "$@"
-}
-
-cxr() {
-  _codex_run -p review "$@"
-}
-
-cxd() {
-  _codex_run -p deep "$@"
-}
-
-cxl() {
-  _codex_run resume --last "$@"
-}
-
-cxu() {
-  _codex_statusline
-}
-
 dotprofile() {
   printf '%s\n' "${DOTFILES_PROFILE:-core}"
 }

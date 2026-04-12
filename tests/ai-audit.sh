@@ -81,7 +81,7 @@ chmod +x "${tmpdir}/scripts/ai-audit.sh" "${tmpdir}/scripts/lib/ai-config.sh"
 # ---- Scenario 1: clean case ----
 cat > "${HOME}/.codex/config.toml" <<EOF
 model = "gpt-5.4"
-model_reasoning_effort = "high"
+model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 approval_policy = "on-request"
 

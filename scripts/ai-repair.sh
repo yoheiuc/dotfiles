@@ -215,15 +215,12 @@ fi
 log "Codex baseline..."
 mkdir -p "$(dirname "${CODEX_CONFIG}")"
 ai_config_toml_upsert_top_level "${CODEX_CONFIG}" model '"gpt-5.4"'
-ai_config_toml_upsert_top_level "${CODEX_CONFIG}" model_reasoning_effort '"high"'
+ai_config_toml_upsert_top_level "${CODEX_CONFIG}" model_reasoning_effort '"medium"'
 ai_config_toml_upsert_top_level "${CODEX_CONFIG}" personality '"pragmatic"'
 ai_config_toml_upsert_top_level "${CODEX_CONFIG}" sandbox_mode '"workspace-write"'
 ai_config_toml_upsert_top_level "${CODEX_CONFIG}" approval_policy '"on-request"'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[profiles.fast]" $'model = "codex-mini-latest"\nmodel_reasoning_effort = "low"\npersonality = "pragmatic"'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[profiles.review]" $'model = "gpt-5.4"\nmodel_reasoning_effort = "high"\npersonality = "pragmatic"'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[profiles.deep]" $'model = "gpt-5.4"\nmodel_reasoning_effort = "high"\npersonality = "pragmatic"'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[features]" $'multi_agent = true\ncodex_hooks = true'
-ok "Codex: baseline model/profiles/sandbox settings normalized"
+ok "Codex: baseline model/sandbox settings normalized"
 
 # ---- Codex MCP registration (TOML direct) -----------------------------------
 log "Codex MCP registration..."
