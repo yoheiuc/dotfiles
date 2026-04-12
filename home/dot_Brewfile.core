@@ -6,9 +6,6 @@
 # Install: make install
 # Update:  make update
 
-# ---------- Taps ----------
-tap "domt4/autoupdate"           # brew autoupdate command
-
 # ---------- Core CLI ----------
 brew "chezmoi"            # dotfiles manager
 brew "git"
@@ -50,7 +47,6 @@ brew "zellij"             # terminal multiplexer
 # ---------- Runtimes / package managers ----------
 brew "node"               # npm runtime for Codex CLI
 brew "uv"                 # fast Python package manager
-brew "pinentry-mac"       # askpass backend for brew-autoupdate --sudo
 
 # ---------- Misc CLI ----------
 brew "shellcheck"         # shell script linter (used in CI)

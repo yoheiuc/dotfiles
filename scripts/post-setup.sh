@@ -7,7 +7,7 @@
 #   - Register Serena MCP server into Claude Code and Codex (idempotent)
 #   - Register Sequential Thinking MCP into Claude Code and Codex (idempotent)
 #   - Rely on chezmoi-managed Codex skills bundled in this repository
-#   - Set up brew-autoupdate (all formulae/casks, every hour, with sudo support when available)
+#   - Keep brew-autoupdate disabled (manual brew update/upgrade policy)
 #
 # Safe to re-run: already-configured items are skipped.
 # Called automatically by: make install-home
@@ -107,29 +107,10 @@ ok "Codex skills are managed by chezmoi under ~/.codex/skills"
 
 # ---- brew autoupdate -------------------------------------------------------
 log "brew autoupdate..."
-
-if ! brew tap | grep -q "domt4/autoupdate"; then
-  log "Tapping domt4/autoupdate..."
-  brew tap domt4/autoupdate
-fi
-
-AUTOUPDATE_INTERVAL_SECONDS=86400
-autoupdate_args=(autoupdate start "${AUTOUPDATE_INTERVAL_SECONDS}" --upgrade --greedy --cleanup --immediate)
-if brew_autoupdate_pinentry_available; then
-  autoupdate_args+=(--sudo)
-else
-  warn "pinentry-mac not found — sudo-required casks will not auto-upgrade until the core Brew profile is synced"
-fi
-
-if brew_autoupdate_matches_dotfiles_baseline "${AUTOUPDATE_INTERVAL_SECONDS}"; then
-  ok "brew autoupdate: running (every 24h, all formulae/casks, $(brew_autoupdate_mode_summary | tr -d '\n'))"
-else
-  log "Configuring brew autoupdate (every 24h, all formulae/casks)..."
-  brew autoupdate delete >/dev/null 2>&1 || true
-  brew "${autoupdate_args[@]}"
-  ok "brew autoupdate: configured (every 24h, all formulae/casks, $(brew_autoupdate_mode_summary | tr -d '\n'))"
-fi
-unset AUTOUPDATE_INTERVAL_SECONDS autoupdate_args
+launchctl bootout "gui/$(id -u)/$(brew_autoupdate_label)" >/dev/null 2>&1 || true
+brew autoupdate delete >/dev/null 2>&1 || true
+rm -f "$(brew_autoupdate_plist_path)" "$(brew_autoupdate_runner_path)"
+ok "brew autoupdate: disabled by dotfiles policy"
 
 printf '\nVerify with: make doctor\n'
 printf '             codex login    (one-time auth)\n'

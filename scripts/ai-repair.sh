@@ -150,6 +150,13 @@ case "$(ai_config_codex_mcp_url_state "${CODEX_CONFIG}" openaiDeveloperDocs "${O
     ;;
 esac
 
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.filesystem]" $'command = "bash"\nargs = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \\\"$HOME\\\" \\\"$HOME/ghq\\\""]'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.github]" $'command = "npx"\nargs = ["-y", "@modelcontextprotocol/server-github"]'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "npx"\nargs = ["-y", "@modelcontextprotocol/server-brave-search"]'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.drawio]" $'command = "npx"\nargs = ["-y", "@drawio/mcp@latest"]'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.playwright]" $'command = "npx"\nargs = ["-y", "@playwright/mcp@latest"]'
+ok "Codex: baseline MCP servers (filesystem/github/brave-search/drawio/playwright) registered"
+
 printf '\nVerify with: make ai-audit\n'
 if [[ "${restart_needed}" == "1" ]]; then
   printf 'Then restart Claude Code / Codex and close any old terminals still using stale MCP settings.\n'

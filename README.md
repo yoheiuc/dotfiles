@@ -181,8 +181,7 @@ make doctor
 | `git user.name` / `user.email` / `core.hooksPath` | Required | git identity が設定され、global hook が有効 |
 | `node --version` | Optional | Codex CLI 導入に必要な node/npm がある |
 | `uv --version` | Optional | Serena MCP に必要な `uv` がある |
-| `pinentry-mac` | Optional | `brew-autoupdate --sudo` 用の askpass backend がある |
-| `brew-autoupdate` | Optional | 1 時間ごとの全 formula/cask 自動更新が launchd で動いている |
+| `brew-autoupdate` | Optional | dotfiles 方針では無効化されている（有効なら warning） |
 | `ghostty --version` | Optional | Ghostty CLI が存在し、バージョンが取得できる |
 | `claude --version` | Optional | Claude Code CLI がある |
 | `~/.claude.json` serena | Optional | Claude Code 側で Serena MCP が登録されている |
@@ -209,6 +208,20 @@ ghq get git@github.com:owner/repo.git
 ```
 
 ---
+
+## MCP の基本セット（2026）
+
+`home/dot_claude/dot_mcp.json` に、記事ベースの「とりあえずこれ入れておけ」構成を反映しています。
+
+- `filesystem`
+- `github`
+- `brave-search`
+- `drawio`
+- `serena`
+- `playwright`
+
+`github` と `brave-search` は token / API key が必要なので、`<YOUR_...>` を実値に置き換えて使ってください。
+同じ構成は `make ai-repair` 実行時に Codex の `~/.codex/config.toml` にも登録されます。
 
 ## AI セッション
 
@@ -420,7 +433,7 @@ make -C ~/dotfiles serena-index DIR="$PWD"
 
 **Claude Code CLI** は native install を正とし、`post-setup.sh` が `latest` チャンネルで導入します。Claude Code docs どおり native install はバックグラウンド自動更新に対応しているため、Homebrew cask では管理しません。
 
-**brew-autoupdate** は `post-setup.sh` が `domt4/autoupdate` tap 経由で設定し、24 時間ごとに Homebrew 管理下の formula / cask 全体へ `upgrade + greedy cask upgrade + cleanup` を流します。`pinentry-mac` が入っている前提で `--sudo` も有効にするので、sudo が必要な cask も同じ運用に寄せます。
+**brew-autoupdate** は dotfiles 方針で無効化しています。`post-setup.sh` は既存の launch agent / runner があれば削除し、`make status` / `make doctor` でも「無効が正常」として監査します。
 
 ```bash
 ./scripts/post-setup.sh
@@ -504,7 +517,7 @@ dotfiles/
 │   ├── bootstrap.sh                # core brew + chezmoi + apply
 │   ├── profile.sh                  # active profile の保存 / 参照
 │   ├── preview.sh                  # chezmoi/Brew の変更予定を確認
-│   ├── post-setup.sh               # Serena MCP + brew-autoupdate baseline
+│   ├── post-setup.sh               # Serena MCP + brew-autoupdate disable
 │   ├── uninstall.sh                # dotfiles を削除
 │   └── doctor.sh                   # 健全性チェック
 └── .github/workflows/

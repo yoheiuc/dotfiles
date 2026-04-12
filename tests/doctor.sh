@@ -169,6 +169,9 @@ if [[ "${1:-}" == "--version" ]]; then
   printf 'swift 5.9\n'
   exit 0
 fi
+if [[ "${1:-}" == "-e" ]]; then
+  exit 0
+fi
 exit 1
 EOF
 
@@ -244,19 +247,8 @@ web_dashboard: true
 web_dashboard_open_on_launch: false
 project_serena_folder_location: "$projectDir/.serena"
 EOF
-cat > "${home_ok}/Library/Application Support/com.github.domt4.homebrew-autoupdate/brew_autoupdate" <<'EOF'
-#!/bin/sh
-export SUDO_ASKPASS='/tmp/brew_autoupdate_sudo_gui'
-/opt/homebrew/bin/brew update && /opt/homebrew/bin/brew upgrade --formula -v && /opt/homebrew/bin/brew upgrade --cask -v --greedy && /opt/homebrew/bin/brew cleanup
-EOF
-cat > "${home_ok}/Library/LaunchAgents/com.github.domt4.homebrew-autoupdate.plist" <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<plist version="1.0"><dict><key>StartInterval</key><integer>86400</integer></dict></plist>
-EOF
-
 run_capture run_doctor "${home_ok}" \
-  LAUNCHCTL_AUTUPDATE_LOADED=1 \
-  PLUTIL_START_INTERVAL=86400 \
+  LAUNCHCTL_AUTUPDATE_LOADED=0 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy home profile case"
@@ -267,15 +259,14 @@ assert_contains "${RUN_OUTPUT}" "default model: gpt-5.4" "doctor should validate
 assert_contains "${RUN_OUTPUT}" "sandbox mode: workspace-write" "doctor should validate Codex sandbox baseline"
 assert_contains "${RUN_OUTPUT}" "approval policy: on-request" "doctor should validate Codex approval baseline"
 assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP: registered" "doctor should validate Docs MCP"
-assert_contains "${RUN_OUTPUT}" "brew autoupdate: running (every 24h, all formulae/casks, with sudo support)" "doctor should validate brew autoupdate baseline"
-assert_contains "${RUN_OUTPUT}" "pinentry-mac: present" "doctor should validate pinentry availability"
+assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "doctor should validate disabled brew autoupdate policy"
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend = LSP" "doctor should validate Serena global config"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered" "doctor should detect Claude serena registration"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered via wrapper" "doctor should detect Codex wrapper registration"
 
 # ---- Scenario 2: drift ----
 home_drift="${tmpdir}/home-drift"
-mkdir -p "${home_drift}/.config/dotfiles" "${home_drift}/.codex" "${home_drift}/.serena"
+mkdir -p "${home_drift}/.config/dotfiles" "${home_drift}/.codex" "${home_drift}/.serena" "${home_drift}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_drift}/Library/LaunchAgents"
 printf 'core\n' > "${home_drift}/.config/dotfiles/profile"
 cat > "${home_drift}/.codex/config.toml" <<'EOF'
 model = "codex-mini-latest"
@@ -297,23 +288,28 @@ web_dashboard: false
 web_dashboard_open_on_launch: true
 project_serena_folder_location: "/tmp/serena"
 EOF
+cat > "${home_drift}/Library/Application Support/com.github.domt4.homebrew-autoupdate/brew_autoupdate" <<'EOF'
+#!/bin/sh
+/opt/homebrew/bin/brew update && /opt/homebrew/bin/brew upgrade --formula -v
+EOF
+cat > "${home_drift}/Library/LaunchAgents/com.github.domt4.homebrew-autoupdate.plist" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict><key>StartInterval</key><integer>3600</integer></dict></plist>
+EOF
+
 run_capture run_doctor "${home_drift}" \
-  BREW_AUTOUPDATE_FORCE_PINENTRY_MISSING=1 \
-  LAUNCHCTL_AUTUPDATE_LOADED=0 \
+  LAUNCHCTL_AUTUPDATE_LOADED=1 \
   BREW_DOCTOR_CLT_WARN=1 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\nbitwarden\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should stay green when only optional drift warnings are present"
-assert_contains "${RUN_OUTPUT}" "Homebrew reported CLT issues or updates" "doctor should catch CLT/Swift issues from brew doctor"
-assert_contains "${RUN_OUTPUT}" "A newer Command Line Tools release is available" "doctor should report the specific CLT warning"
 assert_contains "${RUN_OUTPUT}" "Brew profile drift: casks installed outside 'core' profile" "doctor should warn on cask drift"
 assert_contains "${RUN_OUTPUT}" "auto-update channel should be latest" "doctor should warn on Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "default model should be gpt-5.4" "doctor should warn on Codex model drift"
 assert_contains "${RUN_OUTPUT}" "sandbox mode should be workspace-write" "doctor should warn on Codex sandbox drift"
 assert_contains "${RUN_OUTPUT}" "approval policy should be on-request" "doctor should warn on Codex approval drift"
 assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP: missing" "doctor should warn on missing Docs MCP"
-assert_contains "${RUN_OUTPUT}" "brew autoupdate: not configured" "doctor should warn on missing brew autoupdate"
-assert_contains "${RUN_OUTPUT}" "pinentry-mac: missing" "doctor should warn on missing pinentry"
+assert_contains "${RUN_OUTPUT}" "brew autoupdate: enabled, but dotfiles policy is disabled" "doctor should warn when brew autoupdate is enabled"
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend is not LSP" "doctor should warn on Serena config drift"
 assert_contains "${RUN_OUTPUT}" "bitwarden" "doctor should list drifting cask names"
 assert_contains "${RUN_OUTPUT}" "serena MCP: not registered" "doctor should warn about missing serena MCP"

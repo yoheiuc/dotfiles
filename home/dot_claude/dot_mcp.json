@@ -1,8 +1,55 @@
 {
   "mcpServers": {
+    "filesystem": {
+      "command": "bash",
+      "args": [
+        "-lc",
+        "npx -y @modelcontextprotocol/server-filesystem \"$HOME\" \"$HOME/ghq\""
+      ]
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_GITHUB_TOKEN>"
+      }
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-brave-search"
+      ],
+      "env": {
+        "BRAVE_API_KEY": "<YOUR_BRAVE_API_KEY>"
+      }
+    },
+    "drawio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@drawio/mcp@latest"
+      ]
+    },
     "playwright": {
       "command": "npx",
-      "args": ["@playwright/mcp@latest"]
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "serena": {
+      "command": "bash",
+      "args": [
+        "-lc",
+        "\"$HOME/.local/bin/serena-mcp\" claude-code"
+      ],
+      "env": {
+        "UV_NATIVE_TLS": "true"
+      }
     }
   }
 }

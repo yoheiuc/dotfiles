@@ -143,6 +143,17 @@ if [[ -f "${_codex_config}" ]]; then
       attention "Codex OpenAI Docs MCP: missing — run make ai-repair"
       ;;
   esac
+
+  for _server in filesystem github brave-search drawio playwright; do
+    case "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('${_server}',{}).get('command','')" 2>/dev/null || true)" in
+      "")
+        attention "Codex ${_server} MCP: missing — run make ai-repair"
+        ;;
+      *)
+        ok "Codex ${_server} MCP: registered"
+        ;;
+    esac
+  done
 else
   attention "Codex config: missing (${_codex_config})"
 fi
