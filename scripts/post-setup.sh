@@ -6,6 +6,7 @@
 #   - Install Codex CLI (via npm install -g @openai/codex)
 #   - Register Serena MCP server into Claude Code and Codex (idempotent)
 #   - Register Sequential Thinking MCP into Claude Code and Codex (idempotent)
+#   - Install Google Workspace CLI (gws) skills under ~/.claude/skills and ~/.codex/skills (idempotent)
 #   - Rely on chezmoi-managed Codex skills bundled in this repository
 #   - Keep brew-autoupdate disabled (manual brew update/upgrade policy)
 #
@@ -104,6 +105,32 @@ esac
 # ---- Codex skills ----------------------------------------------------------
 log "Codex skills..."
 ok "Codex skills are managed by chezmoi under ~/.codex/skills"
+
+# ---- Google Workspace CLI skills (Claude Code / Codex) --------------------
+log "Google Workspace CLI skills..."
+
+if ! command -v gws &>/dev/null; then
+  warn "gws not found — install the core Brew profile first (googleworkspace-cli)"
+elif ! command -v npx &>/dev/null; then
+  warn "npx not found — gws skills skipped (install node via core Brew profile)"
+else
+  for target in claude-code:"${HOME}/.claude/skills" codex:"${HOME}/.codex/skills"; do
+    agent="${target%%:*}"
+    dir="${target#*:}"
+    mkdir -p "${dir}"
+    if compgen -G "${dir}/gws-*/SKILL.md" >/dev/null; then
+      ok "gws skills already present under ${dir/#${HOME}/\~}"
+    else
+      log "Installing gws skills for ${agent} into ${dir/#${HOME}/\~} ..."
+      if npx -y skills add https://github.com/googleworkspace/cli -a "${agent}" -g -y; then
+        ok "gws skills installed (${agent})"
+      else
+        warn "npx skills add failed for ${agent} — re-run or install manually"
+      fi
+    fi
+  done
+  unset target agent dir
+fi
 
 # ---- brew autoupdate -------------------------------------------------------
 log "brew autoupdate..."
