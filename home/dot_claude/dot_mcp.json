@@ -7,17 +7,6 @@
         "npx -y @modelcontextprotocol/server-filesystem \"$HOME\""
       ]
     },
-    "github": {
-      "command": "$HOME/.local/bin/mcp-with-keychain-secret",
-      "args": [
-        "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "dotfiles.ai.mcp",
-        "github-personal-access-token",
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ]
-    },
     "exa": {
       "type": "http",
       "url": "https://mcp.exa.ai/mcp"

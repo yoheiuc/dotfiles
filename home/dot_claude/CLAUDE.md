@@ -18,7 +18,7 @@
 | 知らないこと・最新情報を調べる | `mcp__exa__web_search_exa` / `mcp__exa__web_fetch_exa`。「わかりません」の前にまず検索する |
 | 図で説明した方が早い構成・フロー | `mcp__drawio__*` で図を生成する。テキストだけの説明で済ませない |
 | UI の確認・操作・スクリーンショット | `mcp__playwright__*` でブラウザを実際に開く |
-| GitHub の PR / Issue / コード検索 | `mcp__github__*` で直接操作する。URL を見たら即座にこれで取得 |
+| GitHub の PR / Issue / コード検索 | `gh` CLI を使う（`gh pr`, `gh issue`, `gh api` 等） |
 | パフォーマンス・ネットワーク問題 | `mcp__chrome-devtools__*` で実測する |
 | コード構造の理解・リファクタ | Serena（下記） |
 
