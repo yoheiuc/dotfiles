@@ -7,6 +7,7 @@
 
 # ---------- Local productivity ----------
 cask "raycast"                   # launcher
+cask "libreoffice"               # office suite
 
 # ---------- Accounts / auth ----------
 cask "bitwarden", args: { appdir: "/Applications" }
