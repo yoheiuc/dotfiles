@@ -398,11 +398,13 @@ config-file = local.ghostty
 
 ## Claude Code / Codex / MCP
 
-`~/.claude/settings.json` は基本的にローカル管理にしています。権限設定や許可ルールは運用しながら変わりやすいため、dotfiles では配りません。例外として `post-setup.sh` は `autoUpdatesChannel=latest` だけを保証します。
+`~/.claude/settings.json` は chezmoi 管理にしています。`defaultMode: "auto"` で AI 分類器による自動許可を有効にし、`WebFetch` / `WebSearch` も auto-allow しています。危険な操作は deny リストでブロックし、`git push` 等は ask で確認を挟みます。
 
-`~/.claude/CLAUDE.md` は chezmoi 管理にしており、個人用の共通メモと運用方針を置きます。
+`~/.claude/CLAUDE.md` も chezmoi 管理にしており、個人用の共通メモと運用方針を置きます。
 
-`~/.codex/config.toml` はローカル管理にしています。モデル選択、profile、plugin、project trust などの変わりやすい設定は Codex 側で更新されることがあるため、dotfiles では配りません。
+`~/.claude/statusline.py` と `~/.claude/auto-save.sh` も chezmoi 管理です。`statusline.py` はステータスラインにモデル名・コスト・使用率を表示し、`auto-save.sh` は Stop フックからコンテキスト使用率が高い場合にメモリを自動保存します。
+
+`~/.codex/config.toml` は chezmoi テンプレート管理にしています。`approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`（`--full-auto` 相当）で auto モードを有効にしています。マシン固有のパスは `{{ .chezmoi.homeDir }}` で展開します。
 
 `~/AGENTS.md` も chezmoi 管理にしており、Codex が参照する個人用の共通メモとして使います。
 
@@ -495,17 +497,17 @@ python3 ~/.codex/skills/ui-ux-pro-max/scripts/search.py "SaaS B2B analytics" --d
 
 ### Claude Code / Gemini CLI のローカル state
 
-Claude Code と Gemini CLI は、共通設定とローカル state を分けて管理します。
+Claude Code、Codex、Gemini CLI は、共通設定とローカル state を分けて管理します。
 
-- Claude Code は `~/.claude/CLAUDE.md` だけを dotfiles 管理する
-- `~/.claude/settings.json` はローカル管理にして、permissions / allowlist / denylist などの変わりやすい設定は各マシンで持つ
-- ただし `post-setup.sh` で `autoUpdatesChannel=latest` だけは毎回そろえる
-- `~/.claude/history.jsonl`、`projects/`、`sessions/`、`cache/`、`plugins/` などの運用データは管理しない
-- Codex は `~/AGENTS.md` を dotfiles 管理する
-- `~/.codex/config.toml` はローカル管理にして、model / plugin / project trust などの変わりやすい設定は各マシンで持つ
-- `~/.codex/auth.json`、`sessions/`、`history.jsonl`、`cache/`、`log/`、`sqlite` 系、`tmp/` などの運用データは管理しない
-- Gemini CLI の `~/.gemini/settings.json` はローカル管理にする
+- Claude Code は `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/statusline.py`、`~/.claude/auto-save.sh`、`commands/`、`.mcp.json`、`statusline.sh` を dotfiles 管理する
+- `~/.claude/settings.local.json` はマシン固有のオーバーライド用でローカル管理
+- `~/.claude/history.jsonl`、`projects/`、`sessions/`、`cache/`、`plugins/`、`skills/`（プラグイン自動生成）などの運用データは管理しない
+- Codex は `~/AGENTS.md`、`~/.codex/config.toml`（テンプレート）、`~/.codex/hooks.json`、`~/.codex/skills/` を dotfiles 管理する
+- `~/.codex/auth.json`、`sessions/`、`history.jsonl`、`cache/`、`log/`、`sqlite` 系、`tmp/`、`rules/`（自動学習）、`memories/` などの運用データは管理しない
+- Gemini CLI は `~/.gemini/settings.json` を dotfiles 管理する
 - `~/.gemini/oauth_creds.json`、`google_accounts.json`、`history/`、`projects.json`、`state.json`、`trustedFolders.json`、`tmp/` などは管理しない
+- GitHub CLI は `~/.config/gh/config.yml` を dotfiles 管理する
+- `~/.config/gh/hosts.yml`（認証トークン）は管理しない
 
 ---
 
@@ -524,9 +526,18 @@ dotfiles/
 │   ├── dot_zshrc                   # -> ~/.zshrc
 │   ├── dot_claude/
 │   │   ├── CLAUDE.md               # -> ~/.claude/CLAUDE.md
+│   │   ├── settings.json           # -> ~/.claude/settings.json (auto mode + permissions)
+│   │   ├── executable_statusline.sh # -> ~/.claude/statusline.sh
+│   │   ├── executable_statusline.py # -> ~/.claude/statusline.py
+│   │   ├── executable_auto-save.sh # -> ~/.claude/auto-save.sh
+│   │   ├── dot_mcp.json            # -> ~/.claude/.mcp.json
+│   │   └── commands/               # -> ~/.claude/commands/*
 │   ├── dot_codex/
+│   │   ├── config.toml.tmpl        # -> ~/.codex/config.toml (chezmoi template)
+│   │   ├── hooks.json              # -> ~/.codex/hooks.json
 │   │   └── skills/                 # -> ~/.codex/skills/*
-│   ├── dot_gemini/                 # local settings are unmanaged
+│   ├── dot_gemini/
+│   │   └── settings.json           # -> ~/.gemini/settings.json
 │   ├── dot_local/bin/
 │   │   ├── ai-secrets              # -> ~/.local/bin/ai-secrets
 │   │   ├── mcp-with-keychain-secret # -> ~/.local/bin/mcp-with-keychain-secret
@@ -537,6 +548,7 @@ dotfiles/
 │   │   ├── files.cheat
 │   │   └── terminal.cheat
 │   └── dot_config/
+│       ├── gh/config.yml           # -> ~/.config/gh/config.yml
 │       ├── git/hooks/pre-commit    # global Git privacy guard
 │       ├── ghostty/
 │       │   ├── config.ghostty      # エントリポイント
