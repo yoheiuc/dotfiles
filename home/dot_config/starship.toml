@@ -4,6 +4,8 @@ add_newline = true
 
 # 1行目にピルを表示し、2行目にコマンド入力を配置
 format = """
+$username\
+$hostname\
 [](blue)\
 $directory\
 [](fg:blue bg:purple)\
@@ -64,6 +66,16 @@ symbol = "󰄱"
 
 [time]
 disabled = true
+
+[username]
+ssh_only = true
+style = "bold red"
+format = "[$user@](bold red)"
+
+[hostname]
+ssh_only = true
+style = "bold red"
+format = "[$hostname](bold red) "
 
 [character]
 success_symbol = "[❯](bold green)"
