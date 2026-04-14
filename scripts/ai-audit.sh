@@ -174,17 +174,6 @@ if [[ -f "${_claude_json}" ]]; then
     attention "Claude Code chrome-devtools MCP: missing or drifted — run make ai-repair"
   fi
 
-  _claude_github_command="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('github',{}).get('command','')" 2>/dev/null || true)"
-  if [[ "${_claude_github_command}" == *"mcp-with-keychain-secret"* ]]; then
-    if [[ -n "$(resolve_ai_secret "GITHUB_PERSONAL_ACCESS_TOKEN" "${GITHUB_KEYCHAIN_ACCOUNT}")" ]]; then
-      ok "Claude Code github MCP: GitHub token is available via Keychain"
-    else
-      attention "Claude Code github MCP: GitHub token missing from Keychain"
-    fi
-  else
-    attention "Claude Code github MCP: missing or drifted — run make ai-repair"
-  fi
-
   _claude_exa_url="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
   _claude_exa_type="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('exa',{}).get('type','')" 2>/dev/null || true)"
   if [[ "${_claude_exa_url}" == "https://mcp.exa.ai/mcp" && "${_claude_exa_type}" == "http" ]]; then
@@ -192,7 +181,7 @@ if [[ -f "${_claude_json}" ]]; then
   else
     attention "Claude Code exa MCP: missing or drifted — run make ai-repair"
   fi
-  unset _claude_filesystem_cmd _claude_filesystem_args _claude_drawio_cmd _claude_drawio_args _claude_playwright_cmd _claude_playwright_args _claude_chrome_devtools_cmd _claude_chrome_devtools_args _claude_github_command _claude_exa_url _claude_exa_type
+  unset _claude_filesystem_cmd _claude_filesystem_args _claude_drawio_cmd _claude_drawio_args _claude_playwright_cmd _claude_playwright_args _claude_chrome_devtools_cmd _claude_chrome_devtools_args _claude_exa_url _claude_exa_type
 else
   attention "Claude Code MCP config: missing (${_claude_json})"
 fi
@@ -248,7 +237,7 @@ if [[ -f "${_codex_config}" ]]; then
       ;;
   esac
 
-  for _server in filesystem github drawio playwright chrome-devtools; do
+  for _server in filesystem drawio playwright chrome-devtools; do
     case "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('${_server}',{}).get('command','')" 2>/dev/null || true)" in
       "")
         attention "Codex ${_server} MCP: missing — run make ai-repair"
@@ -265,25 +254,6 @@ if [[ -f "${_codex_config}" ]]; then
     attention "Codex exa MCP: missing — run make ai-repair"
   fi
 
-  _codex_github_command="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('github',{}).get('command','')" 2>/dev/null || true)"
-  if [[ "${_codex_github_command}" == *"mcp-with-keychain-secret"* ]]; then
-    if [[ -n "$(resolve_ai_secret "GITHUB_PERSONAL_ACCESS_TOKEN" "${GITHUB_KEYCHAIN_ACCOUNT}")" ]]; then
-      ok "Codex github MCP: GitHub token is available via Keychain"
-    else
-      attention "Codex github MCP: GitHub token missing from Keychain"
-    fi
-  else
-    _codex_github_token="$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('github',{}).get('env',{}).get('GITHUB_PERSONAL_ACCESS_TOKEN','')" 2>/dev/null || true)"
-    if [[ -z "${_codex_github_token}" ]]; then
-      attention "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is missing in config — run make ai-repair"
-    elif [[ "${_codex_github_token}" == "<YOUR_GITHUB_TOKEN>" ]]; then
-      attention "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is placeholder — set a real token"
-    else
-      ok "Codex github MCP: GITHUB_PERSONAL_ACCESS_TOKEN is configured"
-    fi
-  fi
-
-  unset _codex_github_token _codex_github_command
 else
   attention "Codex config: missing (${_codex_config})"
 fi

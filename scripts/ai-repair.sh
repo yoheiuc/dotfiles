@@ -131,7 +131,6 @@ fi
 log "Claude Code MCP registration..."
 FILESYSTEM_CLAUDE_ENTRY='{"type":"stdio","command":"bash","args":["-lc","npx -y @modelcontextprotocol/server-filesystem \"$HOME\""]}'
 SERENA_CLAUDE_ENTRY='{"type":"stdio","command":"'"${SERENA_WRAPPER}"'","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}'
-GITHUB_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["GITHUB_PERSONAL_ACCESS_TOKEN","'"${KEYCHAIN_SERVICE}"'","'"${GITHUB_KEYCHAIN_ACCOUNT}"'","npx","-y","@modelcontextprotocol/server-github"]}'
 EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
 DRAWIO_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@drawio/mcp@latest"]}'
 PLAYWRIGHT_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@playwright/mcp@latest"]}'
@@ -146,7 +145,6 @@ claude_playwright_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers
 claude_playwright_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('playwright',{}).get('args',[]))" 2>/dev/null || true)"
 claude_chrome_devtools_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
 claude_chrome_devtools_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
-claude_github_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('github',{}).get('command','')" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 
 if [[ "${serena_cmd_state}" == "ok" && "${serena_uv_tls}" == "true" ]]; then
@@ -186,20 +184,14 @@ if [[ "${claude_chrome_devtools_cmd}" != "npx" || "${claude_chrome_devtools_args
   restart_needed=1
 fi
 
-if [[ "${claude_github_cmd}" != *"mcp-with-keychain-secret"* ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" github "${GITHUB_CLAUDE_ENTRY}"
-  ok "Claude Code: github MCP registered"
-  restart_needed=1
-fi
-
 if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" exa "${EXA_CLAUDE_ENTRY}"
   ok "Claude Code: exa MCP registered"
   restart_needed=1
 fi
 
-ok "Claude Code: baseline MCP servers (filesystem/github/exa/drawio/playwright/chrome-devtools) normalized"
-unset claude_filesystem_cmd claude_filesystem_args claude_drawio_cmd claude_drawio_args claude_playwright_cmd claude_playwright_args claude_chrome_devtools_cmd claude_chrome_devtools_args claude_github_cmd claude_exa_url
+ok "Claude Code: baseline MCP servers (filesystem/exa/drawio/playwright/chrome-devtools) normalized"
+unset claude_filesystem_cmd claude_filesystem_args claude_drawio_cmd claude_drawio_args claude_playwright_cmd claude_playwright_args claude_chrome_devtools_cmd claude_chrome_devtools_args claude_exa_url
 
 # ---- Claude Code local settings baseline -----------------------------------
 log "Claude Code local settings..."
@@ -256,17 +248,7 @@ ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.drawio]" $'c
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.playwright]" $'command = "npx"\nargs = ["-y", "@playwright/mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.chrome-devtools]" $'command = "npx"\nargs = ["-y", "chrome-devtools-mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
-github_codex_mcp_body="$(cat <<EOF
-command = "${KEYCHAIN_ENV_WRAPPER}"
-args = ["GITHUB_PERSONAL_ACCESS_TOKEN", "${KEYCHAIN_SERVICE}", "${GITHUB_KEYCHAIN_ACCOUNT}", "npx", "-y", "@modelcontextprotocol/server-github"]
-EOF
-)"
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.github]" "${github_codex_mcp_body}"
-ok "Codex: baseline MCP servers (filesystem/github/exa/drawio/playwright/chrome-devtools) registered"
-
-if [[ -z "$(resolve_ai_secret "GITHUB_PERSONAL_ACCESS_TOKEN" "${GITHUB_KEYCHAIN_ACCOUNT}")" ]]; then
-  warn "Codex GitHub MCP: GitHub token is not set in Keychain (server may fail until configured)"
-fi
+ok "Codex: baseline MCP servers (filesystem/exa/drawio/playwright/chrome-devtools) registered"
 
 printf '\nVerify with: make ai-audit\n'
 if [[ "${restart_needed}" == "1" ]]; then

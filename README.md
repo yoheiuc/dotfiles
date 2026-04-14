@@ -2,7 +2,7 @@
 
 [chezmoi](https://chezmoi.io) で管理している、macOS 向けの個人用 dotfiles です。
 
-現在の運用メモは [docs/notes/current-state.md](/Users/y.uchiyama/dotfiles/docs/notes/current-state.md) に置いています。
+現在の運用メモは [docs/notes/current-state.md](docs/notes/current-state.md) に置いています。
 
 ---
 
@@ -14,7 +14,7 @@
 | Homebrew | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
 | Git | Xcode CLT (`xcode-select --install`) または `brew install git` |
 
-Git identity (`~/.gitconfig`) も chezmoi 管理です。既存の global git config を引き継ぎ、global `pre-commit` hook で author / committer がその値とずれていないかを確認します。public に clone した人向けには、[docs/examples/chezmoidata.yaml](/Users/y.uchiyama/dotfiles/docs/examples/chezmoidata.yaml) を `.chezmoidata.yaml` にコピーして `gitIdentity.name` / `gitIdentity.email` を上書きする方法も用意しています。
+Git identity (`~/.gitconfig`) も chezmoi 管理です。既存の global git config を引き継ぎ、global `pre-commit` hook で author / committer がその値とずれていないかを確認します。public に clone した人向けには、[docs/examples/chezmoidata.yaml](docs/examples/chezmoidata.yaml) を `.chezmoidata.yaml` にコピーして `gitIdentity.name` / `gitIdentity.email` を上書きする方法も用意しています。
 
 初回に git identity が未設定なら、先に次のどちらかを行ってください。
 

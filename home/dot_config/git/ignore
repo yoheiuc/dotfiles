@@ -1,0 +1,22 @@
+# Global gitignore — managed by chezmoi (source: home/dot_config/git/ignore)
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Editors
+*.swp
+*.swo
+*~
+.*.un~
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Thumbnails / caches
+Thumbs.db
+.cache/

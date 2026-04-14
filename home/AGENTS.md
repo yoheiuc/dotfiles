@@ -9,3 +9,48 @@
 - ファイル内容を丸ごと繰り返さない。変更箇所は diff か該当行だけ示す
 - 前置き・要約・確認の繰り返しは省く。結論から入る
 - ツール呼び出し結果を全文引用しない。必要な部分だけ抜粋する
+
+## MCP ツール選択ルール
+
+テキストで説明するだけで終わらせず、ツールで実行する。
+
+| やりたいこと | 使うツール |
+|---|---|
+| 知らないこと・最新情報を調べる | `exa__web_search_exa` / `exa__web_fetch_exa`。「わかりません」の前にまず検索する |
+| 図で説明した方が早い構成・フロー | `drawio__*` で図を生成する。テキストだけの説明で済ませない |
+| UI の確認・操作・スクリーンショット | `playwright__*` でブラウザを実際に開く |
+| GitHub の PR / Issue / コード検索 | `gh` CLI を使う（`gh pr`, `gh issue`, `gh api` 等） |
+| パフォーマンス・ネットワーク問題 | `chrome-devtools__*` で実測する |
+| コード構造の理解・リファクタ | Serena（下記） |
+
+## Skills
+
+`~/.codex/skills/` にインストール済みの skill がある。該当場面では積極的に使う。
+
+| skill | 場面 |
+|---|---|
+| `security-best-practices` | コードレビュー・新規コード作成時に `references/` のガイドを参照する |
+| `playwright` | ブラウザ自動操作のスクリプト実行 |
+| `screenshot` | macOS のデスクトップ / ウィンドウキャプチャ |
+| `doc` | Word (.docx) ドキュメント生成 |
+| `pdf` | PDF の読み取り・解析 |
+| `spreadsheet` | Excel (.xlsx) の生成・読み取り |
+| `jupyter-notebook` | ノートブックの作成・実行 |
+| `ui-ux-pro-max` | UI/UX デザインパターンの検索・参照 |
+
+## Serena MCP
+
+Serena は LSP ベースのコード解析ツール。Grep/テキスト検索より正確な結果が得られる場面では積極的に使う。
+
+### セッション開始時
+- `serena__initial_instructions` を呼んで利用可能なツールを確認する
+
+### Grep より Serena を優先する場面
+- シンボルの定義箇所を探す → `serena__find_symbol`
+- シンボルの詳細（型、引数、docstring）を見る → `serena__get_symbol_detail`
+- 呼び出し元・参照箇所を網羅的に探す → `serena__find_references`
+- ファイルの構造（クラス、関数一覧）を把握する → `serena__get_file_overview`
+
+### 変更時
+- クロスファイルのリネーム → `serena__rename_symbol`（テキスト置換ではなく必ずこれを使う）
+- 変更後の LSP エラー確認 → `serena__get_diagnostics`
