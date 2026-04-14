@@ -37,7 +37,9 @@
       "Bash(sort *)",
       "Bash(diff *)",
       "Bash(* --version)",
-      "Bash(* --help)"
+      "Bash(* --help)",
+      "WebFetch(*)",
+      "WebSearch(*)"
     ],
     "deny": [
       "Bash(curl*)",
@@ -54,9 +56,9 @@
     "ask": [
       "Bash(git push*)",
       "Bash(git reset*)",
-      "Bash(brew uninstall*)",
-      "WebFetch(*)"
-    ]
+      "Bash(brew uninstall*)"
+    ],
+    "defaultMode": "auto"
   },
   "statusLine": {
     "type": "command",

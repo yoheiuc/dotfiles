@@ -1,0 +1,122 @@
+# ~/.codex/config.toml
+
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+personality = "pragmatic"
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[profiles.fast]
+model = "codex-mini-latest"
+model_reasoning_effort = "low"
+personality = "pragmatic"
+[profiles.review]
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+[profiles.deep]
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+[notice]
+hide_rate_limit_model_nudge = true
+
+[notice.model_migrations]
+"gpt-5.1-codex-max" = "gpt-5.4"
+"gpt-5.3-codex" = "gpt-5.4"
+
+[features]
+multi_agent = true
+codex_hooks = true
+[plugins."google-calendar@openai-curated"]
+enabled = true
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[plugins."gmail@openai-curated"]
+enabled = true
+
+[plugins."google-drive@openai-curated"]
+enabled = true
+
+[plugins."build-macos-apps@openai-curated"]
+enabled = true
+
+[plugins."build-ios-apps@openai-curated"]
+enabled = true
+
+[plugins."notion@openai-curated"]
+enabled = true
+
+[mcp_servers.serena]
+command = "{{ .chezmoi.homeDir }}/.local/bin/serena-mcp"
+args = ["codex"]
+
+[mcp_servers.serena.tools.edit_memory]
+approval_mode = "approve"
+
+[mcp_servers.serena.tools.delete_memory]
+approval_mode = "approve"
+
+[mcp_servers.serena.tools.write_memory]
+approval_mode = "approve"
+
+[projects."{{ .chezmoi.homeDir }}/yojitsu"]
+trust_level = "trusted"
+
+[projects."{{ .chezmoi.homeDir }}/peercast-hls"]
+trust_level = "trusted"
+
+[projects."{{ .chezmoi.homeDir }}"]
+trust_level = "trusted"
+
+[projects."{{ .chezmoi.homeDir }}/dotfiles"]
+trust_level = "trusted"
+
+[projects."{{ .chezmoi.homeDir }}/idea-garden"]
+trust_level = "trusted"
+
+[projects."{{ .chezmoi.homeDir }}/pcyp-mac"]
+trust_level = "trusted"
+
+[projects."{{ .chezmoi.homeDir }}/pecareco-mac"]
+trust_level = "trusted"
+
+[projects."{{ .chezmoi.homeDir }}/pecareco-web"]
+trust_level = "trusted"
+
+[projects."{{ .chezmoi.homeDir }}/Documents/Playground"]
+trust_level = "trusted"
+
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
+
+[mcp_servers.filesystem]
+command = "bash"
+args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"$HOME\""]
+[mcp_servers.drawio]
+command = "npx"
+args = ["-y", "@drawio/mcp@latest"]
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
+[mcp_servers.playwright.tools.browser_navigate]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_resize]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_click]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.browser_evaluate]
+approval_mode = "approve"
+[mcp_servers.github]
+command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-with-keychain-secret"
+args = ["GITHUB_PERSONAL_ACCESS_TOKEN", "dotfiles.ai.mcp", "github-personal-access-token", "npx", "-y", "@modelcontextprotocol/server-github"]
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["-y", "chrome-devtools-mcp@latest"]
+[mcp_servers.exa]
+url = "https://mcp.exa.ai/mcp"
