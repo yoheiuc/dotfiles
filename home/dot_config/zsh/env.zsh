@@ -17,6 +17,9 @@ export LANG="en_US.UTF-8"
 export EDITOR="micro"
 export VISUAL="${EDITOR}"
 
+# Match bat theme to Ghostty (Catppuccin Mocha)
+export BAT_THEME="Catppuccin Mocha"
+
 # Persisted machine role for dotfiles operations
 export DOTFILES_PROFILE="core"
 _dotfiles_profile_path="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/profile"
