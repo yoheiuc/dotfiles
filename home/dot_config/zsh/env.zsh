@@ -20,6 +20,9 @@ export VISUAL="${EDITOR}"
 # Match bat theme to Ghostty (Catppuccin Mocha)
 export BAT_THEME="Catppuccin Mocha"
 
+# Claude Code — flicker-free fullscreen rendering
+export CLAUDE_CODE_NO_FLICKER=1
+
 # Persisted machine role for dotfiles operations
 export DOTFILES_PROFILE="core"
 _dotfiles_profile_path="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/profile"
