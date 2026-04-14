@@ -68,12 +68,12 @@ symbol = "󰄱"
 disabled = true
 
 [username]
-ssh_only = true
+detect_env_vars = ["SSH_CONNECTION"]
 style = "bold red"
 format = "[$user@](bold red)"
 
 [hostname]
-ssh_only = true
+detect_env_vars = ["SSH_CONNECTION"]
 style = "bold red"
 format = "[$hostname](bold red) "
 
