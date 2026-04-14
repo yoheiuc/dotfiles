@@ -29,7 +29,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "/Users/y.uchiyama/.claude/statusline.sh"
+    "command": "$HOME/.claude/statusline.sh"
   },
   "effortLevel": "auto",
   "autoUpdatesChannel": "latest",
