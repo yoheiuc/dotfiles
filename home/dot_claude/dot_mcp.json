@@ -32,6 +32,13 @@
         "chrome-devtools-mcp@latest"
       ]
     },
+    "brave-search": {
+      "command": "bash",
+      "args": [
+        "-lc",
+        "\"$HOME/.local/bin/mcp-with-keychain-secret\" BRAVE_API_KEY dotfiles.ai.mcp brave-api-key npx -y @modelcontextprotocol/server-brave-search"
+      ]
+    },
     "serena": {
       "command": "bash",
       "args": [

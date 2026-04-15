@@ -16,7 +16,7 @@
 
 | やりたいこと | 使うツール |
 |---|---|
-| 知らないこと・最新情報を調べる | `mcp__exa__web_search_exa` / `mcp__exa__web_fetch_exa`。「わかりません」の前にまず検索する |
+| 知らないこと・最新情報を調べる | `mcp__exa__web_search_exa` / `mcp__exa__web_fetch_exa` または `mcp__brave-search__brave_web_search`。Exa は技術系・構造化検索向き、Brave は汎用 Web 検索向き。「わかりません」の前にまず検索する |
 | 図で説明した方が早い構成・フロー | `mcp__drawio__*` で図を生成する。テキストだけの説明で済ませない |
 | UI の確認・操作・スクリーンショット | `mcp__playwright__*` でブラウザを実際に開く |
 | GitHub の PR / Issue / コード検索 | `gh` CLI を使う（`gh pr`, `gh issue`, `gh api` 等） |

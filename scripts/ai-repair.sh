@@ -22,6 +22,7 @@ AI_SHARED_ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ai-secrets.env"
 AI_SHARED_ENV_FALLBACK_FILE="${HOME}/.config/dotfiles/ai-secrets.env"
 KEYCHAIN_SERVICE="dotfiles.ai.mcp"
 GITHUB_KEYCHAIN_ACCOUNT="github-personal-access-token"
+BRAVE_KEYCHAIN_ACCOUNT="brave-api-key"
 
 CLAUDE_JSON="${HOME}/.claude.json"
 CLAUDE_SETTINGS_JSON="${HOME}/.claude/settings.json"
@@ -135,6 +136,7 @@ EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
 DRAWIO_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@drawio/mcp@latest"]}'
 PLAYWRIGHT_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@playwright/mcp@latest"]}'
 CHROME_DEVTOOLS_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@latest"]}'
+BRAVE_SEARCH_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["BRAVE_API_KEY","dotfiles.ai.mcp","brave-api-key","npx","-y","@modelcontextprotocol/server-brave-search"]}'
 serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
 serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
 claude_filesystem_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('filesystem',{}).get('command','')" 2>/dev/null || true)"
@@ -146,6 +148,7 @@ claude_playwright_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('
 claude_chrome_devtools_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
 claude_chrome_devtools_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
+claude_brave_search_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
 
 if [[ "${serena_cmd_state}" == "ok" && "${serena_uv_tls}" == "true" ]]; then
   ok "Claude Code: serena already registered with wrapper and UV_NATIVE_TLS"
@@ -190,8 +193,14 @@ if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
   restart_needed=1
 fi
 
-ok "Claude Code: baseline MCP servers (filesystem/exa/drawio/playwright/chrome-devtools) normalized"
-unset claude_filesystem_cmd claude_filesystem_args claude_drawio_cmd claude_drawio_args claude_playwright_cmd claude_playwright_args claude_chrome_devtools_cmd claude_chrome_devtools_args claude_exa_url
+if [[ "${claude_brave_search_cmd}" != "${KEYCHAIN_ENV_WRAPPER}" ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" brave-search "${BRAVE_SEARCH_CLAUDE_ENTRY}"
+  ok "Claude Code: brave-search MCP registered"
+  restart_needed=1
+fi
+
+ok "Claude Code: baseline MCP servers (filesystem/exa/brave-search/drawio/playwright/chrome-devtools) normalized"
+unset claude_filesystem_cmd claude_filesystem_args claude_drawio_cmd claude_drawio_args claude_playwright_cmd claude_playwright_args claude_chrome_devtools_cmd claude_chrome_devtools_args claude_exa_url claude_brave_search_cmd
 
 # ---- Claude Code local settings baseline -----------------------------------
 log "Claude Code local settings..."
@@ -248,7 +257,8 @@ ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.drawio]" $'c
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.playwright]" $'command = "npx"\nargs = ["-y", "@playwright/mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.chrome-devtools]" $'command = "npx"\nargs = ["-y", "chrome-devtools-mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
-ok "Codex: baseline MCP servers (filesystem/exa/drawio/playwright/chrome-devtools) registered"
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "'"${KEYCHAIN_ENV_WRAPPER}"'"\nargs = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]'
+ok "Codex: baseline MCP servers (filesystem/exa/brave-search/drawio/playwright/chrome-devtools) registered"
 
 printf '\nVerify with: make ai-audit\n'
 if [[ "${restart_needed}" == "1" ]]; then

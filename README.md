@@ -218,12 +218,13 @@ ghq get git@github.com:owner/repo.git
 - `filesystem`
 - `github`
 - `exa`
+- `brave-search`
 - `drawio`
 - `serena`
 - `playwright`
 - `chrome-devtools`
 
-`github` は placeholder を設定ファイルへ埋め込まず、`mcp-with-keychain-secret` wrapper 経由で macOS Keychain から読み出す構成です。検索系は `brave-search` の代わりに `Exa MCP` を `https://mcp.exa.ai/mcp` で直接つなぎます。公式案内では `No API key required` で始められる前提です。
+`github` は placeholder を設定ファイルへ埋め込まず、`mcp-with-keychain-secret` wrapper 経由で macOS Keychain から読み出す構成です。検索系は `Exa MCP`（`https://mcp.exa.ai/mcp`、API key 不要）と `brave-search`（`@modelcontextprotocol/server-brave-search`、`BRAVE_API_KEY` を Keychain 経由で注入）の両方を入れています。
 
 同じ baseline は `make ai-repair` 実行時に Claude Code の `~/.claude.json` と Codex の `~/.codex/config.toml` に再生成されます。`filesystem` は `"$HOME"` のみを root にし、存在しない optional directory は起動引数へ入れません。`make ai-audit` は Keychain に GitHub token が無い場合や、MCP 登録が壊れている場合に warning を出します。
 
@@ -448,7 +449,7 @@ make ai-audit
 `make ai-audit` は次の観点をまとめて確認します。
 
 - `~/.claude.json` / `~/.codex/config.toml` の baseline
-- Serena wrapper / OpenAI Docs MCP / filesystem/github/exa/drawio/playwright/chrome-devtools の登録有無
+- Serena wrapper / OpenAI Docs MCP / filesystem/github/exa/brave-search/drawio/playwright/chrome-devtools の登録有無
 - GitHub credential が Keychain に存在するか
 - 古い bridge 設定や危険な approval 設定が残っていないか
 

@@ -181,7 +181,14 @@ if [[ -f "${_claude_json}" ]]; then
   else
     attention "Claude Code exa MCP: missing or drifted — run make ai-repair"
   fi
-  unset _claude_filesystem_cmd _claude_filesystem_args _claude_drawio_cmd _claude_drawio_args _claude_playwright_cmd _claude_playwright_args _claude_chrome_devtools_cmd _claude_chrome_devtools_args _claude_exa_url _claude_exa_type
+
+  _claude_brave_search_cmd="$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
+  if [[ "${_claude_brave_search_cmd}" == "${HOME}/.local/bin/mcp-with-keychain-secret" ]]; then
+    ok "Claude Code brave-search MCP: registered"
+  else
+    attention "Claude Code brave-search MCP: missing or drifted — run make ai-repair"
+  fi
+  unset _claude_filesystem_cmd _claude_filesystem_args _claude_drawio_cmd _claude_drawio_args _claude_playwright_cmd _claude_playwright_args _claude_chrome_devtools_cmd _claude_chrome_devtools_args _claude_exa_url _claude_exa_type _claude_brave_search_cmd
 else
   attention "Claude Code MCP config: missing (${_claude_json})"
 fi
@@ -252,6 +259,12 @@ if [[ -f "${_codex_config}" ]]; then
     ok "Codex exa MCP: registered"
   else
     attention "Codex exa MCP: missing — run make ai-repair"
+  fi
+
+  if [[ -n "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)" ]]; then
+    ok "Codex brave-search MCP: registered"
+  else
+    attention "Codex brave-search MCP: missing — run make ai-repair"
   fi
 
 else
