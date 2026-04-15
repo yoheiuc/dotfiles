@@ -252,7 +252,7 @@ run_capture run_doctor "${home_ok}" \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy home profile case"
-assert_contains "${RUN_OUTPUT}" "Daily checks live in: make status / make ai-audit / make dashboard" "doctor should point to the lighter commands"
+assert_contains "${RUN_OUTPUT}" "Daily checks live in: make status / make ai-audit" "doctor should point to the lighter commands"
 assert_contains "${RUN_OUTPUT}" "No Brew profile drift detected for 'home'" "doctor should report clean drift status"
 assert_contains "${RUN_OUTPUT}" "auto-update channel: latest" "doctor should validate Claude channel"
 assert_contains "${RUN_OUTPUT}" "default model: gpt-5.4" "doctor should validate Codex model baseline"

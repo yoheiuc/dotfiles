@@ -1,4 +1,4 @@
-.PHONY: help tips status ai-audit ai-repair ai-secrets dashboard dashboard-open install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home serena-index doctor test test-scripts uninstall
+.PHONY: help tips status ai-audit ai-repair ai-secrets install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home serena-index doctor test test-scripts uninstall
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -15,14 +15,8 @@ ai-audit: ## ローカル管理の AI 設定だけを詳しく確認
 ai-repair: ## AI 周りのローカル drift を修復 (Serena config / MCP registration)
 	bash scripts/ai-repair.sh
 
-ai-secrets: ## Claude Code / Codex 共通の GitHub credential を対話で保存
+ai-secrets: ## Claude Code / Codex 共通の MCP credential を対話で保存
 	bash scripts/ai-secrets.sh
-
-dashboard: ## status と ai-audit を Markdown にまとめる
-	OUTPUT="$(OUTPUT)" bash scripts/dashboard.sh
-
-dashboard-open: ## Markdown レポートを生成して開く
-	OUTPUT="$(OUTPUT)" OPEN_DASHBOARD=1 bash scripts/dashboard.sh --open
 
 install: ## 新しいMacのセットアップ (core のみ)
 	bash scripts/bootstrap.sh core
@@ -105,7 +99,6 @@ test-scripts: ## shell スクリプトの回帰テストを実行
 	bash tests/dothelp.sh
 	bash tests/status.sh
 	bash tests/ai-audit.sh
-	bash tests/dashboard.sh
 
 uninstall: ## dotfiles をアンインストール
 	bash scripts/uninstall.sh
