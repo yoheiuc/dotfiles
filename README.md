@@ -82,8 +82,6 @@ make help
 | `make ai-audit` | ローカル管理の AI 設定だけを詳しく確認 | ✓ |
 | `make ai-repair` | AI 周りの local drift を修復 (`Serena config` / MCP registration) | ✓ |
 | `make ai-secrets` | Claude Code / Codex 共通の MCP credential を Keychain に保存 | ✓ |
-| `make dashboard` | `status` と `ai-audit` を Markdown にまとめる | ✓ |
-| `make dashboard-open` | Markdown レポートを生成して開く | ✓ |
 | `make install` | core Brew + `chezmoi apply` | ✓ |
 | `make install-home` | core + home + `post-setup` | ✓ |
 | `make preview` | `chezmoi diff` + dry-run + brew preview (現在のプロファイル) | ✓ |
@@ -113,9 +111,6 @@ cd ~/dotfiles
 make status
 make ai-audit
 make ai-repair
-make dashboard
-make dashboard OUTPUT=docs/last-dashboard.md
-make dashboard-open OUTPUT=docs/last-dashboard.md
 make preview
 make update
 make update-home
@@ -126,14 +121,11 @@ make brew-diff
 make tips
 ```
 
-ふだんは `make status` でざっと状態を見て、AI 設定を触ったあとは `make ai-audit`、Serena や MCP 登録が怪しいときは `make ai-repair`、共有しやすい形で残したいときは `make dashboard OUTPUT=docs/last-dashboard.md` を使いながら、`make preview` / `make update` で現在のプロファイルに追従します。  
+ふだんは `make status` でざっと状態を見て、AI 設定を触ったあとは `make ai-audit`、Serena や MCP 登録が怪しいときは `make ai-repair` を使いながら、`make preview` / `make update` で現在のプロファイルに追従します。  
 別プロファイルを一時的に見たいときだけ `make preview-home` を使います。
 cleanup まで含めて Homebrew 実体を定義どおりに寄せたいときは `make sync` / `make sync-home` を使います。
 会社 PC で明示的に `core` へ寄せたいときは `make sync-core` を使います。
 Claude Code / Codex 共通の MCP credential（Brave API key など）を安全に入れたいときは `ai-secrets` を使います。`~/.local/bin` が PATH に入っている前提なので、どのリポジトリ上でも同じコマンドで実行できます。
-
-`make dashboard` は前回の同じ出力先があれば差分要約も入れます。  
-既定の出力先は `/tmp` 配下ですが、残したいときは `OUTPUT=docs/last-dashboard.md` のように指定します。
 
 新しい package をローカルで試したあとに repo へ取り込みたいときは、`brew bundle dump` ではなく 1 件ずつ追記します。
 
@@ -170,7 +162,7 @@ dothelp
 make doctor
 ```
 
-`make doctor` は深い確認用です。日常確認は `make status`、AI 設定確認は `make ai-audit`、修復は `make ai-repair`、共有用の記録は `make dashboard` を先に使う想定です。
+`make doctor` は深い確認用です。日常確認は `make status`、AI 設定確認は `make ai-audit`、修復は `make ai-repair` を先に使う想定です。
 
 `doctor.sh` は次の項目を確認します。
 

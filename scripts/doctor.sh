@@ -48,7 +48,7 @@ REQUIRED_FAILED=0
 echo
 printf '\033[1m=== dotfiles doctor ===\033[0m\n'
 printf 'Active profile: %s\n' "${ACTIVE_PROFILE}"
-info "Daily checks live in: make status / make ai-audit / make dashboard"
+info "Daily checks live in: make status / make ai-audit"
 if [[ "${PROFILE_IS_EXPLICIT}" -ne 1 ]]; then
   warn "No persisted machine profile yet; defaulting to 'core'"
 fi

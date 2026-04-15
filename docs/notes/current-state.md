@@ -13,6 +13,5 @@
 - Codex の `model_reasoning_effort` デフォルトは `medium`。プロファイルは廃止済み。
 - マシン role は `core` / `home` の 2 層に整理し、`~/.config/dotfiles/profile` に保存する。`make preview` / `make update` / `make doctor` はその値を既定で使う。
 - `make status` は日常確認用、`make ai-audit` はローカル管理の AI 設定確認用に使い分ける。
-- `make dashboard` は `status` と `ai-audit` の結果を Markdown にまとめ、前回との差分要約も入れる。保存先は `OUTPUT=...` で変えられる。
-- `make doctor` は深い確認用として残し、日常確認は `status` / `ai-audit` / `dashboard` を先に使う。
+- `make doctor` は深い確認用として残し、日常確認は `status` / `ai-audit` を先に使う。
 - README は全面的に日本語化済みで、今の運用方針に合わせて更新済み。
