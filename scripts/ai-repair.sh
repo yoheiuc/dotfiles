@@ -21,7 +21,6 @@ SERENA_CONFIG_BACKUP_SUFFIX="$(date +%Y%m%d%H%M%S)"
 AI_SHARED_ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ai-secrets.env"
 AI_SHARED_ENV_FALLBACK_FILE="${HOME}/.config/dotfiles/ai-secrets.env"
 KEYCHAIN_SERVICE="dotfiles.ai.mcp"
-GITHUB_KEYCHAIN_ACCOUNT="github-personal-access-token"
 BRAVE_KEYCHAIN_ACCOUNT="brave-api-key"
 
 CLAUDE_JSON="${HOME}/.claude.json"
@@ -257,7 +256,7 @@ ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.drawio]" $'c
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.playwright]" $'command = "npx"\nargs = ["-y", "@playwright/mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.chrome-devtools]" $'command = "npx"\nargs = ["-y", "chrome-devtools-mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "'"${KEYCHAIN_ENV_WRAPPER}"'"\nargs = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]'
+ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "'"${KEYCHAIN_ENV_WRAPPER}"$'"\nargs = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]'
 ok "Codex: baseline MCP servers (filesystem/exa/brave-search/drawio/playwright/chrome-devtools) registered"
 
 printf '\nVerify with: make ai-audit\n'

@@ -82,10 +82,10 @@ run_capture env \
   XDG_CONFIG_HOME="${fake_home}/.config" \
   DOTFILES_REPO_ROOT="${REPO_ROOT}" \
   SECURITY_BIN="${tmpdir}/security" \
-  bash -lc "printf 'ghp_from_wrapper\n' | bash '${REPO_ROOT}/home/dot_local/bin/executable_ai-secrets'"
+  bash -lc "printf 'BSAtest_from_wrapper\n' | bash '${REPO_ROOT}/home/dot_local/bin/executable_ai-secrets'"
 assert_eq "0" "${RUN_STATUS}" "ai-secrets wrapper should succeed"
-assert_not_contains "${RUN_OUTPUT}" "ghp_from_wrapper" "ai-secrets wrapper should not echo the GitHub token"
-assert_contains "$(cat "${FAKE_SECURITY_DB}")" $'dotfiles.ai.mcp\tgithub-personal-access-token\tghp_from_wrapper' "ai-secrets wrapper should persist the token to Keychain"
+assert_not_contains "${RUN_OUTPUT}" "BSAtest_from_wrapper" "ai-secrets wrapper should not echo the Brave API key"
+assert_contains "$(cat "${FAKE_SECURITY_DB}")" $'dotfiles.ai.mcp\tbrave-api-key\tBSAtest_from_wrapper' "ai-secrets wrapper should persist the Brave API key to Keychain"
 assert_contains "$(cat "${fake_home}/.codex/config.toml")" 'mcp-with-keychain-secret' "ai-secrets wrapper should refresh Codex config"
 
 pass_test "tests/ai-secrets-wrapper.sh"

@@ -10,7 +10,6 @@ source "${SCRIPT_DIR}/lib/ai-config.sh"
 
 SECURITY_BIN="${SECURITY_BIN:-security}"
 KEYCHAIN_SERVICE="dotfiles.ai.mcp"
-GITHUB_KEYCHAIN_ACCOUNT="github-personal-access-token"
 AI_SHARED_ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ai-secrets.env"
 AI_SHARED_ENV_FALLBACK_FILE="${HOME}/.config/dotfiles/ai-secrets.env"
 
