@@ -80,16 +80,17 @@ exit 0
 EOF
 chmod +x "${HOME}/.local/bin/serena-mcp"
 
-run_capture bash -lc "printf 'ghp_prompted_token\n' | bash '${REPO_ROOT}/scripts/ai-secrets.sh'"
+run_capture bash -lc "printf 'BSAtest_prompted_key\n' | bash '${REPO_ROOT}/scripts/ai-secrets.sh'"
 assert_eq "0" "${RUN_STATUS}" "ai-secrets should succeed with piped input"
-assert_contains "${RUN_OUTPUT}" "Saved GitHub credential to Keychain service dotfiles.ai.mcp" "ai-secrets should report keychain save"
-assert_not_contains "${RUN_OUTPUT}" "ghp_prompted_token" "ai-secrets should not print the GitHub token"
+assert_contains "${RUN_OUTPUT}" "Saved Brave API key to Keychain service dotfiles.ai.mcp" "ai-secrets should report keychain save"
+assert_not_contains "${RUN_OUTPUT}" "BSAtest_prompted_key" "ai-secrets should not print the Brave API key"
 
-assert_contains "$(cat "${FAKE_SECURITY_DB}")" $'dotfiles.ai.mcp\tgithub-personal-access-token\tghp_prompted_token' "ai-secrets should persist the GitHub token to Keychain"
+assert_contains "$(cat "${FAKE_SECURITY_DB}")" $'dotfiles.ai.mcp\tbrave-api-key\tBSAtest_prompted_key' "ai-secrets should persist the Brave API key to Keychain"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" 'mcp-with-keychain-secret' "ai-secrets should configure Codex to use the keychain wrapper"
 assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-secrets should keep Exa registered for Claude Code"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'ghp_prompted_token' "ai-secrets should not write the GitHub token into Codex config"
-assert_not_contains "$(cat "${HOME}/.claude.json")" 'ghp_prompted_token' "ai-secrets should not write the GitHub token into Claude config"
+assert_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-secrets should register Brave Search MCP for Claude Code"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'BSAtest_prompted_key' "ai-secrets should not write the Brave API key into Codex config"
+assert_not_contains "$(cat "${HOME}/.claude.json")" 'BSAtest_prompted_key' "ai-secrets should not write the Brave API key into Claude config"
 assert_not_contains "$(ls -a "${HOME}/.config/dotfiles" 2>/dev/null || true)" 'ai-secrets.env' "ai-secrets should not leave a plaintext secrets file"
 
 pass_test "tests/ai-secrets.sh"

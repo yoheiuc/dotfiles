@@ -92,7 +92,6 @@ assert_contains "${RUN_OUTPUT}" "serena registration created" "ai-repair should 
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel set to latest" "ai-repair should normalize Claude Code channel"
 assert_contains "${RUN_OUTPUT}" "Codex: baseline model/sandbox settings normalized" "ai-repair should normalize Codex baseline"
 assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP registered" "ai-repair should register Docs MCP"
-assert_contains "${RUN_OUTPUT}" "Codex GitHub MCP: GitHub token is not set in Keychain" "ai-repair should warn when the GitHub token is missing"
 assert_contains "$(cat "${HOME}/.serena/serena_config.yml")" 'project_serena_folder_location: "$projectDir/.serena"' "ai-repair should write the expected Serena config"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"autoUpdatesChannel": "latest"' "ai-repair should write Claude auto-update channel"
 
@@ -110,15 +109,13 @@ assert_contains "$(cat "${HOME}/.codex/config.toml")" "args = [\"codex\"]" "ai-r
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.filesystem]" "ai-repair should add filesystem MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/server-filesystem" "ai-repair should set filesystem MCP command args"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '$HOME/ghq' "ai-repair should not register nonexistent optional filesystem roots"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.github]" "ai-repair should add GitHub MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" 'mcp-with-keychain-secret' "ai-repair should route GitHub MCP through the keychain wrapper"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/server-github" "ai-repair should set GitHub MCP command args"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'GITHUB_PERSONAL_ACCESS_TOKEN = ' "ai-repair should not store the GitHub token in Codex config"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.github]" "ai-repair should not add removed GitHub MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.exa]" "ai-repair should add Exa MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" 'url = "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL"
-assert_contains "$(cat "${HOME}/.claude.json")" '"github"' "ai-repair should register GitHub MCP for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" 'mcp-with-keychain-secret' "ai-repair should route Claude GitHub MCP through the keychain wrapper"
-assert_not_contains "$(cat "${HOME}/.claude.json")" '"GITHUB_PERSONAL_ACCESS_TOKEN":' "ai-repair should not write the GitHub token into Claude Code config"
+assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.brave-search]" "ai-repair should add Brave Search MCP section"
+assert_contains "$(cat "${HOME}/.codex/config.toml")" 'mcp-with-keychain-secret' "ai-repair should route Brave Search MCP through the keychain wrapper"
+assert_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/server-brave-search" "ai-repair should set Brave Search MCP command args"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '"github"' "ai-repair should not register removed GitHub MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-repair should register Exa MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"filesystem"' "ai-repair should register filesystem MCP for Claude Code"
@@ -130,6 +127,9 @@ assert_contains "$(cat "${HOME}/.claude.json")" '"playwright"' "ai-repair should
 assert_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should set Claude Playwright MCP args"
 assert_contains "$(cat "${HOME}/.claude.json")" '"chrome-devtools"' "ai-repair should register chrome-devtools MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should set Claude chrome-devtools MCP args"
+assert_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-repair should register Brave Search MCP for Claude Code"
+assert_contains "$(cat "${HOME}/.claude.json")" 'mcp-with-keychain-secret' "ai-repair should route Claude Brave Search MCP through the keychain wrapper"
+assert_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should set Claude Brave Search MCP args"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.drawio]" "ai-repair should add drawio MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "@drawio/mcp@latest" "ai-repair should set drawio MCP command args"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.playwright]" "ai-repair should add Playwright MCP section"
@@ -145,10 +145,10 @@ assert_contains "${RUN_OUTPUT}" "auto-update channel already set to latest" "ai-
 assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP already registered" "ai-repair should detect existing Docs MCP"
 
 # Keychain should feed both Claude Code and Codex without plaintext config values
-"${SECURITY_BIN}" add-generic-password -U -s dotfiles.ai.mcp -a github-personal-access-token -w ghp_shared_token
+"${SECURITY_BIN}" add-generic-password -U -s dotfiles.ai.mcp -a brave-api-key -w BSAtest_key_12345
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when keychain secrets are present"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'ghp_shared_token' "ai-repair should not write the shared GitHub token into Codex config"
-assert_not_contains "$(cat "${HOME}/.claude.json")" 'ghp_shared_token' "ai-repair should not write the shared GitHub token into Claude Code config"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'BSAtest_key_12345' "ai-repair should not write the Brave API key into Codex config"
+assert_not_contains "$(cat "${HOME}/.claude.json")" 'BSAtest_key_12345' "ai-repair should not write the Brave API key into Claude Code config"
 
 pass_test "tests/ai-repair.sh"
