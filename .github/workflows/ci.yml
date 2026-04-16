@@ -37,15 +37,19 @@ jobs:
         run: |
           # YAML Validation
           yamllint .serena/*.yml
-          
+
           # TOML Validation using yq
           yq eval . home/dot_config/starship.toml > /dev/null
           yq eval . home/dot_config/atuin/config.toml > /dev/null
           yq eval . home/dot_config/yazi/yazi.toml > /dev/null
-          
-          # JSON Validation using jq on rendered chezmoi templates
-          chezmoi execute-template < home/dot_claude/settings.json.tmpl | jq . > /dev/null
-          chezmoi execute-template < home/dot_gemini/settings.json.tmpl | jq . > /dev/null
+
+          # TOML Validation for chezmoi templates
+          chezmoi execute-template < home/dot_codex/config.toml.tmpl | yq eval . > /dev/null
+
+          # JSON Validation
+          jq . home/dot_claude/settings.json > /dev/null
+          jq . home/dot_claude/dot_mcp.json > /dev/null
+          jq . home/dot_gemini/settings.json > /dev/null
 
       - name: Validate Chezmoi templates
         run: |
@@ -55,3 +59,6 @@ jobs:
       - name: Run shellcheck on scripts
         run: |
           shellcheck --severity=warning scripts/*.sh tests/*.sh tests/lib/*.sh home/dot_config/git/hooks/*
+
+      - name: Run regression tests
+        run: make test

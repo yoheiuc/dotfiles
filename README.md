@@ -96,7 +96,6 @@ make help
 | `make brew-diff-home` | home とローカル Brew 実体の差分確認 | ✓ |
 | `make brew-add-core KIND=... NAME=...` | core Brewfile に 1 件追加 | ✓ |
 | `make brew-add-home KIND=... NAME=...` | home Brewfile に 1 件追加 | ✓ |
-| `make serena-index DIR=...` | Serena のプロジェクト初期化と index-project 実行 | ✓ |
 | `make tips` | よく使う dotfiles コマンドのヒント表示 | ✓ |
 | `make doctor` | 現在のプロファイルで設定と依存の健全性確認 | ✓ |
 | `make test` | shell ベースの回帰テスト | ✓ |
@@ -227,11 +226,7 @@ make ai-repair
 
 ## AI セッション
 
-`zellij` 上で AI セッションを開くための最小構成です。
-
-```bash
-bash ~/.local/share/chezmoi/scripts/ai-session.sh
-```
+`zellij` 上で AI セッションを開くための最小構成です。`zellij` を直接起動します。
 
 起動直後のイメージ:
 
@@ -452,13 +447,6 @@ make ai-audit
    `chezmoi apply ~/.local/bin/ai-secrets` で wrapper を再展開してください。
 3. `brave-search` MCP が起動しない  
    `make ai-audit` で Keychain の有無を見て、足りなければ `ai-secrets` を再実行します。
-
-プロジェクトごとの Serena インデックスは `make serena-index` で明示的に実行します。
-
-```bash
-cd /path/to/your/project
-make -C ~/dotfiles serena-index DIR="$PWD"
-```
 
 **Claude Code CLI** は native install を正とし、`post-setup.sh` が `latest` チャンネルで導入します。Claude Code docs どおり native install はバックグラウンド自動更新に対応しているため、Homebrew cask では管理しません。
 
