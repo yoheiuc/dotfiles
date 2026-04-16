@@ -1,0 +1,71 @@
+% gemini, ai
+
+# Gemini CLI を起動
+gemini
+
+# Gemini に one-shot で質問を投げる
+gemini -p "<prompt>"
+
+# 特定のファイルを読み込ませて質問
+gemini --file <file> "<prompt>"
+
+# モデルや温度パラメータを指定して実行
+gemini --model <model_id> --temperature <temp> "<prompt>"
+
+# Gemini CLI のバージョンを確認
+gemini --version
+
+# Gemini CLI の設定を表示
+gemini config
+
+# Gemini に one-shot で質問
+gr "<prompt>"
+
+# 現在の diff を Gemini にレビューさせる
+gmr
+
+# 現在の diff を Gemini に要約させる
+gms
+
+% aider, ai
+
+# Aider を起動
+aider
+
+# 特定のファイルを追加して Aider を起動
+aider <file1> <file2>
+
+# OpenAI 互換 API キーで Aider を起動
+OPENAI_API_KEY=<key> aider
+
+# Aider のバージョンを確認
+aider --version
+
+% claude, ai
+
+# Claude Code を起動 (対話モード)
+claude
+
+# Claude に質問を投げる
+claude "<prompt>"
+
+# Claude Code の状態を確認
+claude status
+
+# MCP サーバーの状態を確認
+claude mcp list
+
+# Serena のプロジェクト index を更新 (dotfiles helper)
+make -C ~/dotfiles serena-index DIR="$PWD"
+
+# Serena 初期 instructions を読み込む
+/mcp__serena__initial_instructions
+
+# Claude Code の設定を管理
+claude config <key> <value>
+
+# Claude Code のアップデート
+claude update
+
+# 特定のディレクトリをコンテキストとして Claude を起動
+claude -C <directory>

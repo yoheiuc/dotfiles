@@ -1,0 +1,6 @@
+# Ghostty config — entry point
+# Split into focused modules; add/remove config-file lines to toggle features.
+
+config-file = core.ghostty
+config-file = ui.ghostty
+config-file = keybinds.ghostty

@@ -1,0 +1,46 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "bash",
+      "args": [
+        "-lc",
+        "npx -y @modelcontextprotocol/server-filesystem \"$HOME\""
+      ]
+    },
+    "exa": {
+      "type": "http",
+      "url": "https://mcp.exa.ai/mcp"
+    },
+    "drawio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@drawio/mcp@latest"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ]
+    },
+    "serena": {
+      "command": "bash",
+      "args": [
+        "-lc",
+        "\"$HOME/.local/bin/serena-mcp\" claude-code"
+      ],
+      "env": {
+        "UV_NATIVE_TLS": "true"
+      }
+    }
+  }
+}

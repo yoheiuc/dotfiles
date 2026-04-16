@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+expected_name="$(git config --global --get user.name || true)"
+expected_email="$(git config --global --get user.email || true)"
+
+if [[ -z "${expected_name}" || -z "${expected_email}" ]]; then
+  cat >&2 <<'EOF'
+ERROR: Global git identity is not configured.
+
+Set it with either:
+  git config --global user.name "Your Name"
+  git config --global user.email "your-github-id@users.noreply.github.com"
+
+or define gitIdentity.name / gitIdentity.email in .chezmoidata.yaml and run:
+  chezmoi apply
+EOF
+  exit 1
+fi
+
+author_ident="$(git var GIT_AUTHOR_IDENT)"
+committer_ident="$(git var GIT_COMMITTER_IDENT)"
+
+extract_name() {
+  printf '%s\n' "$1" | sed -E 's/^(.*) <[^>]+>.*$/\1/'
+}
+
+extract_email() {
+  printf '%s\n' "$1" | sed -E 's/^.* <([^>]+)>.*$/\1/'
+}
+
+author_name="$(extract_name "${author_ident}")"
+author_email="$(extract_email "${author_ident}")"
+committer_name="$(extract_name "${committer_ident}")"
+committer_email="$(extract_email "${committer_ident}")"
+
+if [[ "${author_name}" == "${expected_name}" ]] \
+  && [[ "${author_email}" == "${expected_email}" ]] \
+  && [[ "${committer_name}" == "${expected_name}" ]] \
+  && [[ "${committer_email}" == "${expected_email}" ]]; then
+  exit 0
+fi
+
+cat >&2 <<EOF
+ERROR: Git author/committer identity does not match your configured global identity.
+
+Expected:
+  author/committer name : ${expected_name}
+  author/committer email: ${expected_email}
+
+Actual:
+  author   : ${author_name} <${author_email}>
+  committer: ${committer_name} <${committer_email}>
+
+Fix:
+  git config --global user.name "${expected_name}"
+  git config --global user.email "${expected_email}"
+EOF
+
+exit 1

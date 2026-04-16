@@ -1,0 +1,73 @@
+# ~/.Brewfile.core — managed by chezmoi (source: home/dot_Brewfile.core)
+# Manual baseline for tools I want on every machine.
+# Put packages here when they are part of my own shared dev baseline:
+#   - I use them for work and want to install them myself
+#   - they are not simply "already on the work laptop via company auto-deploy"
+# Install: make install
+# Update:  make update
+
+# ---------- Core CLI ----------
+brew "chezmoi"            # dotfiles manager
+brew "git"
+brew "git-delta"          # better git diff
+brew "git-lfs"            # large file storage
+brew "gh"                 # GitHub CLI
+brew "ghq"                # Manage local clones
+brew "lazygit"            # TUI git client
+brew "aider"              # AI pair programming in terminal
+brew "gemini-cli"         # Gemini CLI
+brew "googleworkspace-cli" # Google Workspace CLI (gws): Drive/Gmail/Calendar/Docs/Sheets/Chat/Admin
+brew "jq"                 # JSON processor
+brew "yq"                 # YAML/JSON/TOML processor
+
+# ---------- Shell / prompt ----------
+brew "zsh"
+brew "zsh-autosuggestions"
+brew "zsh-completions"
+brew "zsh-syntax-highlighting"
+brew "zsh-you-should-use"
+brew "starship"           # cross-shell prompt
+brew "atuin"              # shell history (sync + search)
+brew "zoxide"             # smart cd
+brew "navi"               # interactive cheatsheet
+
+# ---------- File / search ----------
+brew "ripgrep"            # fast grep (rg)
+brew "fd"                 # fast find
+brew "fzf"                # fuzzy finder
+brew "bat"                # cat with syntax highlight
+brew "eza"                # modern ls
+brew "yazi"               # TUI file manager
+brew "difftastic"         # structural diff (complements git-delta)
+brew "poppler"            # PDF utilities (pdftoppm, pdfinfo, etc.)
+brew "vim"
+brew "micro"              # simple terminal text editor
+
+# ---------- Terminal multiplexer ----------
+brew "zellij"             # terminal multiplexer
+
+# ---------- Runtimes / package managers ----------
+brew "node"               # npm runtime for Codex CLI
+brew "uv"                 # fast Python package manager
+
+# ---------- Misc CLI ----------
+brew "shellcheck"         # shell script linter (used in CI)
+brew "yamllint"          # YAML linter (used in CI)
+brew "direnv"             # per-directory env vars (auto .envrc)
+brew "just"               # modern task runner (Justfile)
+brew "btop"               # TUI system monitor (CPU/RAM/disk/net)
+brew "awscli"
+brew "azure-cli"
+cask "google-cloud-sdk"   # gcloud (required by `gws auth setup`)
+brew "tfenv"              # Terraform version manager
+
+# ---------- Casks: terminal / AI ----------
+cask "ghostty"            # GPU-accelerated terminal
+cask "claude"             # Claude desktop
+cask "visual-studio-code", args: { appdir: "/Applications" }
+cask "codex-app"                 # OpenAI Codex desktop app
+cask "aws-vault-binary", args: { appdir: "/Applications" }
+
+# ---------- Casks: fonts ----------
+cask "font-jetbrains-mono-nerd-font"
+cask "font-meslo-lg-nerd-font"

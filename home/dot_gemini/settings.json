@@ -1,0 +1,18 @@
+{
+  "selectedAuthType": "oauth-personal",
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    }
+  },
+  "ui": {
+    "footer": {
+      "hideCWD": false,
+      "hideModelInfo": false,
+      "hideContextPercentage": false
+    },
+    "showStatusInTitle": true,
+    "dynamicWindowTitle": true
+  },
+  "general": {}
+}

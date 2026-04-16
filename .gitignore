@@ -1,0 +1,18 @@
+# Claude Code local session permissions (machine-specific, not for tracking)
+.claude/settings.local.json
+
+# Serena local state (machine-specific, not for tracking)
+.serena/
+
+# Playwright CLI local state (machine-specific, not for tracking)
+.playwright-cli/
+
+# chezmoi local data overrides (machine-specific)
+.chezmoidata.yaml
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Ghostty local overrides (machine-specific)
+home/dot_config/ghostty/local.ghostty

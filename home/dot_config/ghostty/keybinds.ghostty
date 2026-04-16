@@ -1,0 +1,17 @@
+# keybinds.ghostty — keyboard shortcuts
+#
+# Keep this file minimal. Ghostty handles rendering/UI concerns,
+# while terminal workflow (tabs/panes) is managed outside this config.
+# See: https://ghostty.org/docs/config/reference#keybind
+
+# Reload config without restarting
+keybind = cmd+shift+comma=reload_config
+
+# Font size controls
+keybind = cmd+plus=increase_font_size:1
+keybind = cmd+minus=decrease_font_size:1
+keybind = cmd+zero=reset_font_size
+
+# Pane splitting is handled by Zellij (Ctrl+p → n/r/d).
+# Ghostty's native splits are intentionally disabled to avoid
+# conflicting with the Zellij pane model.

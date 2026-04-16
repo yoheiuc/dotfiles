@@ -1,0 +1,48 @@
+% git, lazygit, ghq
+
+# lazygit を起動する
+lazygit
+
+# lazygit: ステージング (lazygit 内で)
+# Space でファイルをステージ/アンステージ
+# a で全ファイルをステージ
+# c でコミットメッセージ入力
+# P でプッシュ
+
+# ghq でリポジトリをクローンする
+ghq get <repo>
+
+# ghq + fzf でリポジトリに移動する (qcd エイリアス)
+cd "$(ghq root)/$(ghq list | fzf)"
+
+# ghq で管理しているリポジトリ一覧
+ghq list
+
+# ghq のルートディレクトリを確認
+ghq root
+
+# git-delta: git diff を見やすく表示 (自動適用済み)
+git diff
+
+# git-delta: ステージ済みの差分を表示
+git diff --staged
+
+# git log をグラフ付きで表示 (gl エイリアス)
+git log --oneline --graph --decorate
+
+# git status の短縮 (gs エイリアス)
+git status
+
+% git, gh
+
+# gh で PR を作成する
+gh pr create --title "<title>" --body "<body>"
+
+# gh でオープン中の PR 一覧
+gh pr list
+
+# gh で Issue 一覧
+gh issue list
+
+# gh で PR をブラウザで開く
+gh pr view --web

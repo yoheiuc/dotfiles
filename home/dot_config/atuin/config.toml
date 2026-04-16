@@ -1,0 +1,4 @@
+# Atuin settings
+# Keep selected history in the command line for editing when pressing Enter,
+# instead of executing immediately.
+enter_accept = false

@@ -1,0 +1,12 @@
+# core.ghostty — terminal behaviour
+
+shell-integration = detect
+shell-integration-features = cursor,sudo,title
+
+# Use the login shell detected from /etc/passwd
+command = /bin/zsh --login
+
+# Keep reasonable scrollback without eating memory
+scrollback-limit = 10000
+
+quit-after-last-window-closed = true

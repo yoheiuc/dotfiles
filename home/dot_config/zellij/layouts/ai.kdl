@@ -1,0 +1,17 @@
+// ai.kdl — AI 作業用レイアウト
+// 左: メインターミナル (AI エージェント用)
+// 右: サブターミナル (上: 実行・テスト / 下: git・参照)
+// 使い方: zellij --layout ai
+
+layout {
+    pane split_direction="vertical" {
+        pane size="65%" name="main"
+        pane split_direction="horizontal" {
+            pane size="60%" name="run"
+            pane size="40%" name="ref"
+        }
+    }
+    pane size=1 borderless=true {
+        plugin location="compact-bar"
+    }
+}

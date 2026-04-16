@@ -1,0 +1,25 @@
+# ~/.Brewfile.home — managed by chezmoi (source: home/dot_Brewfile.home)
+# Personal/home layer on top of the core profile.
+# Put packages here when they are personal, home-machine-specific, or
+# even used for work but already auto-deployed on the work laptop.
+# Install: make install-home
+# Update:  make update-home
+
+# ---------- Local productivity ----------
+cask "raycast"                   # launcher
+cask "libreoffice"               # office suite
+
+# ---------- Accounts / auth ----------
+cask "bitwarden", args: { appdir: "/Applications" }
+cask "ente-auth"                 # 2FA
+
+# ---------- System monitoring ----------
+cask "stats"                     # menu bar system monitor (CPU/RAM/disk/network)
+cask "cleanshot"                 # screenshot tool
+
+# ---------- Browser ----------
+cask "google-chrome"
+
+# ---------- System / locale ----------
+cask "google-japanese-ime"
+cask "logi-options+"

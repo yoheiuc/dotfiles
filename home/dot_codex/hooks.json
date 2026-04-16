@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.codex/skills/codex-auto-save-memory/scripts/autosave_memory.py\" --hook-stop",
+            "statusMessage": "Auto-saving Codex memory",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

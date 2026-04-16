@@ -1,0 +1,83 @@
+{
+  "env": {
+    "ENABLE_TOOL_SEARCH": "auto:5"
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/auto-save.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Grep(*)",
+      "Glob(*)",
+      "mcp__*",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(python*)",
+      "Bash(pip*)",
+      "Bash(uv *)",
+      "Bash(uvx *)",
+      "Bash(make *)",
+      "Bash(go *)",
+      "Bash(cargo *)",
+      "Bash(chezmoi *)",
+      "Bash(brew *)",
+      "Bash(jq *)",
+      "Bash(yq *)",
+      "Bash(shellcheck *)",
+      "Bash(yamllint *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(which *)",
+      "Bash(wc *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(sort *)",
+      "Bash(diff *)",
+      "Bash(* --version)",
+      "Bash(* --help)",
+      "WebFetch(*)",
+      "WebSearch(*)"
+    ],
+    "deny": [
+      "Bash(curl*)",
+      "Bash(wget*)",
+      "Bash(rm*)",
+      "Bash(sudo*)",
+      "Bash(chmod*)",
+      "Bash(chown*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(secrets/**)",
+      "Read(~/.ssh/**)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(git reset*)",
+      "Bash(brew uninstall*)"
+    ],
+    "defaultMode": "auto"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "$HOME/.claude/statusline.sh"
+  },
+  "effortLevel": "auto",
+  "autoUpdatesChannel": "latest",
+  "model": "opus[1m]"
+}

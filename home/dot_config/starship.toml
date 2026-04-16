@@ -1,0 +1,82 @@
+# starship.toml — Ultimate Modern Pill Config (2026)
+
+add_newline = true
+
+# 1行目にピルを表示し、2行目にコマンド入力を配置
+format = """
+$username\
+$hostname\
+[](blue)\
+$directory\
+[](fg:blue bg:purple)\
+$git_branch\
+$git_status\
+[](fg:purple bg:cyan)\
+$python\
+$nodejs\
+$rust\
+[](fg:cyan bg:yellow)\
+$cmd_duration\
+[](fg:yellow bg:red)\
+$status\
+[](fg:red)\
+$line_break\
+$character"""
+
+[directory]
+style = "bg:blue fg:black"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = " "
+style = "bg:purple fg:black"
+format = "[ $symbol$branch ]($style)"
+
+[git_status]
+style = "bg:purple fg:black"
+format = "[($all_status$ahead_behind )]($style)"
+
+[nodejs]
+symbol = "󰎙 "
+style = "bg:cyan fg:black"
+format = "[ $symbol($version) ]($style)"
+
+[rust]
+symbol = "󱘗 "
+style = "bg:cyan fg:black"
+format = "[ $symbol($version) ]($style)"
+
+[python]
+symbol = "󰌠 "
+style = "bg:cyan fg:black"
+format = "[ $symbol($version) ]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "bg:yellow fg:black"
+format = "[ 󱫿 $duration ]($style)"
+
+[status]
+disabled = false
+style = "bg:red fg:black"
+format = "[ 󰄱 $status ]($style)"
+symbol = "󰄱"
+
+[time]
+disabled = true
+
+[username]
+detect_env_vars = ["SSH_CONNECTION"]
+style_user = "bold red"
+format = "[$user@](bold red)"
+
+[hostname]
+detect_env_vars = ["SSH_CONNECTION"]
+style = "bold red"
+format = "[$hostname](bold red) "
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
