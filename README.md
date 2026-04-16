@@ -556,3 +556,9 @@ dotfiles/
 └── .github/workflows/
     └── ci.yml                      # shellcheck + core brew bundle
 ```
+
+---
+
+## 今後の予定
+
+- **APM (Agent Package Manager) によるチーム共有**: `microsoft/apm` は core Brewfile に導入済み。今後、Claude Code commands や Codex skills のうちチームで共有したいものを別リポジトリの APM パッケージとして切り出す予定。dotfiles はマシン単位の設定管理（chezmoi）、APM パッケージはプロジェクト単位のエージェント設定共有（`apm install`）という棲み分けで運用する
