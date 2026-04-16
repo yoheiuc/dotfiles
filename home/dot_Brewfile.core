@@ -75,7 +75,6 @@ cask "bitwarden", args: { appdir: "/Applications" }  # password manager
 cask "ente-auth"                 # 2FA
 cask "stats"                     # menu bar system monitor (CPU/RAM/disk/network)
 cask "cleanshot"                 # screenshot tool
-cask "google-chrome"
 cask "google-japanese-ime"
 cask "logi-options+"
 

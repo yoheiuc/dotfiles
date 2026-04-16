@@ -4,3 +4,6 @@
 # even used for work but already auto-deployed on the work laptop.
 # Install: make install-home
 # Update:  make update-home
+
+# ---------- Browser ----------
+cask "google-chrome"             # auto-deployed on work laptop
