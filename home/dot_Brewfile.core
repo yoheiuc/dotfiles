@@ -38,6 +38,7 @@ brew "fzf"                # fuzzy finder
 brew "bat"                # cat with syntax highlight
 brew "eza"                # modern ls
 brew "yazi"               # TUI file manager
+brew "difftastic"         # structural diff (complements git-delta)
 brew "poppler"            # PDF utilities (pdftoppm, pdfinfo, etc.)
 brew "vim"
 brew "micro"              # simple terminal text editor
@@ -52,6 +53,9 @@ brew "uv"                 # fast Python package manager
 # ---------- Misc CLI ----------
 brew "shellcheck"         # shell script linter (used in CI)
 brew "yamllint"          # YAML linter (used in CI)
+brew "direnv"             # per-directory env vars (auto .envrc)
+brew "just"               # modern task runner (Justfile)
+brew "btop"               # TUI system monitor (CPU/RAM/disk/net)
 brew "awscli"
 brew "azure-cli"
 cask "google-cloud-sdk"   # gcloud (required by `gws auth setup`)

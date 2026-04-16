@@ -19,5 +19,13 @@ alias cp='cp -i'
 alias mv='mv -i'
 
 
+# AI tools
+alias cc='claude'
+alias ccc='claude --continue'
+alias ccr='claude --resume'
+
 # Repository navigation
 alias qcd='cd "$(ghq root)/$(ghq list | fzf)"'
+
+# AI session (Zellij with AI layout)
+alias ai='~/dotfiles/scripts/ai-session.sh'

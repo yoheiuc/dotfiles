@@ -12,11 +12,6 @@ keybind = cmd+plus=increase_font_size:1
 keybind = cmd+minus=decrease_font_size:1
 keybind = cmd+zero=reset_font_size
 
-# Split panes
-keybind = cmd+d=new_split:right
-keybind = cmd+shift+d=new_split:down
-
-# ---------- Future expansion ----------
-# keybind = cmd+t=new_tab
-# keybind = cmd+w=close_surface
-# keybind = cmd+shift+enter=new_split:right
+# Pane splitting is handled by Zellij (Ctrl+p → n/r/d).
+# Ghostty's native splits are intentionally disabled to avoid
+# conflicting with the Zellij pane model.

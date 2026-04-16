@@ -21,6 +21,11 @@ if command -v navi &>/dev/null; then
   eval "$(navi widget zsh)"
 fi
 
+# direnv — per-directory env vars
+if command -v direnv &>/dev/null; then
+  eval "$(direnv hook zsh)"
+fi
+
 dotprofile() {
   printf '%s\n' "${DOTFILES_PROFILE:-core}"
 }
@@ -112,6 +117,27 @@ gms() {
   diff="$(_gemini_current_diff)" || return
   extra="$*"
   prompt="以下の差分を簡潔に要約してください。何が変わったか、気をつける点、次にやるとよい確認を短く整理してください。"
+
+  if [[ -n "$extra" ]]; then
+    prompt="${prompt}
+
+追加指示:
+${extra}"
+  fi
+
+  command gemini -p "${prompt}
+
+対象差分:
+${diff}"
+}
+
+gd() {
+  _gemini_require || return
+
+  local diff extra prompt
+  diff="$(_gemini_current_diff)" || return
+  extra="$*"
+  prompt="以下の差分を読み、変更の意図・影響・見落としやすいリスクを短く説明してください。"
 
   if [[ -n "$extra" ]]; then
     prompt="${prompt}
