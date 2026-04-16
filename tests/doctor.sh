@@ -189,7 +189,21 @@ case "${1:-}" in
 esac
 EOF
 
-chmod +x "${STUB_BIN}/brew" "${STUB_BIN}/chezmoi" "${STUB_BIN}/git" "${STUB_BIN}/claude" "${STUB_BIN}/codex" "${STUB_BIN}/launchctl" "${STUB_BIN}/plutil" "${STUB_BIN}/pinentry-mac" "${STUB_BIN}/xcode-select" "${STUB_BIN}/swift" "${STUB_BIN}/gcloud"
+cat > "${STUB_BIN}/clasp" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+  --version)
+    printf '2.5.0\n'
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+EOF
+
+chmod +x "${STUB_BIN}/brew" "${STUB_BIN}/chezmoi" "${STUB_BIN}/git" "${STUB_BIN}/claude" "${STUB_BIN}/codex" "${STUB_BIN}/launchctl" "${STUB_BIN}/plutil" "${STUB_BIN}/pinentry-mac" "${STUB_BIN}/xcode-select" "${STUB_BIN}/swift" "${STUB_BIN}/gcloud" "${STUB_BIN}/clasp"
 
 run_doctor() {
   local home_dir="$1"
@@ -280,6 +294,7 @@ assert_contains "${RUN_OUTPUT}" "serena MCP: registered" "doctor should detect C
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered via wrapper" "doctor should detect Codex wrapper registration"
 assert_contains "${RUN_OUTPUT}" "Google Cloud SDK" "doctor should detect gcloud version"
 assert_contains "${RUN_OUTPUT}" "VERIFY_X509_STRICT bypass: active" "doctor should confirm SSL compat is active"
+assert_contains "${RUN_OUTPUT}" "clasp 2.5.0" "doctor should detect clasp version"
 
 # ---- Scenario 2: drift ----
 home_drift="${tmpdir}/home-drift"
@@ -314,11 +329,17 @@ cat > "${home_drift}/Library/LaunchAgents/com.github.domt4.homebrew-autoupdate.p
 <plist version="1.0"><dict><key>StartInterval</key><integer>3600</integer></dict></plist>
 EOF
 
+# Hide clasp stub so drift scenario triggers the warning
+mv "${STUB_BIN}/clasp" "${STUB_BIN}/_clasp.bak"
+
 run_capture run_doctor "${home_drift}" \
   LAUNCHCTL_AUTUPDATE_LOADED=1 \
   BREW_DOCTOR_CLT_WARN=1 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\nbitwarden\n'
+
+# Restore clasp stub
+mv "${STUB_BIN}/_clasp.bak" "${STUB_BIN}/clasp"
 assert_eq "0" "${RUN_STATUS}" "doctor should stay green when only optional drift warnings are present"
 assert_contains "${RUN_OUTPUT}" "Brew profile drift: casks installed outside 'core' profile" "doctor should warn on cask drift"
 assert_contains "${RUN_OUTPUT}" "auto-update channel should be latest" "doctor should warn on Claude channel drift"
@@ -331,5 +352,6 @@ assert_contains "${RUN_OUTPUT}" "serena config: language_backend is not LSP" "do
 assert_contains "${RUN_OUTPUT}" "bitwarden" "doctor should list drifting cask names"
 assert_contains "${RUN_OUTPUT}" "serena MCP: not registered" "doctor should warn about missing serena MCP"
 assert_contains "${RUN_OUTPUT}" "VERIFY_X509_STRICT bypass: not active" "doctor should warn when SSL compat is missing"
+assert_contains "${RUN_OUTPUT}" "clasp not found" "doctor should warn when clasp is missing"
 
 pass_test "tests/doctor.sh"

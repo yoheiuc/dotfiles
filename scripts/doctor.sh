@@ -372,6 +372,13 @@ else
   warn "gemini not found — install via Brewfile (brew \"gemini-cli\")"
 fi
 
+section "clasp (optional)"
+if command -v clasp &>/dev/null; then
+  ok "clasp $(clasp --version 2>/dev/null | head -1 || true)"
+else
+  warn "clasp not found — run: ./scripts/post-setup.sh"
+fi
+
 section "Codex (optional)"
 if command -v codex &>/dev/null; then
   codex_version_line="$(codex --version 2>&1 | head -1)"
