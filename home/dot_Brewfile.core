@@ -58,7 +58,7 @@ brew "just"               # modern task runner (Justfile)
 brew "btop"               # TUI system monitor (CPU/RAM/disk/net)
 brew "awscli"
 brew "azure-cli"
-cask "google-cloud-sdk"   # gcloud (required by `gws auth setup`)
+cask "gcloud-cli"         # gcloud (required by `gws auth setup`)
 brew "tfenv"              # Terraform version manager
 
 # ---------- Casks: terminal / AI ----------

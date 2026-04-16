@@ -131,7 +131,7 @@ ${extra}"
 ${diff}"
 }
 
-gd() {
+gmd() {
   _gemini_require || return
 
   local diff extra prompt

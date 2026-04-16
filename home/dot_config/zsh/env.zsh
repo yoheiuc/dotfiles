@@ -20,6 +20,9 @@ export VISUAL="${EDITOR}"
 # Match bat theme to Ghostty (Catppuccin Mocha)
 export BAT_THEME="Catppuccin Mocha"
 
+# Default Python version for uv
+export UV_PYTHON="3.12"
+
 # Claude Code — flicker-free fullscreen rendering
 export CLAUDE_CODE_NO_FLICKER=1
 
