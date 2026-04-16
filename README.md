@@ -584,6 +584,8 @@ dotfiles/
 │   │   ├── ai-secrets              # -> ~/.local/bin/ai-secrets
 │   │   ├── mcp-with-keychain-secret # -> ~/.local/bin/mcp-with-keychain-secret
 │   │   └── serena-mcp              # -> ~/.local/bin/serena-mcp
+│   ├── dot_local/lib/python-ssl-compat/
+│   │   └── sitecustomize.py        # Python 3.13 VERIFY_X509_STRICT 無効化 (企業プロキシ対策)
 │   ├── dot_local/share/navi/cheats/dotfiles/
 │   │   ├── git.cheat
 │   │   ├── shell.cheat
@@ -599,9 +601,9 @@ dotfiles/
 │       │   └── keybinds.ghostty    # 追加キーバインド
 │       ├── dotfiles/profile        # ローカルの active profile (runtime state)
 │       ├── zsh/
-│       │   ├── env.zsh             # PATH / export / brew shellenv
+│       │   ├── env.zsh             # PATH / export / brew shellenv / PYTHONPATH (SSL compat)
 │       │   ├── aliases.zsh         # alias 群
-│       │   ├── tools.zsh           # starship / zoxide / atuin / fzf / navi
+│       │   ├── tools.zsh           # starship / zoxide / atuin / fzf / navi / gcloud
 │       │   └── completion.zsh      # compinit
 │       └── starship.toml           # prompt 設定
 ├── scripts/
@@ -609,7 +611,7 @@ dotfiles/
 │   ├── ai-repair.sh                # Serena / Claude / Codex の local drift 修復
 │   ├── ai-secrets.sh               # Keychain へ MCP credential を対話保存
 │   ├── brew-bundle.sh              # Brew profile の sync / install / check
-│   ├── bootstrap.sh                # core brew + chezmoi + apply
+│   ├── bootstrap.sh                # SSL compat + core brew + chezmoi + apply
 │   ├── profile.sh                  # active profile の保存 / 参照
 │   ├── preview.sh                  # chezmoi/Brew の変更予定を確認
 │   ├── post-setup.sh               # Serena MCP + brew-autoupdate disable
