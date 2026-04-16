@@ -175,7 +175,21 @@ fi
 exit 1
 EOF
 
-chmod +x "${STUB_BIN}/brew" "${STUB_BIN}/chezmoi" "${STUB_BIN}/git" "${STUB_BIN}/claude" "${STUB_BIN}/codex" "${STUB_BIN}/launchctl" "${STUB_BIN}/plutil" "${STUB_BIN}/pinentry-mac" "${STUB_BIN}/xcode-select" "${STUB_BIN}/swift"
+cat > "${STUB_BIN}/gcloud" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+  version)
+    printf 'Google Cloud SDK 520.0.0\n'
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+EOF
+
+chmod +x "${STUB_BIN}/brew" "${STUB_BIN}/chezmoi" "${STUB_BIN}/git" "${STUB_BIN}/claude" "${STUB_BIN}/codex" "${STUB_BIN}/launchctl" "${STUB_BIN}/plutil" "${STUB_BIN}/pinentry-mac" "${STUB_BIN}/xcode-select" "${STUB_BIN}/swift" "${STUB_BIN}/gcloud"
 
 run_doctor() {
   local home_dir="$1"
@@ -195,7 +209,8 @@ run_doctor() {
 
 # ---- Scenario 1: healthy home profile ----
 home_ok="${tmpdir}/home-ok"
-mkdir -p "${home_ok}/.config/dotfiles" "${home_ok}/.codex" "${home_ok}/.serena" "${home_ok}/.local/bin" "${home_ok}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_ok}/Library/LaunchAgents"
+mkdir -p "${home_ok}/.config/dotfiles" "${home_ok}/.codex" "${home_ok}/.serena" "${home_ok}/.local/bin" "${home_ok}/.local/lib/python-ssl-compat" "${home_ok}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_ok}/Library/LaunchAgents"
+cp "${REPO_ROOT}/home/dot_local/lib/python-ssl-compat/sitecustomize.py" "${home_ok}/.local/lib/python-ssl-compat/sitecustomize.py"
 printf 'home\n' > "${home_ok}/.config/dotfiles/profile"
 cat > "${home_ok}/.claude.json" <<EOF
 {
@@ -263,6 +278,8 @@ assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend = LSP" "doctor should validate Serena global config"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered" "doctor should detect Claude serena registration"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered via wrapper" "doctor should detect Codex wrapper registration"
+assert_contains "${RUN_OUTPUT}" "Google Cloud SDK" "doctor should detect gcloud version"
+assert_contains "${RUN_OUTPUT}" "VERIFY_X509_STRICT bypass: active" "doctor should confirm SSL compat is active"
 
 # ---- Scenario 2: drift ----
 home_drift="${tmpdir}/home-drift"
@@ -313,5 +330,6 @@ assert_contains "${RUN_OUTPUT}" "brew autoupdate: enabled, but dotfiles policy i
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend is not LSP" "doctor should warn on Serena config drift"
 assert_contains "${RUN_OUTPUT}" "bitwarden" "doctor should list drifting cask names"
 assert_contains "${RUN_OUTPUT}" "serena MCP: not registered" "doctor should warn about missing serena MCP"
+assert_contains "${RUN_OUTPUT}" "VERIFY_X509_STRICT bypass: not active" "doctor should warn when SSL compat is missing"
 
 pass_test "tests/doctor.sh"

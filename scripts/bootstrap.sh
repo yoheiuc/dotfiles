@@ -4,9 +4,10 @@
 # Responsibility (nothing more):
 #   1. Verify Homebrew is present
 #   2. Install chezmoi if missing
-#   3. Install core Brew packages (no cleanup — won't remove home packages)
-#   4. Persist the active machine profile
-#   5. Apply dotfiles via chezmoi
+#   3. Apply Python 3.13 SSL compat (corporate proxy workaround)
+#   4. Install core Brew packages (no cleanup — won't remove home packages)
+#   5. Persist the active machine profile
+#   6. Apply dotfiles via chezmoi
 #
 # Called automatically by: make install / install-home
 #
@@ -46,14 +47,28 @@ if ! command -v chezmoi &>/dev/null; then
   brew install chezmoi
 fi
 
-# ---- 3. Homebrew packages (install core profile, no cleanup) ---------------
+# ---- 3. Python 3.13 SSL compat (corporate proxy workaround) ---------------
+# gcloud-cli and other Python 3.13+ tools fail behind CASB/proxies
+# (Netskope, Zscaler, etc.) due to VERIFY_X509_STRICT rejecting MITM certs.
+# Deploy sitecustomize.py before brew bundle so cask postflight works.
+_ssl_compat_src="${REPO_ROOT}/home/dot_local/lib/python-ssl-compat/sitecustomize.py"
+_ssl_compat_dst="${HOME}/.local/lib/python-ssl-compat"
+if [[ -f "${_ssl_compat_src}" ]]; then
+  mkdir -p "${_ssl_compat_dst}"
+  cp "${_ssl_compat_src}" "${_ssl_compat_dst}/sitecustomize.py"
+  export PYTHONPATH="${_ssl_compat_dst}${PYTHONPATH:+:${PYTHONPATH}}"
+  log "Python SSL compat: VERIFY_X509_STRICT disabled for corporate proxy"
+fi
+unset _ssl_compat_src _ssl_compat_dst
+
+# ---- 4. Homebrew packages (install core profile, no cleanup) ---------------
 # Cleanup is intentionally skipped here so that home packages
 # installed by broader profiles are not removed when bootstrap re-runs.
 # Cleanup happens only when explicitly running brew-bundle.sh sync <profile>.
 log "Installing packages for 'core' profile..."
 brew bundle --file="${REPO_ROOT}/home/dot_Brewfile.core"
 
-# ---- 4. Persist active profile ---------------------------------------------
+# ---- 5. Persist active profile ---------------------------------------------
 if [[ "${PROFILE}" == "core" ]]; then
   if bash "${REPO_ROOT}/scripts/profile.sh" exists; then
     ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
@@ -67,7 +82,7 @@ else
   ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" set "${PROFILE}")"
 fi
 
-# ---- 5. Point chezmoi at this repo and apply dotfiles ----------------------
+# ---- 6. Point chezmoi at this repo and apply dotfiles ----------------------
 # Keep a single source of truth for day-to-day edits:
 #   ~/.local/share/chezmoi -> ~/dotfiles
 # .chezmoiroot tells chezmoi the actual source is home/ inside that repo.

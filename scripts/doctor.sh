@@ -230,6 +230,30 @@ else
 fi
 unset SERENA_CONFIG_PATH
 
+section "gcloud (optional)"
+if command -v gcloud &>/dev/null; then
+  gcloud_version_line="$(gcloud version 2>&1 | head -1 || true)"
+  if [[ -n "$gcloud_version_line" ]]; then
+    ok "$gcloud_version_line"
+  else
+    warn "gcloud found but version returned no usable output"
+  fi
+else
+  warn "gcloud not found — install via Brewfile (cask \"gcloud-cli\")"
+fi
+
+section "Python SSL compat (optional)"
+_ssl_compat_file="${HOME}/.local/lib/python-ssl-compat/sitecustomize.py"
+if [[ -f "${_ssl_compat_file}" ]]; then
+  ok "VERIFY_X509_STRICT bypass: active (${_ssl_compat_file})"
+  ok "To disable after cert rotation: rm ${_ssl_compat_file/#${HOME}/\~}"
+else
+  warn "VERIFY_X509_STRICT bypass: not active"
+  warn "  Python 3.13+ may fail behind corporate CASB/proxies (Netskope, Zscaler)"
+  warn "  Restore with: chezmoi apply"
+fi
+unset _ssl_compat_file
+
 section "Ghostty (optional)"
 # Ghostty CLI may not be in PATH when installed as a .app bundle.
 # /Applications/Ghostty.app/Contents/MacOS/ghostty is the binary path.
