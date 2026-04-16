@@ -3,10 +3,36 @@
 # コンテキスト使用率が高い場合にメモリファイルを更新する
 set -euo pipefail
 
-MEMORY_FILE="$HOME/.claude/projects/-Users-REDACTED-dotfiles/memory/project_dotfiles_ccb.md"
+# Find the most recently modified memory file for the current project.
+# Claude Code stores project memories under ~/.claude/projects/<encoded-path>/memory/.
+find_memory_file() {
+  local projects_dir="$HOME/.claude/projects"
+  [[ -d "${projects_dir}" ]] || return 1
+
+  local workspace_dir
+  workspace_dir="$(printf '%s' "$INPUT" | jq -r '.workspace.current_dir // .cwd // ""' 2>/dev/null || true)"
+  [[ -z "${workspace_dir}" ]] && workspace_dir="$PWD"
+
+  # Encode the project path the same way Claude Code does (/ → -)
+  local encoded
+  encoded="$(printf '%s' "${workspace_dir}" | tr '/' '-')"
+  local candidate="${projects_dir}/${encoded}/memory"
+
+  if [[ -d "${candidate}" ]]; then
+    # Return the most recently modified .md file
+    find "${candidate}" -maxdepth 1 -name '*.md' -type f -print0 2>/dev/null \
+      | xargs -0 ls -t 2>/dev/null \
+      | head -1
+    return
+  fi
+
+  return 1
+}
+
+INPUT="$(cat || true)"
+MEMORY_FILE="$(find_memory_file || true)"
 TODAY="$(date '+%Y-%m-%d')"
 NOW="$(date '+%Y-%m-%d %H:%M')"
-INPUT="$(cat || true)"
 
 PCT="${CLAUDE_CONTEXT_PERCENT:-}"
 if [[ -z "$PCT" ]]; then
@@ -43,7 +69,7 @@ work_dir = os.environ["WORK_DIR"]
 text = memory_file.read_text()
 
 frontmatter_pattern = r"(^---\n.*?^description:\s*)(.*?)(\n.*?^---\n)"
-description = f"dotfilesリポジトリをCCB中心に開発中。最終自動保存: {now} / dir: {work_dir}"
+description = f"最終自動保存: {now} / dir: {work_dir}"
 if re.search(frontmatter_pattern, text, flags=re.MULTILINE | re.DOTALL):
     text = re.sub(
         frontmatter_pattern,
