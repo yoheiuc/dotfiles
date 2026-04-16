@@ -49,7 +49,7 @@ brew "zellij"             # terminal multiplexer
 
 # ---------- Runtimes / package managers ----------
 brew "node"               # npm runtime for Codex CLI
-brew "uv"                 # fast Python package manager
+brew "uv"                 # fast Python package manager (also provides Python 3.12 for gcloud)
 
 # ---------- Misc CLI ----------
 brew "shellcheck"         # shell script linter (used in CI)

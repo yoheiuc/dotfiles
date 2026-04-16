@@ -4,9 +4,10 @@
 # Responsibility (nothing more):
 #   1. Verify Homebrew is present
 #   2. Install chezmoi if missing
-#   3. Install core Brew packages (no cleanup — won't remove home packages)
-#   4. Persist the active machine profile
-#   5. Apply dotfiles via chezmoi
+#   3. Pre-install uv + Python 3.12 (gcloud corporate proxy workaround)
+#   4. Install core Brew packages (no cleanup — won't remove home packages)
+#   5. Persist the active machine profile
+#   6. Apply dotfiles via chezmoi
 #
 # Called automatically by: make install / install-home
 #
@@ -46,14 +47,32 @@ if ! command -v chezmoi &>/dev/null; then
   brew install chezmoi
 fi
 
-# ---- 3. Homebrew packages (install core profile, no cleanup) ---------------
+# ---- 3. Python 3.12 for gcloud (corporate proxy workaround) ---------------
+# gcloud-cli cask bundles Python 3.13+ which enables VERIFY_X509_STRICT.
+# Corporate CASB/proxies (Netskope, Zscaler, etc.) use MITM certificates
+# that lack RFC 5280 compliance, causing SSL errors during cask postflight.
+# Pre-install Python 3.12 via uv so CLOUDSDK_PYTHON is set before brew bundle.
+if ! command -v uv &>/dev/null; then
+  log "Installing uv (needed for Python 3.12 management)..."
+  brew install uv
+fi
+if ! uv python find 3.12 &>/dev/null 2>&1; then
+  log "Installing Python 3.12 via uv (gcloud proxy workaround)..."
+  uv python install 3.12
+fi
+export CLOUDSDK_PYTHON="$(uv python find 3.12 2>/dev/null)"
+if [[ -n "${CLOUDSDK_PYTHON}" ]]; then
+  log "CLOUDSDK_PYTHON=${CLOUDSDK_PYTHON}"
+fi
+
+# ---- 4. Homebrew packages (install core profile, no cleanup) ---------------
 # Cleanup is intentionally skipped here so that home packages
 # installed by broader profiles are not removed when bootstrap re-runs.
 # Cleanup happens only when explicitly running brew-bundle.sh sync <profile>.
 log "Installing packages for 'core' profile..."
 brew bundle --file="${REPO_ROOT}/home/dot_Brewfile.core"
 
-# ---- 4. Persist active profile ---------------------------------------------
+# ---- 5. Persist active profile ---------------------------------------------
 if [[ "${PROFILE}" == "core" ]]; then
   if bash "${REPO_ROOT}/scripts/profile.sh" exists; then
     ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
@@ -67,7 +86,7 @@ else
   ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" set "${PROFILE}")"
 fi
 
-# ---- 5. Point chezmoi at this repo and apply dotfiles ----------------------
+# ---- 6. Point chezmoi at this repo and apply dotfiles ----------------------
 # Keep a single source of truth for day-to-day edits:
 #   ~/.local/share/chezmoi -> ~/dotfiles
 # .chezmoiroot tells chezmoi the actual source is home/ inside that repo.

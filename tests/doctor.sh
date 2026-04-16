@@ -175,7 +175,34 @@ fi
 exit 1
 EOF
 
-chmod +x "${STUB_BIN}/brew" "${STUB_BIN}/chezmoi" "${STUB_BIN}/git" "${STUB_BIN}/claude" "${STUB_BIN}/codex" "${STUB_BIN}/launchctl" "${STUB_BIN}/plutil" "${STUB_BIN}/pinentry-mac" "${STUB_BIN}/xcode-select" "${STUB_BIN}/swift"
+cat > "${STUB_BIN}/gcloud" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+  version)
+    printf 'Google Cloud SDK 520.0.0\n'
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+EOF
+
+# Stub python3.12 for CLOUDSDK_PYTHON verification
+cat > "${STUB_BIN}/python3.12" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${1:-}" == "-c" ]]; then
+  # respond to version probe from doctor.sh
+  printf '3.12\n'
+  exit 0
+fi
+exit 1
+EOF
+
+chmod +x "${STUB_BIN}/brew" "${STUB_BIN}/chezmoi" "${STUB_BIN}/git" "${STUB_BIN}/claude" "${STUB_BIN}/codex" "${STUB_BIN}/launchctl" "${STUB_BIN}/plutil" "${STUB_BIN}/pinentry-mac" "${STUB_BIN}/xcode-select" "${STUB_BIN}/swift" "${STUB_BIN}/gcloud" "${STUB_BIN}/python3.12"
 
 run_doctor() {
   local home_dir="$1"
@@ -249,6 +276,7 @@ project_serena_folder_location: "$projectDir/.serena"
 EOF
 run_capture run_doctor "${home_ok}" \
   LAUNCHCTL_AUTUPDATE_LOADED=0 \
+  CLOUDSDK_PYTHON="${STUB_BIN}/python3.12" \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\n'
 assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy home profile case"
@@ -263,6 +291,8 @@ assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend = LSP" "doctor should validate Serena global config"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered" "doctor should detect Claude serena registration"
 assert_contains "${RUN_OUTPUT}" "serena MCP: registered via wrapper" "doctor should detect Codex wrapper registration"
+assert_contains "${RUN_OUTPUT}" "Google Cloud SDK" "doctor should detect gcloud version"
+assert_contains "${RUN_OUTPUT}" "proxy safe" "doctor should confirm CLOUDSDK_PYTHON is proxy safe"
 
 # ---- Scenario 2: drift ----
 home_drift="${tmpdir}/home-drift"
@@ -313,5 +343,6 @@ assert_contains "${RUN_OUTPUT}" "brew autoupdate: enabled, but dotfiles policy i
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend is not LSP" "doctor should warn on Serena config drift"
 assert_contains "${RUN_OUTPUT}" "bitwarden" "doctor should list drifting cask names"
 assert_contains "${RUN_OUTPUT}" "serena MCP: not registered" "doctor should warn about missing serena MCP"
+assert_contains "${RUN_OUTPUT}" "CLOUDSDK_PYTHON: not set" "doctor should warn when CLOUDSDK_PYTHON is missing"
 
 pass_test "tests/doctor.sh"

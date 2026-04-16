@@ -230,6 +230,42 @@ else
 fi
 unset SERENA_CONFIG_PATH
 
+section "gcloud (optional)"
+if command -v gcloud &>/dev/null; then
+  gcloud_version_line="$(gcloud version 2>&1 | head -1 || true)"
+  if [[ -n "$gcloud_version_line" ]]; then
+    ok "$gcloud_version_line"
+  else
+    warn "gcloud found but version returned no usable output"
+  fi
+
+  # Verify CLOUDSDK_PYTHON is set and points to Python <3.13
+  if [[ -n "${CLOUDSDK_PYTHON:-}" ]]; then
+    if [[ -x "${CLOUDSDK_PYTHON}" ]]; then
+      _gcloud_pyver="$("${CLOUDSDK_PYTHON}" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+      if [[ -n "${_gcloud_pyver}" ]]; then
+        _gcloud_pymajor="${_gcloud_pyver%%.*}"
+        _gcloud_pyminor="${_gcloud_pyver#*.}"
+        if [[ "${_gcloud_pymajor}" -eq 3 && "${_gcloud_pyminor}" -le 12 ]]; then
+          ok "CLOUDSDK_PYTHON: ${CLOUDSDK_PYTHON} (Python ${_gcloud_pyver}) — proxy safe"
+        else
+          warn "CLOUDSDK_PYTHON: Python ${_gcloud_pyver} — 3.13+ may break corporate proxy SSL inspection"
+        fi
+      else
+        warn "CLOUDSDK_PYTHON: could not determine Python version"
+      fi
+      unset _gcloud_pyver _gcloud_pymajor _gcloud_pyminor
+    else
+      warn "CLOUDSDK_PYTHON: ${CLOUDSDK_PYTHON} is not executable"
+    fi
+  else
+    warn "CLOUDSDK_PYTHON: not set — gcloud may use Python 3.13+ (corporate proxy risk)"
+    warn "  Set CLOUDSDK_PYTHON in env.zsh or install python@3.12 via Brewfile"
+  fi
+else
+  warn "gcloud not found — install via Brewfile (cask \"gcloud-cli\")"
+fi
+
 section "Ghostty (optional)"
 # Ghostty CLI may not be in PATH when installed as a .app bundle.
 # /Applications/Ghostty.app/Contents/MacOS/ghostty is the binary path.

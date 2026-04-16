@@ -23,6 +23,21 @@ export BAT_THEME="Catppuccin Mocha"
 # Default Python version for uv
 export UV_PYTHON="3.12"
 
+# Google Cloud SDK — force Python 3.12 for corporate proxy compatibility
+# Python 3.13+ enables VERIFY_X509_STRICT by default, which rejects
+# corporate CASB/proxy (Netskope, Zscaler etc.) MITM CA certificates
+# that lack RFC 5280 compliance (basicConstraints not critical, missing AKI).
+# Lookup order: python3.12 in PATH → uv-managed Python 3.12
+if command -v python3.12 &>/dev/null; then
+  export CLOUDSDK_PYTHON="$(command -v python3.12)"
+elif command -v uv &>/dev/null; then
+  _gcloud_py="$(uv python find 3.12 2>/dev/null || true)"
+  if [[ -n "${_gcloud_py}" && -x "${_gcloud_py}" ]]; then
+    export CLOUDSDK_PYTHON="${_gcloud_py}"
+  fi
+  unset _gcloud_py
+fi
+
 # Claude Code — flicker-free fullscreen rendering
 export CLAUDE_CODE_NO_FLICKER=1
 

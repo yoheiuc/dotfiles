@@ -175,6 +175,8 @@ make doctor
 | `node --version` | Optional | Codex CLI 導入に必要な node/npm がある |
 | `uv --version` | Optional | Serena MCP に必要な `uv` がある |
 | `brew-autoupdate` | Optional | dotfiles 方針では無効化されている（有効なら warning） |
+| `gcloud version` | Optional | gcloud CLI がある |
+| `CLOUDSDK_PYTHON` | Optional | gcloud が Python ≤3.12 を使い、企業プロキシで安全 |
 | `ghostty --version` | Optional | Ghostty CLI が存在し、バージョンが取得できる |
 | `cmux --version` | Optional | cmux CLI が存在し、バージョンが取得できる |
 | `claude --version` | Optional | Claude Code CLI がある |
@@ -330,6 +332,66 @@ chezmoi apply
 make doctor
 ./scripts/brew-bundle.sh preview "$(dotprofile)"
 ```
+
+---
+
+## gcloud と企業プロキシ（Python 3.13 問題）
+
+gcloud CLI は内部で Python を使います。Python 3.13 以降では `VERIFY_X509_STRICT` がデフォルトで有効になり、RFC 5280 に厳密に準拠した証明書チェーンを要求します。企業の CASB/プロキシ（Netskope, Zscaler 等）が SSL インスペクション（MITM）で使う CA 証明書は、`basicConstraints` に `critical` フラグが無い、Authority Key Identifier (AKI) が欠落している等の理由で拒否されることがあります。
+
+参考: [Netskope 環境での Python 3.13 SSL 問題](https://blog.cloudnative.co.jp/28436/)
+
+### 症状
+
+`brew install --cask gcloud-cli` の postflight やその後の `gcloud` コマンドで SSL エラーが発生します。
+
+```
+ssl.SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED]
+  certificate verify failed: Basic Constraints of CA cert not marked critical
+```
+
+### 対策: CLOUDSDK_PYTHON で Python 3.12 を固定
+
+`bootstrap.sh` が `brew bundle` の **前に** `uv` と Python 3.12 をインストールし、`CLOUDSDK_PYTHON` を設定します。これにより `gcloud-cli` cask の postflight も Python 3.12 で実行され、SSL エラーを回避できます。
+
+```bash
+# bootstrap.sh (自動)
+uv python install 3.12
+export CLOUDSDK_PYTHON="$(uv python find 3.12)"
+# → 以降の brew bundle で gcloud-cli が正常にインストールされる
+```
+
+シェル起動時は `env.zsh` が同じ設定を行います:
+
+```bash
+# env.zsh (自動設定 — PATH の python3.12 → uv 管理の Python 3.12 の順に探索)
+export CLOUDSDK_PYTHON="$(uv python find 3.12)"
+```
+
+手動で入れる場合:
+
+```bash
+uv python install 3.12
+```
+
+`make doctor` は gcloud の存在と `CLOUDSDK_PYTHON` のバージョンを確認し、3.13 以上の場合は warning を出します。
+
+### カスタム CA 証明書が必要な場合
+
+プロキシ経由で `gcloud` を使う際にカスタム CA バンドルが必要な場合は、マシンローカルで以下を設定します。
+
+```bash
+gcloud config set core/custom_ca_certs_file /path/to/corporate-ca-bundle.pem
+```
+
+Python ライブラリ全般（`google-cloud-*` 等）にも適用したい場合:
+
+```bash
+export REQUESTS_CA_BUNDLE=/path/to/corporate-ca-bundle.pem
+export SSL_CERT_FILE=/path/to/corporate-ca-bundle.pem
+```
+
+これらはマシン固有の認証情報に依存するため、dotfiles には含めず `.envrc`（direnv）等でローカル管理します。
 
 ---
 
