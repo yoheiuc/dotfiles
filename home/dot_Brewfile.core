@@ -71,7 +71,6 @@ cask "aws-vault-binary", args: { appdir: "/Applications" }
 # ---------- Casks: productivity / system ----------
 cask "raycast"                   # launcher
 cask "libreoffice"               # office suite
-cask "bitwarden", args: { appdir: "/Applications" }  # password manager
 cask "ente-auth"                 # 2FA
 cask "stats"                     # menu bar system monitor (CPU/RAM/disk/network)
 cask "cleanshot"                 # screenshot tool
