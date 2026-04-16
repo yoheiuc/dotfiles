@@ -4,6 +4,7 @@
 # Responsibility:
 #   - Install/update Claude Code CLI via native installer and keep it on latest
 #   - Install Codex CLI (via npm install -g @openai/codex)
+#   - Install clasp (via npm install -g @google/clasp)
 #   - Register Serena MCP server into Claude Code and Codex (idempotent)
 #   - Register Sequential Thinking MCP into Claude Code and Codex (idempotent)
 #   - Install Google Workspace CLI (gws) skills under ~/.claude/skills and ~/.codex/skills (idempotent)
@@ -65,6 +66,27 @@ else
     ok "Codex installed: $(codex --version 2>/dev/null | tail -1 || true)"
   else
     warn "codex CLI still not found after install — open a new terminal and re-run."
+    exit 1
+  fi
+fi
+
+# ---- clasp (Google Apps Script CLI) ----------------------------------------
+log "clasp..."
+
+if command -v clasp &>/dev/null; then
+  ok "clasp already installed: $(clasp --version 2>/dev/null | head -1 || true)"
+else
+  if ! command -v npm &>/dev/null; then
+    warn "npm not found — install the core Brew profile first."
+    exit 1
+  fi
+
+  log "Installing clasp via npm..."
+  npm install -g @google/clasp
+  if command -v clasp &>/dev/null; then
+    ok "clasp installed: $(clasp --version 2>/dev/null | head -1 || true)"
+  else
+    warn "clasp CLI still not found after install — open a new terminal and re-run."
     exit 1
   fi
 fi
