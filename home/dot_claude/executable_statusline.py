@@ -8,7 +8,6 @@ import sys
 RESET = "\033[0m"
 DIM = "\033[2m"
 CYAN = "\033[36m"
-GREEN = "\033[32m"
 YELLOW = "\033[33m"
 MAGENTA = "\033[35m"
 
@@ -71,17 +70,13 @@ def main():
     model = data.get("model", {}).get("display_name") or "Claude"
     current_dir = shorten_dir(data.get("workspace", {}).get("current_dir") or data.get("cwd") or "")
 
-    cost = data.get("cost", {})
-    total_cost = cost.get("total_cost_usd")
-    total_duration_ms = int(cost.get("total_duration_ms") or 0)
+    total_duration_ms = int(data.get("cost", {}).get("total_duration_ms") or 0)
 
     parts = [
         f"{CYAN}{model}{RESET}",
         f"{DIM}{current_dir}{RESET}",
     ]
 
-    if isinstance(total_cost, (int, float)):
-        parts.append(f"{GREEN}${total_cost:.2f}{RESET}")
     if total_duration_ms > 0:
         parts.append(f"{YELLOW}{format_duration(total_duration_ms)}{RESET}")
 
