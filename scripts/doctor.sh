@@ -259,6 +259,30 @@ fi
 unset _ghostty
 
 
+section "cmux (optional)"
+_cmux=""
+if command -v cmux &>/dev/null; then
+  _cmux="cmux"
+elif [[ -x "/Applications/cmux.app/Contents/MacOS/cmux" ]]; then
+  _cmux="/Applications/cmux.app/Contents/MacOS/cmux"
+fi
+
+if [[ -n "$_cmux" ]]; then
+  if cmux_version_out="$("$_cmux" --version 2>&1)"; then
+    cmux_version_line="$(printf '%s\n' "$cmux_version_out" | head -1 || true)"
+    if [[ -n "$cmux_version_line" ]]; then
+      ok "cmux ${cmux_version_line}"
+    else
+      warn "cmux CLI returned unexpected output"
+    fi
+  else
+    warn "cmux CLI found but --version failed"
+  fi
+else
+  warn "cmux not found — install via Brewfile (cask \"cmux\")"
+fi
+unset _cmux
+
 section "zellij (optional)"
 if zellij --version &>/dev/null; then
   ok "$(zellij --version 2>&1 | head -1)"
