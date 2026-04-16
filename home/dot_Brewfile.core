@@ -68,6 +68,17 @@ cask "visual-studio-code", args: { appdir: "/Applications" }
 cask "codex-app"                 # OpenAI Codex desktop app
 cask "aws-vault-binary", args: { appdir: "/Applications" }
 
+# ---------- Casks: productivity / system ----------
+cask "raycast"                   # launcher
+cask "libreoffice"               # office suite
+cask "bitwarden", args: { appdir: "/Applications" }  # password manager
+cask "ente-auth"                 # 2FA
+cask "stats"                     # menu bar system monitor (CPU/RAM/disk/network)
+cask "cleanshot"                 # screenshot tool
+cask "google-chrome"
+cask "google-japanese-ime"
+cask "logi-options+"
+
 # ---------- Casks: fonts ----------
 cask "font-jetbrains-mono-nerd-font"
 cask "font-meslo-lg-nerd-font"
