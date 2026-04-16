@@ -3,6 +3,7 @@
 - Ghostty は共通設定を控えめに維持し、未対応キーは入れない。
 - Ghostty の GUI 変更は `chezmoi diff` で確認し、必要なものだけ dotfiles に取り込む。
 - `local.ghostty` は共通設定から自動読込しない。使うマシンだけ手で有効化する。
+- `cmux` を core Brewfile に追加済み。Ghostty config を共有し、AI エージェント並行運用に使う。zellij は併用可。
 - `doctor.sh` は誤検知とハングしやすい箇所を修正済みで、required は通る。
 - Codex skill は repo 同梱方式に統一済みで、`post-setup.sh` で外部 clone しない。
 - `make ai-repair` で Serena config と Claude Code / Codex の MCP registration を期待値へ戻せる。

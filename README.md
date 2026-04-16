@@ -176,6 +176,7 @@ make doctor
 | `uv --version` | Optional | Serena MCP に必要な `uv` がある |
 | `brew-autoupdate` | Optional | dotfiles 方針では無効化されている（有効なら warning） |
 | `ghostty --version` | Optional | Ghostty CLI が存在し、バージョンが取得できる |
+| `cmux --version` | Optional | cmux CLI が存在し、バージョンが取得できる |
 | `claude --version` | Optional | Claude Code CLI がある |
 | `~/.claude.json` serena | Optional | Claude Code 側で Serena MCP が登録されている |
 | `codex --version` | Optional | Codex CLI がある |
@@ -226,21 +227,21 @@ make ai-repair
 
 ## AI セッション
 
-`zellij` 上で AI セッションを開くための最小構成です。`zellij` を直接起動します。
+AI エージェントを並行運用するためのターミナル構成です。
 
-起動直後のイメージ:
+### cmux（推奨）
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ zellij (single pane)                                        │
-│                                                              │
-│ ここから必要に応じて使い方を決める                            │
-└──────────────────────────────────────────────────────────────┘
-```
+`cmux` は libghostty ベースの AI エージェント特化ターミナルです。Ghostty の `~/.config/ghostty/` をそのまま読むため、テーマ・フォント設定を共有できます。
 
-- レイアウトは固定しない
-- 通常の pane / tab 操作は upstream の流儀を維持する
-- まずはほぼ素の `zellij` セッションとして開く
+- タブに git branch / PR ステータス / 作業ディレクトリ / listening port を表示
+- AI エージェントが入力待ちになるとタブ・ペインがハイライト（Claude Code hooks 対応）
+- ターミナル横にスクリプタブルなブラウザペインを並べられる
+- セッション復元（ワークスペースがアプリ再起動後も残る）
+- Unix socket API / CLI で自動化可能
+
+### zellij（併用可）
+
+`zellij` は汎用のターミナルマルチプレクサとして引き続き使えます。
 
 `~/.config/zellij/config.kdl` は discoverability を少しだけ強めています。
 
