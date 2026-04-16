@@ -189,6 +189,7 @@ make doctor
 | `claude --version` | Optional | Claude Code CLI がある |
 | `~/.claude.json` serena | Optional | Claude Code 側で Serena MCP が登録されている |
 | `gemini --version` | Optional | Gemini CLI がある |
+| `clasp --version` | Optional | clasp (Google Apps Script CLI) がある |
 | `codex --version` | Optional | Codex CLI がある |
 | `~/.codex/config.toml` serena | Optional | Codex 側で Serena MCP が登録されている |
 | `codex hooks` / `hooks.json` | Optional | Codex hooks が有効で hooks.json が存在する |
@@ -495,6 +496,8 @@ Gemini は補助用途の one-shot コマンドを用意しています。
 - `gmd [追加指示]` = 現在の git diff の意図・影響・リスクを Gemini に説明させる
 
 `aider` も core Brew profile に含めています。git 管理下のコードを端末から直接編集させたいときの補助用途として使えます。
+
+**clasp** (Google Apps Script CLI) は `post-setup.sh` が `npm install -g @google/clasp` で導入します。初回は `clasp login` で Google アカウント認証が必要です。
 
 **Codex CLI** は `post-setup.sh` が公式 npm パッケージ経由で導入します。  
 `node` は core Brew プロファイルに含めているので、新規マシンでもこの導線がそのまま使えます。  
