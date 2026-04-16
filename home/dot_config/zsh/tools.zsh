@@ -152,6 +152,14 @@ ${extra}"
 ${diff}"
 }
 
+# gcloud — Google Cloud SDK shell completions
+_gcloud_inc="${HOMEBREW_PREFIX:-/opt/homebrew}/share/google-cloud-sdk"
+if [[ -d "${_gcloud_inc}" ]]; then
+  [[ -f "${_gcloud_inc}/path.zsh.inc" ]]       && source "${_gcloud_inc}/path.zsh.inc"
+  [[ -f "${_gcloud_inc}/completion.zsh.inc" ]]  && source "${_gcloud_inc}/completion.zsh.inc"
+fi
+unset _gcloud_inc
+
 # fzf — fuzzy finder
 if command -v fzf &>/dev/null; then
   # Shell completions

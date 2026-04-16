@@ -23,6 +23,16 @@ export BAT_THEME="Catppuccin Mocha"
 # Default Python version for uv
 export UV_PYTHON="3.12"
 
+# Python 3.13 SSL compat — corporate CASB/proxy workaround (Netskope, Zscaler)
+# Python 3.13+ enables VERIFY_X509_STRICT, which rejects MITM CA certificates
+# that lack RFC 5280 compliance. sitecustomize.py restores 3.12-equivalent behaviour.
+# To disable after certificate rotation: rm ~/.local/lib/python-ssl-compat/sitecustomize.py
+_ssl_compat="${HOME}/.local/lib/python-ssl-compat"
+if [[ -f "${_ssl_compat}/sitecustomize.py" ]]; then
+  export PYTHONPATH="${_ssl_compat}${PYTHONPATH:+:${PYTHONPATH}}"
+fi
+unset _ssl_compat
+
 # Claude Code — flicker-free fullscreen rendering
 export CLAUDE_CODE_NO_FLICKER=1
 
