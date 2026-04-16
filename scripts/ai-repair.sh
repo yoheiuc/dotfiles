@@ -41,48 +41,9 @@ projects: []
 EOF
 }
 
-read_legacy_env_secret() {
-  local env_name="$1"
-  local env_file="${AI_SHARED_ENV_FILE}"
-  if [[ ! -f "${env_file}" && "${AI_SHARED_ENV_FALLBACK_FILE}" != "${env_file}" && -f "${AI_SHARED_ENV_FALLBACK_FILE}" ]]; then
-    env_file="${AI_SHARED_ENV_FALLBACK_FILE}"
-  fi
-
-  if [[ ! -f "${env_file}" ]]; then
-    printf ''
-    return 0
-  fi
-
-  env -i bash -lc "
-    set -a
-    source '${env_file}'
-    set +a
-    printf '%s' \"\${${env_name}:-}\"
-  " 2>/dev/null
-}
-
-read_keychain_secret() {
-  local account="$1"
-
-  if ! command -v "${SECURITY_BIN}" >/dev/null 2>&1; then
-    printf ''
-    return 0
-  fi
-
-  "${SECURITY_BIN}" find-generic-password -w -s "${KEYCHAIN_SERVICE}" -a "${account}" 2>/dev/null || true
-}
-
-resolve_ai_secret() {
-  local env_name="$1"
-  local account="$2"
-  local secret=""
-
-  secret="$(read_keychain_secret "${account}")"
-  if [[ -z "${secret}" ]]; then
-    secret="$(read_legacy_env_secret "${env_name}")"
-  fi
-  printf '%s' "${secret}"
-}
+read_keychain_secret() { ai_config_read_keychain_secret "$@"; }
+read_legacy_env_secret() { ai_config_read_legacy_env_secret "$@"; }
+resolve_ai_secret() { ai_config_resolve_secret "$@"; }
 
 # ---- Serena local config -----------------------------------------------------
 log "Serena local config..."

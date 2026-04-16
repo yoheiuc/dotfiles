@@ -263,6 +263,63 @@ ai_config_codex_mcp_url_state() {
   fi
 }
 
+# ---- Keychain / legacy env credential helpers --------------------------------
+
+# Read a secret from macOS Keychain.
+# Usage: ai_config_read_keychain_secret <account>
+# Requires SECURITY_BIN and KEYCHAIN_SERVICE to be set by the caller.
+ai_config_read_keychain_secret() {
+  local account="$1"
+  local security_bin="${SECURITY_BIN:-security}"
+  local service="${KEYCHAIN_SERVICE:-dotfiles.ai.mcp}"
+
+  if ! command -v "${security_bin}" >/dev/null 2>&1; then
+    printf ''
+    return 0
+  fi
+  "${security_bin}" find-generic-password -w -s "${service}" -a "${account}" 2>/dev/null || true
+}
+
+# Read a secret from the legacy plaintext env file.
+# Usage: ai_config_read_legacy_env_secret <env_name>
+# Requires AI_SHARED_ENV_FILE (and optionally AI_SHARED_ENV_FALLBACK_FILE) to
+# be set by the caller.
+ai_config_read_legacy_env_secret() {
+  local env_name="$1"
+  local env_file="${AI_SHARED_ENV_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ai-secrets.env}"
+  local fallback="${AI_SHARED_ENV_FALLBACK_FILE:-${HOME}/.config/dotfiles/ai-secrets.env}"
+
+  if [[ ! -f "${env_file}" && "${fallback}" != "${env_file}" && -f "${fallback}" ]]; then
+    env_file="${fallback}"
+  fi
+
+  if [[ ! -f "${env_file}" ]]; then
+    printf ''
+    return 0
+  fi
+
+  env -i bash -lc "
+    set -a
+    source '${env_file}'
+    set +a
+    printf '%s' \"\${${env_name}:-}\"
+  " 2>/dev/null
+}
+
+# Resolve a secret — try Keychain first, fall back to legacy env file.
+# Usage: ai_config_resolve_secret <env_name> <keychain_account>
+ai_config_resolve_secret() {
+  local env_name="$1"
+  local account="$2"
+  local secret=""
+
+  secret="$(ai_config_read_keychain_secret "${account}")"
+  if [[ -z "${secret}" ]]; then
+    secret="$(ai_config_read_legacy_env_secret "${env_name}")"
+  fi
+  printf '%s' "${secret}"
+}
+
 # Upsert serena MCP entry in Codex config.toml.
 # Usage: ai_config_codex_upsert_mcp <config_toml> <server_name> <command> <arg>
 ai_config_codex_upsert_mcp() {

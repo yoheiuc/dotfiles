@@ -26,6 +26,3 @@ alias ccr='claude --resume'
 
 # Repository navigation
 alias qcd='cd "$(ghq root)/$(ghq list | fzf)"'
-
-# AI session (Zellij with AI layout)
-alias ai='~/dotfiles/scripts/ai-session.sh'

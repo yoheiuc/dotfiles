@@ -6,6 +6,8 @@
 set -euo pipefail
 
 REPO_ROOT="${DOTFILES_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+source "${REPO_ROOT}/scripts/lib/ai-config.sh"
+
 SECURITY_BIN="${SECURITY_BIN:-security}"
 AI_SHARED_ENV_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles"
 AI_SHARED_ENV_FILE="${AI_SHARED_ENV_DIR}/ai-secrets.env"
@@ -17,32 +19,8 @@ ok() { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 die() { printf '  \033[1;31m✗\033[0m  %s\n' "$*" >&2; exit 1; }
 
-read_legacy_env_secret() {
-  local env_name="$1"
-
-  if [[ ! -f "${AI_SHARED_ENV_FILE}" ]]; then
-    printf ''
-    return 0
-  fi
-
-  env -i bash -lc "
-    set -a
-    source '${AI_SHARED_ENV_FILE}'
-    set +a
-    printf '%s' \"\${${env_name}:-}\"
-  " 2>/dev/null
-}
-
-read_keychain_secret() {
-  local account="$1"
-
-  if ! command -v "${SECURITY_BIN}" >/dev/null 2>&1; then
-    printf ''
-    return 0
-  fi
-
-  "${SECURITY_BIN}" find-generic-password -w -s "${KEYCHAIN_SERVICE}" -a "${account}" 2>/dev/null || true
-}
+read_legacy_env_secret() { ai_config_read_legacy_env_secret "$@"; }
+read_keychain_secret() { ai_config_read_keychain_secret "$@"; }
 
 write_keychain_secret() {
   local account="$1"
