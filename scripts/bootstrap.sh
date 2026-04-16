@@ -4,7 +4,7 @@
 # Responsibility (nothing more):
 #   1. Verify Homebrew is present
 #   2. Install chezmoi if missing
-#   3. Pre-install uv + Python 3.12 (gcloud corporate proxy workaround)
+#   3. Apply Python 3.13 SSL compat (corporate proxy workaround)
 #   4. Install core Brew packages (no cleanup — won't remove home packages)
 #   5. Persist the active machine profile
 #   6. Apply dotfiles via chezmoi
@@ -47,23 +47,19 @@ if ! command -v chezmoi &>/dev/null; then
   brew install chezmoi
 fi
 
-# ---- 3. Python 3.12 for gcloud (corporate proxy workaround) ---------------
-# gcloud-cli cask bundles Python 3.13+ which enables VERIFY_X509_STRICT.
-# Corporate CASB/proxies (Netskope, Zscaler, etc.) use MITM certificates
-# that lack RFC 5280 compliance, causing SSL errors during cask postflight.
-# Pre-install Python 3.12 via uv so CLOUDSDK_PYTHON is set before brew bundle.
-if ! command -v uv &>/dev/null; then
-  log "Installing uv (needed for Python 3.12 management)..."
-  brew install uv
+# ---- 3. Python 3.13 SSL compat (corporate proxy workaround) ---------------
+# gcloud-cli and other Python 3.13+ tools fail behind CASB/proxies
+# (Netskope, Zscaler, etc.) due to VERIFY_X509_STRICT rejecting MITM certs.
+# Deploy sitecustomize.py before brew bundle so cask postflight works.
+_ssl_compat_src="${REPO_ROOT}/home/dot_local/lib/python-ssl-compat/sitecustomize.py"
+_ssl_compat_dst="${HOME}/.local/lib/python-ssl-compat"
+if [[ -f "${_ssl_compat_src}" ]]; then
+  mkdir -p "${_ssl_compat_dst}"
+  cp "${_ssl_compat_src}" "${_ssl_compat_dst}/sitecustomize.py"
+  export PYTHONPATH="${_ssl_compat_dst}${PYTHONPATH:+:${PYTHONPATH}}"
+  log "Python SSL compat: VERIFY_X509_STRICT disabled for corporate proxy"
 fi
-if ! uv python find 3.12 &>/dev/null 2>&1; then
-  log "Installing Python 3.12 via uv (gcloud proxy workaround)..."
-  uv python install 3.12
-fi
-export CLOUDSDK_PYTHON="$(uv python find 3.12 2>/dev/null)"
-if [[ -n "${CLOUDSDK_PYTHON}" ]]; then
-  log "CLOUDSDK_PYTHON=${CLOUDSDK_PYTHON}"
-fi
+unset _ssl_compat_src _ssl_compat_dst
 
 # ---- 4. Homebrew packages (install core profile, no cleanup) ---------------
 # Cleanup is intentionally skipped here so that home packages

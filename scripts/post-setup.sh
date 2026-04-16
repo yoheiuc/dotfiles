@@ -69,21 +69,6 @@ else
   fi
 fi
 
-# ---- Python 3.12 for gcloud (proxy-safe) -----------------------------------
-log "Python 3.12 for gcloud..."
-
-if command -v uv &>/dev/null; then
-  if uv python find 3.12 &>/dev/null; then
-    ok "Python 3.12 already available: $(uv python find 3.12)"
-  else
-    log "Installing Python 3.12 via uv (needed by gcloud behind corporate proxy)..."
-    uv python install 3.12
-    ok "Python 3.12 installed: $(uv python find 3.12)"
-  fi
-else
-  warn "uv not found — Python 3.12 for gcloud skipped (install the core Brew profile first)"
-fi
-
 # ---- Aider CLI -------------------------------------------------------------
 log "Aider CLI..."
 

@@ -176,7 +176,7 @@ make doctor
 | `uv --version` | Optional | Serena MCP に必要な `uv` がある |
 | `brew-autoupdate` | Optional | dotfiles 方針では無効化されている（有効なら warning） |
 | `gcloud version` | Optional | gcloud CLI がある |
-| `CLOUDSDK_PYTHON` | Optional | gcloud が Python ≤3.12 を使い、企業プロキシで安全 |
+| Python SSL compat | Optional | `sitecustomize.py` で `VERIFY_X509_STRICT` を無効化済み |
 | `ghostty --version` | Optional | Ghostty CLI が存在し、バージョンが取得できる |
 | `cmux --version` | Optional | cmux CLI が存在し、バージョンが取得できる |
 | `claude --version` | Optional | Claude Code CLI がある |
@@ -350,45 +350,44 @@ ssl.SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED]
   certificate verify failed: Basic Constraints of CA cert not marked critical
 ```
 
-### 対策: CLOUDSDK_PYTHON で Python 3.12 を固定
+### 対策: sitecustomize.py で VERIFY_X509_STRICT を無効化
 
-`bootstrap.sh` が `brew bundle` の **前に** `uv` と Python 3.12 をインストールし、`CLOUDSDK_PYTHON` を設定します。これにより `gcloud-cli` cask の postflight も Python 3.12 で実行され、SSL エラーを回避できます。
+Python 3.13+ の全プロセスに対して、起動時に `VERIFY_X509_STRICT` フラグを除去するモンキーパッチを適用します。gcloud だけでなく、awscli, aider, poetry 等の Python 3.13 製ツールもまとめて対応できます。
 
-```bash
-# bootstrap.sh (自動)
-uv python install 3.12
-export CLOUDSDK_PYTHON="$(uv python find 3.12)"
-# → 以降の brew bundle で gcloud-cli が正常にインストールされる
-```
+仕組み:
+1. `~/.local/lib/python-ssl-compat/sitecustomize.py` が chezmoi で配置される
+2. `env.zsh` がこのディレクトリを `PYTHONPATH` に追加
+3. Python 3.13+ プロセスは起動時に `sitecustomize.py` を読み、SSL 検証を 3.12 相当に戻す
+4. Python 3.12 以前には `hasattr` ガードで影響なし
 
-シェル起動時は `env.zsh` が同じ設定を行います:
+`bootstrap.sh` は `brew bundle` の前にこのファイルをコピーするため、`gcloud-cli` cask の postflight も安全に動作します。
 
-```bash
-# env.zsh (自動設定 — PATH の python3.12 → uv 管理の Python 3.12 の順に探索)
-export CLOUDSDK_PYTHON="$(uv python find 3.12)"
-```
+`make doctor` は SSL compat の有効/無効状態を表示します。
 
-手動で入れる場合:
+### 証明書ローテート後の無効化
+
+Netskope 等のベンダーが RFC 5280 準拠の CA 証明書にローテートしたら、ワークアラウンドを無効化します。
 
 ```bash
-uv python install 3.12
-```
+# 即座に無効化（ファイルを消すだけ）
+rm ~/.local/lib/python-ssl-compat/sitecustomize.py
 
-`make doctor` は gcloud の存在と `CLOUDSDK_PYTHON` のバージョンを確認し、3.13 以上の場合は warning を出します。
+# 新しいターミナルを開いて gcloud が動くことを確認
+gcloud version
+
+# 恒久化する場合は repo からも削除
+rm ~/dotfiles/home/dot_local/lib/python-ssl-compat/sitecustomize.py
+cd ~/dotfiles && git add -A && git commit -m "Remove SSL compat (Netskope cert rotated)"
+chezmoi apply
+```
 
 ### カスタム CA 証明書が必要な場合
 
-プロキシ経由で `gcloud` を使う際にカスタム CA バンドルが必要な場合は、マシンローカルで以下を設定します。
+プロキシ経由で `gcloud` を使う際にカスタム CA バンドルも必要な場合は、マシンローカルで設定します。
 
 ```bash
 gcloud config set core/custom_ca_certs_file /path/to/corporate-ca-bundle.pem
-```
-
-Python ライブラリ全般（`google-cloud-*` 等）にも適用したい場合:
-
-```bash
 export REQUESTS_CA_BUNDLE=/path/to/corporate-ca-bundle.pem
-export SSL_CERT_FILE=/path/to/corporate-ca-bundle.pem
 ```
 
 これらはマシン固有の認証情報に依存するため、dotfiles には含めず `.envrc`（direnv）等でローカル管理します。
