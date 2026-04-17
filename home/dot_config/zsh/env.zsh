@@ -1,10 +1,28 @@
 # env.zsh — environment variables and PATH
 
+# _zsh_cache_eval — cache `eval "$(cmd ...)"` output to a file and source it,
+# regenerating only when the command binary is newer than the cache. Avoids
+# forking a subprocess on every shell startup.
+#   $1 = cache key (filename)
+#   $2 = bin path (used as mtime reference)
+#   $3 = command to run (shell string; eval'd)
+_zsh_cache_eval() {
+  local key="$1" bin="$2" cmd="$3"
+  local dir="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/inits"
+  local file="${dir}/${key}.zsh"
+  [[ -x "$bin" || -f "$bin" ]] || return 1
+  if [[ ! -s "$file" || "$bin" -nt "$file" ]]; then
+    mkdir -p "$dir"
+    eval "$cmd" > "$file" 2>/dev/null || { rm -f "$file"; return 1; }
+  fi
+  source "$file"
+}
+
 # Homebrew (Apple Silicon path; falls back gracefully on Intel)
 if [[ -x /opt/homebrew/bin/brew ]]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
+  _zsh_cache_eval brew-shellenv /opt/homebrew/bin/brew '/opt/homebrew/bin/brew shellenv'
 elif [[ -x /usr/local/bin/brew ]]; then
-  eval "$(/usr/local/bin/brew shellenv)"
+  _zsh_cache_eval brew-shellenv /usr/local/bin/brew '/usr/local/bin/brew shellenv'
 fi
 
 # User-local binaries (pip install --user, cargo install, etc.)
