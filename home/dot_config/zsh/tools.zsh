@@ -1,30 +1,29 @@
 # tools.zsh — third-party tool hooks and wrappers (existence-checked)
+# Each init output is cached via _zsh_cache_eval (defined in env.zsh) to avoid
+# forking the tool's init subprocess on every shell startup.
+
+_tool_bin() { command -v "$1" 2>/dev/null; }
 
 # starship prompt
-if command -v starship &>/dev/null; then
-  eval "$(starship init zsh)"
-fi
+_b="$(_tool_bin starship)" && _zsh_cache_eval starship "$_b" 'starship init zsh'
 
 # zoxide — smart cd
-if command -v zoxide &>/dev/null; then
-  eval "$(zoxide init zsh)"
-fi
+_b="$(_tool_bin zoxide)" && _zsh_cache_eval zoxide "$_b" 'zoxide init zsh'
 
 # atuin — shell history
-if command -v atuin &>/dev/null; then
-  eval "$(atuin init zsh)"
+if _b="$(_tool_bin atuin)"; then
+  _zsh_cache_eval atuin "$_b" 'atuin init zsh'
   bindkey '?' self-insert
 fi
 
 # navi — interactive cheatsheet (Ctrl+G)
-if command -v navi &>/dev/null; then
-  eval "$(navi widget zsh)"
-fi
+_b="$(_tool_bin navi)" && _zsh_cache_eval navi "$_b" 'navi widget zsh'
 
 # direnv — per-directory env vars
-if command -v direnv &>/dev/null; then
-  eval "$(direnv hook zsh)"
-fi
+_b="$(_tool_bin direnv)" && _zsh_cache_eval direnv "$_b" 'direnv hook zsh'
+
+unset _b
+unfunction _tool_bin
 
 dotprofile() {
   printf '%s\n' "${DOTFILES_PROFILE:-core}"
