@@ -8,14 +8,23 @@ _zsh_completions="${HOMEBREW_PREFIX:-/opt/homebrew}/share/zsh-completions"
 [[ -d "$_zsh_completions" ]] && fpath=("$_zsh_completions" $fpath)
 unset _zsh_completions
 
-# Only call compinit once per session; skip insecure dirs check for speed
+# compinit — skip insecure dirs check (-C) and precompile the dump to .zwc so
+# zsh reads the binary form, which is noticeably faster on large dumps.
+_zcompdump="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
 autoload -Uz compinit
-compinit -C -d "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
-
-# codex — register completion after compinit defines compdef
-if command -v codex &>/dev/null; then
-  eval "$(codex completion zsh 2>/dev/null | sed '/^WARNING: proceeding, even though we could not update PATH:/d')"
+compinit -C -d "$_zcompdump"
+if [[ -s "$_zcompdump" && ( ! -s "${_zcompdump}.zwc" || "$_zcompdump" -nt "${_zcompdump}.zwc" ) ]]; then
+  zcompile "$_zcompdump"
 fi
+unset _zcompdump
+
+# codex — register completion after compinit defines compdef.
+# Cached via _zsh_cache_eval (defined in env.zsh) to avoid forking codex each startup.
+if _codex_bin="$(command -v codex 2>/dev/null)"; then
+  _zsh_cache_eval codex-completion "$_codex_bin" \
+    "codex completion zsh 2>/dev/null | sed '/^WARNING: proceeding, even though we could not update PATH:/d'"
+fi
+unset _codex_bin
 
 # Style
 zstyle ':completion:*' menu select
