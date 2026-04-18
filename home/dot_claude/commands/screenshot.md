@@ -1,9 +1,9 @@
 Capture desktop or system screenshots (full screen, specific app/window, or pixel region).
 
 ## Tool priority
-1. **chrome-devtools MCP** — for browser/web page screenshots, use `mcp__chrome-devtools__take_screenshot`.
-2. **Playwright MCP** — for browser automation screenshots, use `mcp__playwright__browser_take_screenshot`.
-3. **This command** — for OS-level desktop captures, whole-system screenshots, or when MCP tools can't capture what's needed.
+1. **chrome-devtools MCP** — for screenshots of a live Chrome you're already observing, use `mcp__chrome-devtools__take_screenshot`.
+2. **Playwright CLI** — for browser automation screenshots under a persistent session, use `playwright-cli screenshot` (respects `PLAYWRIGHT_CLI_SESSION`).
+3. **This command** — for OS-level desktop captures, whole-system screenshots, or when neither of the above fits.
 
 ## Save location rules
 1. User specifies a path -> save there.
