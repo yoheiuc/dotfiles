@@ -220,11 +220,12 @@ ghq get git@github.com:owner/repo.git
 
 - `exa`
 - `brave-search`
-- `notion`（remote HTTP + OAuth、`https://mcp.notion.com/mcp`）
 - `slack`（remote HTTP + OAuth、`https://mcp.slack.com/mcp`）
 - `serena`
 - `chrome-devtools`
 - `sequential-thinking`（`post-setup.sh` で Claude Code に登録）
+
+Notion は MCP ではなく公式 CLI (`ntn`) + skill の組み合わせを採用しています（下の「Notion CLI (ntn)」節参照）。token 効率と scripted 用途の両立を優先しました。
 
 ブラウザ自動化は `@playwright/cli` + skill 方式に寄せているので、`@playwright/mcp` は含めていません（下の「Playwright CLI」節参照）。ファイル操作は Claude Code の native `Read` / `Write` / `Edit` / `Grep` / `Glob` で代替できるため、`filesystem` MCP も外しました。図は Mermaid（`.md` 直埋め）か `mermaid-cli` の `mmdc` で text diff フレンドリーに扱えるため、`@drawio/mcp` も外しています。
 
@@ -238,29 +239,72 @@ make ai-audit
 make ai-repair
 ```
 
-## Notion / Slack MCP（remote + OAuth）
+## Notion CLI (`ntn`)
 
-Notion と Slack はどちらも **remote HTTP MCP + OAuth** 方式で導入しています。ローカルに stdio プロセスを生やさず、token も Keychain に置かない（OAuth token は Claude Code 側が管理）のが設計上のポイントです。
+Notion 公式の CLI + skill 方式を採用しています。Playwright CLI と同じ「CLI + skill の方が token 効率が良く、scripted 用途にも使える」というパターンです。
+
+### なぜ MCP ではなく CLI か
+
+- **公式 CLI が存在する**（`https://ntn.dev`、Notion 配布）。Notion 公式 MCP が hosted で Markdown 変換を行うのと同じ品質を、CLI の `ntn block list --md` で出せる
+- **token 効率**：CLI 出力は pipe できるので agent context を圧迫しない
+- **scripted 用途**：shell pipeline / cron / CI から触れる。MCP だと Claude Code を起動していないと使えない
+- **公式 skill** が `~/.claude/skills/notion-cli/` と `~/.codex/skills/notion-cli/` に配布されるので、agent は自動で使い方を理解する
+
+### インストール
+
+`make install-home` が走ると `scripts/post-setup.sh` が idempotent に以下を実行します。
+
+```bash
+curl -fsSL https://ntn.dev | bash                                  # ntn CLI
+npx -y skills add https://github.com/makenotion/skills -a claude-code --skill notion-cli
+npx -y skills add https://github.com/makenotion/skills -a codex --skill notion-cli
+```
+
+### 認証
+
+初回だけ手動で実行：
+
+```bash
+ntn login    # ブラウザ OAuth フロー
+```
+
+あるいは CI 等では `NOTION_API_TOKEN` env var に integration token を入れて使います（推奨は OAuth）。
+
+### よく使うコマンド
+
+```bash
+ntn api pages/<page-id>          # ページ情報
+ntn block list <page-id> --md    # ページ本文を Markdown で読む
+ntn block append <page-id> --file doc.md   # Markdown をページに追記
+ntn files upload ./screenshot.png          # ファイルアップロード
+ntn workers deploy               # Notion workers 管理
+```
+
+### Blast radius の方針
+
+- **AI セッション用には admin workspace を接続しない**。閲覧 / 限定書き込み用の integration を別に作る
+- `NOTION_API_TOKEN` を使う場合は Keychain 経由で注入（`mcp-with-keychain-secret` wrapper と同じパターン）。plaintext で `.env` に書かない
+- 権限を持つアカウントのセッションは AI 用に作らない（Playwright CLI と同じ方針）
+
+## Slack MCP（remote + OAuth）
+
+Slack は remote HTTP MCP + OAuth 方式を採用しています。ローカルに stdio プロセスを生やさず、token も Keychain に置かない（OAuth token は Claude Code 側が管理）のが設計上のポイントです。
 
 ### 初回認証
 
 Claude Code では `/mcp` コマンドからブラウザが開いて OAuth フローが走ります。認証承認後は `make ai-audit` で `registered` が出ます。
 
-- Notion は初回認証後、**使いたいページを integration と共有する**必要があります（ページ ••• メニュー → Add connections）。共有していないと `object not found` が返ります
-- Slack は OAuth 画面でスコープを選べます。デフォルトは次の方針で
-
 ### スコープの方針（blast radius 最小化）
 
-| MCP | 推奨スコープ | 避けるスコープ |
-|---|---|---|
-| Notion | 閲覧したい workspace 単位に絞る。admin workspace には接続しない | Notion admin workspace への接続 |
-| Slack | `channels:history` / `groups:history` / `search:read` / `chat:write`（通知用）まで | `admin.*` 系、`files:write`、全 workspace 管理系トークン |
+| 推奨スコープ | 避けるスコープ |
+|---|---|
+| `channels:history` / `groups:history` / `search:read` / `chat:write`（通知用）まで | `admin.*` 系、`files:write`、全 workspace 管理系トークン |
 
-AI セッション用のスコープは **読み取り中心 + 必要最低限の書き込み** に絞り、管理系権限は別の運用アカウントに分けるのが Playwright CLI でも採用している方針と同じです。
+AI セッション用のスコープは **読み取り中心 + 必要最低限の書き込み** に絞り、管理系権限は別の運用アカウントに分けるのが Playwright CLI / Notion CLI でも採用している方針と同じです。
 
-### なぜ CLI ではなく MCP か
+### なぜ CLI ではなく MCP か（Slack の場合）
 
-Notion も Slack も公式 CLI は（ドキュメント整備状況が）弱く、Notion は API を Markdown に整形してから返す hosted MCP を公式が最優先サポートしています。Slack 公式 MCP も OAuth フロー込みで配布されているため、独自実装するより公式 remote に乗るのが token 効率・保守性ともに優位です。
+Slack 公式 MCP が OAuth フロー込みで配布されており、公式 CLI（`slack-cli`）は Slack アプリ開発用途向けで IT ops の読み書きには合いません。Notion は CLI が筋、Slack は MCP が筋、と分岐しています。
 
 ## Playwright CLI（ブラウザ自動化）
 
@@ -562,7 +606,7 @@ config-file = local.ghostty
 - `approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`（`--full-auto` 相当）
 - `[features]`: `multi_agent = true`、`codex_hooks = true`
 - `[plugins]`: Google Calendar, GitHub, Gmail, Google Drive, build-macos-apps, build-ios-apps, Notion
-- MCP サーバー: Serena, chrome-devtools, exa, brave-search, notion, slack, OpenAI Developer Docs
+- MCP サーバー: Serena, chrome-devtools, exa, brave-search, slack, OpenAI Developer Docs
 - マシン固有のパスは `{{ .chezmoi.homeDir }}` で展開
 
 `~/.codex/hooks.json` も chezmoi 管理にしています。Stop フックで `codex-auto-save-memory` skill を実行し、セッション終了時にメモリを自動保存します。
@@ -613,7 +657,7 @@ make ai-audit
 `make ai-audit` は次の観点をまとめて確認します。
 
 - `~/.claude.json` / `~/.codex/config.toml` の baseline（model, sandbox, approval, features, hooks）
-- Serena wrapper / OpenAI Docs MCP / exa/notion/slack/brave-search/chrome-devtools の登録有無（レガシーな `playwright` / `filesystem` / `drawio` MCP が残っていれば warning）
+- Serena wrapper / OpenAI Docs MCP / exa/slack/brave-search/chrome-devtools の登録有無（レガシーな `playwright` / `filesystem` / `drawio` / `notion` MCP が残っていれば warning）
 - Brave API key が Keychain に存在するか
 - Serena config の主要キー（`language_backend`, `web_dashboard`, `project_serena_folder_location`）
 - 古い bridge 設定や危険な approval 設定が残っていないか
@@ -621,7 +665,7 @@ make ai-audit
 
 よくあるトラブルは次の 3 つです。
 
-1. 旧 dotfiles から移行したら `playwright` / `filesystem` / `drawio` MCP が残っている  
+1. 旧 dotfiles から移行したら `playwright` / `filesystem` / `drawio` / `notion` MCP が残っている  
    `make ai-repair` が自動的に削除します。残っていれば `make ai-audit` が warning を出すので、それを目印に repair を走らせてください。
 2. `ai-secrets` が古い wrapper を掴んで失敗する  
    `chezmoi apply ~/.local/bin/ai-secrets` で wrapper を再展開してください。

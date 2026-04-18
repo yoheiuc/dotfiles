@@ -92,7 +92,6 @@ fi
 log "Claude Code MCP registration..."
 SERENA_CLAUDE_ENTRY='{"type":"stdio","command":"'"${SERENA_WRAPPER}"'","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}'
 EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
-NOTION_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.notion.com/mcp"}'
 # Slack's clientId / callbackPort below are public values published in Slack's
 # official docs (https://docs.slack.dev/ai/slack-mcp-server/connect-to-claude/),
 # not secrets. OAuth tokens themselves are managed by Claude Code, not dotfiles.
@@ -104,7 +103,6 @@ serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).ge
 claude_chrome_devtools_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
 claude_chrome_devtools_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
-claude_notion_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('notion',{}).get('url','')" 2>/dev/null || true)"
 claude_slack_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
 claude_brave_search_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
 
@@ -133,12 +131,6 @@ if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
   restart_needed=1
 fi
 
-if [[ "${claude_notion_url}" != "https://mcp.notion.com/mcp" ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" notion "${NOTION_CLAUDE_ENTRY}"
-  ok "Claude Code: notion MCP registered"
-  restart_needed=1
-fi
-
 if [[ "${claude_slack_url}" != "https://mcp.slack.com/mcp" ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" slack "${SLACK_CLAUDE_ENTRY}"
   ok "Claude Code: slack MCP registered"
@@ -151,14 +143,15 @@ if [[ "${claude_brave_search_cmd}" != "${KEYCHAIN_ENV_WRAPPER}" ]]; then
   restart_needed=1
 fi
 
-ok "Claude Code: baseline MCP servers (exa/notion/slack/brave-search/chrome-devtools) normalized"
-unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_exa_url claude_notion_url claude_slack_url claude_brave_search_cmd
+ok "Claude Code: baseline MCP servers (exa/slack/brave-search/chrome-devtools) normalized"
+unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_exa_url claude_slack_url claude_brave_search_cmd
 
 # Strip legacy MCP registrations that have been retired.
 #   playwright  → @playwright/cli + skill (see post-setup.sh)
 #   filesystem  → native Claude Code Read/Write/Edit/Grep/Glob tools
 #   drawio      → Mermaid (inline in .md) or mermaid-cli (mmdc) for PNG/SVG output
-for _legacy in playwright filesystem drawio; do
+#   notion      → ntn CLI + makenotion/skills (see post-setup.sh)
+for _legacy in playwright filesystem drawio notion; do
   if [[ "$(ai_config_json_remove_mcp "${CLAUDE_JSON}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Claude Code: legacy ${_legacy} MCP removed"
     restart_needed=1
@@ -218,13 +211,12 @@ esac
 
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.chrome-devtools]" $'command = "npx"\nargs = ["-y", "chrome-devtools-mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.notion]" 'url = "https://mcp.notion.com/mcp"'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.slack]" 'url = "https://mcp.slack.com/mcp"'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "'"${KEYCHAIN_ENV_WRAPPER}"$'"\nargs = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]'
-ok "Codex: baseline MCP servers (exa/notion/slack/brave-search/chrome-devtools) registered"
+ok "Codex: baseline MCP servers (exa/slack/brave-search/chrome-devtools) registered"
 
 # Strip legacy Codex MCP registrations retired in favor of CLIs / native tools.
-for _legacy in playwright filesystem drawio; do
+for _legacy in playwright filesystem drawio notion; do
   if [[ "$(ai_config_toml_remove_mcp_section "${CODEX_CONFIG}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Codex: legacy ${_legacy} MCP removed"
     restart_needed=1
