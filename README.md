@@ -223,6 +223,7 @@ ghq get git@github.com:owner/repo.git
 - `slack`（remote HTTP + OAuth、`https://mcp.slack.com/mcp`）
 - `serena`
 - `chrome-devtools`
+- `owlocr`（macOS Vision framework 経由の画像 / PDF OCR、`ja-JP` 対応、`uvx --from git+https://github.com/jangisaac-dev/owlocr-mcp`）
 - `sequential-thinking`（`post-setup.sh` で Claude Code に登録）
 
 Notion は MCP ではなく公式 CLI (`ntn`) + skill の組み合わせを採用しています（下の「Notion CLI (ntn)」節参照）。token 効率と scripted 用途の両立を優先しました。
@@ -606,7 +607,7 @@ config-file = local.ghostty
 - `approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`（`--full-auto` 相当）
 - `[features]`: `multi_agent = true`、`codex_hooks = true`
 - `[plugins]`: Google Calendar, GitHub, Gmail, Google Drive, build-macos-apps, build-ios-apps（Notion は `ntn` CLI + `makenotion/skills` に移行済み、curated plugin も無効化）
-- MCP サーバー: Serena, chrome-devtools, exa, brave-search, slack, OpenAI Developer Docs
+- MCP サーバー: Serena, chrome-devtools, owlocr, exa, brave-search, slack, OpenAI Developer Docs
 - マシン固有のパスは `{{ .chezmoi.homeDir }}` で展開
 
 `~/.codex/hooks.json` も chezmoi 管理にしています。Stop フックで `codex-auto-save-memory` skill を実行し、セッション終了時にメモリを自動保存します。
@@ -657,7 +658,7 @@ make ai-audit
 `make ai-audit` は次の観点をまとめて確認します。
 
 - `~/.claude.json` / `~/.codex/config.toml` の baseline（model, sandbox, approval, features, hooks）
-- Serena wrapper / OpenAI Docs MCP / exa/slack/brave-search/chrome-devtools の登録有無（レガシーな `playwright` / `filesystem` / `drawio` / `notion` MCP が残っていれば warning）
+- Serena wrapper / OpenAI Docs MCP / exa/slack/brave-search/chrome-devtools/owlocr の登録有無（レガシーな `playwright` / `filesystem` / `drawio` / `notion` MCP が残っていれば warning）
 - Brave API key が Keychain に存在するか
 - Serena config の主要キー（`language_backend`, `web_dashboard`, `project_serena_folder_location`）
 - 古い bridge 設定や危険な approval 設定が残っていないか
@@ -693,11 +694,14 @@ python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp --acti
 python3 ~/.codex/skills/ui-ux-pro-max/scripts/search.py "SaaS B2B analytics" --design-system -f markdown
 ```
 
-**Superpowers plugin** は Claude Code セッション内で手動インストールです。
+**Superpowers plugin** / **Context7 plugin** は Claude Code セッション内で手動インストールです（Anthropic 公式 marketplace 経由、dotfiles 管理外）。
 
 ```text
 /plugin install superpowers
+/plugin install context7@claude-plugins-official
 ```
+
+Superpowers は 14 skill の agent discipline framework（clarify → design → plan → code → verify）、Context7 は最新ライブラリドキュメントを context に注入して API 幻覚を抑える plugin。どちらも tool surface を持たないので context 消費は最小。
 
 ### Claude Code / Gemini CLI のローカル state
 
