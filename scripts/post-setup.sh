@@ -193,6 +193,50 @@ else
   unset target agent dir
 fi
 
+# ---- Notion CLI (ntn) ------------------------------------------------------
+log "Notion CLI (ntn)..."
+
+if command -v ntn &>/dev/null; then
+  ok "ntn already installed: $(ntn --version 2>/dev/null | head -1 || true)"
+else
+  log "Installing Notion CLI via official installer..."
+  # Official installer from Notion: https://ntn.dev
+  if curl -fsSL https://ntn.dev | bash; then
+    hash -r
+    if command -v ntn &>/dev/null; then
+      ok "ntn installed: $(ntn --version 2>/dev/null | head -1 || true)"
+    else
+      warn "ntn still not found after install — open a new terminal and re-run, or add ntn's install dir to PATH"
+    fi
+  else
+    warn "ntn install failed — run manually: curl -fsSL https://ntn.dev | bash"
+  fi
+fi
+
+# ---- Notion CLI skills (makenotion/skills) --------------------------------
+log "Notion CLI skills..."
+
+if ! command -v npx &>/dev/null; then
+  warn "npx not found — notion-cli skills skipped (install node via core Brew profile)"
+else
+  for target in claude-code:"${HOME}/.claude/skills" codex:"${HOME}/.codex/skills"; do
+    agent="${target%%:*}"
+    dir="${target#*:}"
+    mkdir -p "${dir}"
+    if [[ -f "${dir}/notion-cli/SKILL.md" ]]; then
+      ok "notion-cli skill already present under ${dir/#${HOME}/\~}"
+    else
+      log "Installing notion-cli skill for ${agent} into ${dir/#${HOME}/\~} ..."
+      if npx -y skills add https://github.com/makenotion/skills -a "${agent}" -g -y --skill notion-cli; then
+        ok "notion-cli skill installed (${agent})"
+      else
+        warn "npx skills add failed for ${agent} — re-run or install manually"
+      fi
+    fi
+  done
+  unset target agent dir
+fi
+
 # ---- brew autoupdate -------------------------------------------------------
 log "brew autoupdate..."
 launchctl bootout "gui/$(id -u)/$(brew_autoupdate_label)" >/dev/null 2>&1 || true
@@ -202,3 +246,4 @@ ok "brew autoupdate: disabled by dotfiles policy"
 
 printf '\nVerify with: make doctor\n'
 printf '             codex login    (one-time auth)\n'
+printf '             ntn login      (one-time Notion OAuth)\n'
