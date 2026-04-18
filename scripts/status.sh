@@ -135,6 +135,16 @@ fi
 
 unset brew_check_code
 
+section "Playwright CLI"
+if command -v playwright-cli >/dev/null 2>&1; then
+  ok "playwright-cli: $(playwright-cli --version 2>&1 | head -1)"
+  if [[ -n "${PLAYWRIGHT_CLI_SESSION:-}" ]]; then
+    info "PLAYWRIGHT_CLI_SESSION=${PLAYWRIGHT_CLI_SESSION}"
+  fi
+else
+  warn "playwright-cli not found — run: ./scripts/post-setup.sh"
+fi
+
 section "brew-autoupdate"
 if command -v brew >/dev/null 2>&1 && command -v launchctl >/dev/null 2>&1 && command -v plutil >/dev/null 2>&1; then
   if brew_autoupdate_is_loaded || [[ -f "$(brew_autoupdate_plist_path)" ]]; then

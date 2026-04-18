@@ -29,9 +29,14 @@ assert_eq "0" "${RUN_STATUS}" "sourcing module with no playwright-cli should not
 assert_contains "${RUN_OUTPUT}" "absent" "module should not define pwsession when playwright-cli is missing"
 
 # 3. With a stub playwright-cli on PATH, every helper should be defined.
-cat > "${tmpdir}/playwright-cli" <<'EOF'
+# The stub logs its argv to $PW_STUB_LOG so tests can assert on the exact
+# invocation (prevents silent refactor regressions like dropping --persistent).
+stub_log="${tmpdir}/pwcli.log"
+cat > "${tmpdir}/playwright-cli" <<EOF
 #!/usr/bin/env bash
-exit 0
+printf '%s\0' "\$@" >> "${stub_log}"
+printf '\n' >> "${stub_log}"
+exit "\${PW_STUB_EXIT:-0}"
 EOF
 chmod +x "${tmpdir}/playwright-cli"
 
@@ -50,5 +55,40 @@ assert_contains "${RUN_OUTPUT}" "session=demo" "pwsession should export PLAYWRIG
 run_capture zsh -c "PATH='${tmpdir}:${PATH}' source '${MODULE}'; pwsession"
 assert_eq "1" "${RUN_STATUS}" "pwsession without args should fail"
 assert_contains "${RUN_OUTPUT}" "usage: pwsession" "pwsession should print usage on misuse"
+
+# 6. pwlogin must invoke playwright-cli with canonical argv and only export
+#    PLAYWRIGHT_CLI_SESSION on success.
+: > "${stub_log}"
+run_capture zsh -c "PATH='${tmpdir}:${PATH}' source '${MODULE}'; pwlogin demo https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-}\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "pwlogin should propagate stub exit 0"
+assert_contains "${RUN_OUTPUT}" "session=demo" "pwlogin should export PLAYWRIGHT_CLI_SESSION on success"
+stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
+assert_contains "${stub_invocation}" "--session=demo" "pwlogin should use --session=<name> form"
+assert_contains "${stub_invocation}" "open" "pwlogin should invoke the open subcommand"
+assert_contains "${stub_invocation}" "--headed" "pwlogin should pass --headed"
+assert_contains "${stub_invocation}" "--persistent" "pwlogin should pass --persistent"
+assert_contains "${stub_invocation}" "https://example.com" "pwlogin should pass the URL"
+
+# 7. pwlogin must NOT export PLAYWRIGHT_CLI_SESSION if playwright-cli fails.
+: > "${stub_log}"
+run_capture zsh -c "PATH='${tmpdir}:${PATH}' PW_STUB_EXIT=2 source '${MODULE}'; pwlogin bad https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+assert_contains "${RUN_OUTPUT}" "rc=2" "pwlogin should propagate stub exit 2"
+assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwlogin should NOT export PLAYWRIGHT_CLI_SESSION on failure"
+
+# 8. pwkill <name> must invoke playwright-cli delete-data --session <name>.
+: > "${stub_log}"
+run_capture zsh -c "PATH='${tmpdir}:${PATH}' source '${MODULE}'; pwkill demo >/dev/null 2>&1"
+stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
+assert_contains "${stub_invocation}" "delete-data" "pwkill should call delete-data"
+assert_contains "${stub_invocation}" "--session" "pwkill should pass --session"
+assert_contains "${stub_invocation}" "demo" "pwkill should pass the session name"
+
+# 9. pwlist / pwshow / pwkillall must invoke the expected subcommands.
+: > "${stub_log}"
+run_capture zsh -c "PATH='${tmpdir}:${PATH}' source '${MODULE}'; pwlist >/dev/null 2>&1; pwshow >/dev/null 2>&1; pwkillall >/dev/null 2>&1"
+stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
+assert_contains "${stub_invocation}" "list" "pwlist should call list"
+assert_contains "${stub_invocation}" "show" "pwshow should call show"
+assert_contains "${stub_invocation}" "kill-all" "pwkillall should call kill-all"
 
 pass_test "tests/playwright-zsh.sh"
