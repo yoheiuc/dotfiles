@@ -18,7 +18,7 @@
 |---|---|
 | 知らないこと・最新情報を調べる | `exa__web_search_exa` / `exa__web_fetch_exa`。「わかりません」の前にまず検索する |
 | 図で説明した方が早い構成・フロー | `drawio__*` で図を生成する。テキストだけの説明で済ませない |
-| UI の確認・操作・スクリーンショット | `playwright__*` でブラウザを実際に開く |
+| ブラウザ操作・自動化・UI 確認 | `playwright-cli`（ターミナルから CLI で起動）。`PLAYWRIGHT_CLI_SESSION` が set されていればそれを使う。skill は `~/.codex/skills/playwright/` |
 | GitHub の PR / Issue / コード検索 | `gh` CLI を使う（`gh pr`, `gh issue`, `gh api` 等） |
 | パフォーマンス・ネットワーク問題 | `chrome-devtools__*` で実測する |
 | コード構造の理解・リファクタ | Serena（下記） |
@@ -30,7 +30,7 @@
 | skill | 場面 |
 |---|---|
 | `security-best-practices` | コードレビュー・新規コード作成時に `references/` のガイドを参照する |
-| `playwright` | ブラウザ自動操作のスクリプト実行 |
+| `playwright` | `playwright-cli` ラッパー経由でブラウザ自動操作。`PLAYWRIGHT_CLI_SESSION` で永続セッションを指定 |
 | `screenshot` | macOS のデスクトップ / ウィンドウキャプチャ |
 | `doc` | Word (.docx) ドキュメント生成 |
 | `pdf` | PDF の読み取り・解析 |

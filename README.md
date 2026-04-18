@@ -223,9 +223,10 @@ ghq get git@github.com:owner/repo.git
 - `brave-search`
 - `drawio`
 - `serena`
-- `playwright`
 - `chrome-devtools`
 - `sequential-thinking`（`post-setup.sh` で Claude Code に登録）
+
+ブラウザ自動化は `@playwright/cli` + skill 方式に寄せているので、`@playwright/mcp` は含めていません（下の「Playwright CLI」節参照）。
 
 検索系は `Exa MCP`（`https://mcp.exa.ai/mcp`、API key 不要）と `brave-search`（`@modelcontextprotocol/server-brave-search`、`BRAVE_API_KEY` を `mcp-with-keychain-secret` wrapper 経由で macOS Keychain から注入）の両方を入れています。
 
@@ -537,7 +538,7 @@ config-file = local.ghostty
 - `approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`（`--full-auto` 相当）
 - `[features]`: `multi_agent = true`、`codex_hooks = true`
 - `[plugins]`: Google Calendar, GitHub, Gmail, Google Drive, build-macos-apps, build-ios-apps, Notion
-- MCP サーバー: Serena, filesystem, drawio, playwright, chrome-devtools, exa, brave-search, OpenAI Developer Docs
+- MCP サーバー: Serena, filesystem, drawio, chrome-devtools, exa, brave-search, OpenAI Developer Docs
 - マシン固有のパスは `{{ .chezmoi.homeDir }}` で展開
 
 `~/.codex/hooks.json` も chezmoi 管理にしています。Stop フックで `codex-auto-save-memory` skill を実行し、セッション終了時にメモリを自動保存します。
@@ -588,7 +589,7 @@ make ai-audit
 `make ai-audit` は次の観点をまとめて確認します。
 
 - `~/.claude.json` / `~/.codex/config.toml` の baseline（model, sandbox, approval, features, hooks）
-- Serena wrapper / OpenAI Docs MCP / filesystem/exa/brave-search/drawio/playwright/chrome-devtools の登録有無
+- Serena wrapper / OpenAI Docs MCP / filesystem/exa/brave-search/drawio/chrome-devtools の登録有無（レガシーな `playwright` MCP が残っていれば warning）
 - Brave API key が Keychain に存在するか
 - Serena config の主要キー（`language_backend`, `web_dashboard`, `project_serena_folder_location`）
 - 古い bridge 設定や危険な approval 設定が残っていないか
@@ -615,11 +616,11 @@ make doctor
 
 セットアップ系のスクリプトは Bash 前提で書いているので、呼び出しは `bash` 明示です。日常利用は普段どおり `zsh` のままで問題ありません。
 
-同梱している skill は `~/.codex/skills` に入り、`chezmoi apply` で反映されます。現在は `playwright`、`screenshot`、`doc`、`pdf`、`spreadsheet`、`jupyter-notebook`、`security-best-practices`、`ui-ux-pro-max`、`codex-auto-save-memory` を同梱しています。`ui-ux-pro-max` は `nextlevelbuilder/ui-ux-pro-max-skill` の Codex 向け構成を repo 同梱化したものです。たとえば:
+同梱している skill は `~/.codex/skills` に入り、`chezmoi apply` で反映されます。現在は `screenshot`、`doc`、`pdf`、`spreadsheet`、`jupyter-notebook`、`security-best-practices`、`ui-ux-pro-max`、`codex-auto-save-memory` を同梱しています。`ui-ux-pro-max` は `nextlevelbuilder/ui-ux-pro-max-skill` の Codex 向け構成を repo 同梱化したものです。`playwright` skill は `post-setup.sh` が `playwright-cli install --skills` で配置するため dotfiles 本体では管理しません（gws skills と同じ扱い）。たとえば:
 
 ```zsh
-~/.codex/skills/playwright/scripts/playwright_cli.sh open https://example.com
-~/.codex/skills/playwright/scripts/playwright_cli.sh snapshot
+playwright-cli open https://example.com
+playwright-cli snapshot
 python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp --active-window
 python3 ~/.codex/skills/ui-ux-pro-max/scripts/search.py "SaaS B2B analytics" --design-system -f markdown
 ```
@@ -673,8 +674,7 @@ dotfiles/
 │   ├── dot_codex/
 │   │   ├── config.toml.tmpl        # -> ~/.codex/config.toml (chezmoi template)
 │   │   ├── hooks.json              # -> ~/.codex/hooks.json (auto-save memory)
-│   │   └── skills/                 # -> ~/.codex/skills/* (9 skills)
-│   │       ├── playwright/
+│   │   └── skills/                 # -> ~/.codex/skills/* (8 skills; playwright は post-setup が CLI 配置)
 │   │       ├── screenshot/
 │   │       ├── doc/
 │   │       ├── pdf/

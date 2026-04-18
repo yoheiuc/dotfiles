@@ -18,13 +18,6 @@
         "@drawio/mcp@latest"
       ]
     },
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest"
-      ]
-    },
     "chrome-devtools": {
       "command": "npx",
       "args": [

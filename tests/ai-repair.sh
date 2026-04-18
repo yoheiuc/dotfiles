@@ -123,8 +123,7 @@ assert_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-fi
 assert_not_contains "$(cat "${HOME}/.claude.json")" '$HOME/ghq' "ai-repair should not register nonexistent optional Claude filesystem roots"
 assert_contains "$(cat "${HOME}/.claude.json")" '"drawio"' "ai-repair should register drawio MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should set Claude drawio MCP args"
-assert_contains "$(cat "${HOME}/.claude.json")" '"playwright"' "ai-repair should register Playwright MCP for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should set Claude Playwright MCP args"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should not register retired Playwright MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"chrome-devtools"' "ai-repair should register chrome-devtools MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should set Claude chrome-devtools MCP args"
 assert_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-repair should register Brave Search MCP for Claude Code"
@@ -132,8 +131,8 @@ assert_contains "$(cat "${HOME}/.claude.json")" 'mcp-with-keychain-secret' "ai-r
 assert_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should set Claude Brave Search MCP args"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.drawio]" "ai-repair should add drawio MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "@drawio/mcp@latest" "ai-repair should set drawio MCP command args"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.playwright]" "ai-repair should add Playwright MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "@playwright/mcp@latest" "ai-repair should set Playwright MCP command args"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.playwright]" "ai-repair should not register retired Playwright MCP in Codex"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@playwright/mcp@latest" "ai-repair should not set retired Playwright MCP args in Codex"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.chrome-devtools]" "ai-repair should add chrome-devtools MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "chrome-devtools-mcp@latest" "ai-repair should set chrome-devtools MCP command args"
 
@@ -150,5 +149,32 @@ run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when keychain secrets are present"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'BSAtest_key_12345' "ai-repair should not write the Brave API key into Codex config"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'BSAtest_key_12345' "ai-repair should not write the Brave API key into Claude Code config"
+
+# Legacy playwright MCP removal — simulate an old dotfiles install and verify convergence.
+python3 -c "
+import json
+p = '${HOME}/.claude.json'
+with open(p) as f: d = json.load(f)
+d.setdefault('mcpServers', {})['playwright'] = {
+  'type': 'stdio', 'command': 'npx', 'args': ['-y', '@playwright/mcp@latest']
+}
+with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
+"
+cat >> "${HOME}/.codex/config.toml" <<'EOF'
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
+
+[mcp_servers.playwright.tools.browser_navigate]
+approval_mode = "approve"
+EOF
+
+run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
+assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when purging legacy playwright MCP"
+assert_contains "${RUN_OUTPUT}" "legacy playwright MCP removed" "ai-repair should announce legacy playwright removal"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should strip legacy playwright from .claude.json"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright]' "ai-repair should strip legacy playwright section from Codex config"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright.tools.browser_navigate]' "ai-repair should strip legacy playwright tools subsections from Codex config"
 
 pass_test "tests/ai-repair.sh"
