@@ -193,6 +193,13 @@ else
   warn "ntn not found — run: ./scripts/post-setup.sh"
 fi
 
+section "mmdc (mermaid-cli, optional)"
+if command -v mmdc &>/dev/null; then
+  ok "mmdc $(mmdc --version 2>&1 | head -1 || true)"
+else
+  warn "mmdc not found — install via Brewfile (brew \"mermaid-cli\")"
+fi
+
 section "uv (optional)"
 if uv --version &>/dev/null; then
   ok "$(uv --version)"

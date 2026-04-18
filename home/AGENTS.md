@@ -16,7 +16,7 @@
 
 | やりたいこと | 使うツール |
 |---|---|
-| 知らないこと・最新情報を調べる | `exa__web_search_exa` / `exa__web_fetch_exa`。「わかりません」の前にまず検索する |
+| 知らないこと・最新情報を調べる | `exa__web_search_exa` / `exa__web_fetch_exa` または `brave-search__brave_web_search`。Exa は技術系・構造化検索向き、Brave は汎用 Web 検索向き。「わかりません」の前にまず検索する |
 | Notion の情報検索・参照・更新 | `ntn` CLI（Notion 公式）。`ntn api ...` で API 叩き、`ntn files ...` / `ntn workers ...` も。skill は `~/.codex/skills/notion-cli/`。認証は `ntn login` または `NOTION_API_TOKEN` env var |
 | Slack のメッセージ検索・投稿・チャンネル操作 | `slack__*`（remote + OAuth）。インシデント履歴の調査、チャンネルの要約、通知投稿に使う |
 | 図で説明した方が早い構成・フロー | Mermaid を使う。`.md` に ```mermaid ブロックで直接埋める。PNG / SVG が要るときは `mmdc -i in.mmd -o out.svg`（`mermaid-cli`） |
@@ -32,13 +32,16 @@
 | skill | 場面 |
 |---|---|
 | `security-best-practices` | コードレビュー・新規コード作成時に `references/` のガイドを参照する |
-| `playwright` | `playwright-cli` ラッパー経由でブラウザ自動操作。`PLAYWRIGHT_CLI_SESSION` で永続セッションを指定 |
+| `playwright` | `playwright-cli install --skills` で配置。`PLAYWRIGHT_CLI_SESSION` で永続セッションを指定。dotfiles 本体では管理しない |
+| `notion-cli` | `npx skills add makenotion/skills` で配置。`ntn api` / `ntn files` / `ntn workers` の使い方ガイド。dotfiles 本体では管理しない |
+| `gws-*` | `npx skills add googleworkspace/cli` で配置。Google Workspace（Gmail / Drive / Calendar / Docs / Sheets / Chat / Admin）操作。dotfiles 本体では管理しない |
 | `screenshot` | macOS のデスクトップ / ウィンドウキャプチャ |
 | `doc` | Word (.docx) ドキュメント生成 |
 | `pdf` | PDF の読み取り・解析 |
 | `spreadsheet` | Excel (.xlsx) の生成・読み取り |
 | `jupyter-notebook` | ノートブックの作成・実行 |
 | `ui-ux-pro-max` | UI/UX デザインパターンの検索・参照 |
+| `codex-auto-save-memory` | セッション終了 hook で重要な要点を Codex メモリーに保存 |
 
 ## Serena MCP
 

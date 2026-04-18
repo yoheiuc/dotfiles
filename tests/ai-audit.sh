@@ -176,6 +176,7 @@ assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: registered" "ai-audi
 assert_contains "${RUN_OUTPUT}" "Serena config: web_dashboard enabled" "ai-audit should validate Serena config"
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should report Claude MCP registration"
 assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: registered via wrapper" "ai-audit should report Codex MCP registration"
+assert_contains "${RUN_OUTPUT}" "Brave API key: present in Keychain" "ai-audit should confirm Brave key is in Keychain in clean case"
 assert_contains "${RUN_OUTPUT}" "AI config audit looks good." "ai-audit should report a clean result"
 
 # ---- Scenario 2: drift + registrations ----
