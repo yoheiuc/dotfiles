@@ -579,7 +579,6 @@ baseline として保証されるのは以下:
 - `autoUpdatesChannel: "latest"`
 - `env.ENABLE_TOOL_SEARCH: "auto:5"` でツール検索を自動化
 - `hooks.PreToolUse` Grep → `lsp-hint.sh`（Serena 推奨を stderr で提示、block はしない）
-- `hooks.UserPromptSubmit` → `session-topic.sh`（Haiku API で 4–6 語のセッショントピックを生成し `~/.claude/session-topics/{id}.txt` にキャッシュ。statusline が読み取って右下にバッジ表示。`/rename` で手動命名した場合はそちらを優先。`CLAUDE_SESSION_TOPIC=0` で無効化可能）
 - `hooks.Stop` → `auto-save.sh`（コンテキスト使用率が高い場合にメモリを自動保存）
 - `hooks.Notification` → macOS 通知（osascript）
 
@@ -587,7 +586,7 @@ baseline として保証されるのは以下:
 
 `~/.claude/CLAUDE.md` も chezmoi 管理にしており、個人用の共通メモ・MCP ツール選択ルール・Serena の使い方を置きます。
 
-`~/.claude/statusline.sh` と `~/.claude/auto-save.sh`、`~/.claude/lsp-hint.sh`、`~/.claude/session-topic.sh` も chezmoi 管理です。`statusline.sh` はステータスラインにモデル名・コスト・使用率 + 右下にセッション名バッジ（`/rename` 値 → Haiku トピック → slug → session_id の優先順）を表示し、`auto-save.sh` は Stop フックからコンテキスト使用率が高い場合にメモリを自動保存します。`lsp-hint.sh` は PreToolUse フックから呼ばれる advisory で、Grep が明らかなコードシンボル検索っぽい時に Serena の LSP tool 推奨を stderr に出します（block はしない）。`session-topic.sh` は UserPromptSubmit フックで 1/3/5/10/15… prompt 目に Haiku を叩いて 4–6 語のトピックを生成し `~/.claude/session-topics/{id}.txt` にキャッシュ、statusline がそれを読みます（`claude -p --bare --model haiku` 経由で fire-and-forget、プロンプト送信を遅延させない）。
+`~/.claude/statusline.sh` と `~/.claude/auto-save.sh`、`~/.claude/lsp-hint.sh` も chezmoi 管理です。`statusline.sh` はステータスラインにモデル名・コスト・使用率を表示し、`auto-save.sh` は Stop フックからコンテキスト使用率が高い場合にメモリを自動保存します。`lsp-hint.sh` は PreToolUse フックから呼ばれる advisory で、Grep が明らかなコードシンボル検索っぽい時に Serena の LSP tool 推奨を stderr に出します（block はしない）。
 
 `~/.codex/config.toml` は chezmoi テンプレート管理にしています。主な設定:
 
@@ -695,7 +694,7 @@ Superpowers は 14 skill の agent discipline framework（clarify → design →
 
 Claude Code、Codex、Gemini CLI は、共通設定とローカル state を分けて管理します。
 
-- Claude Code は `~/.claude/CLAUDE.md`、`~/.claude/statusline.sh`、`~/.claude/auto-save.sh`、`~/.claude/lsp-hint.sh`、`~/.claude/session-topic.sh`、`commands/`、`.mcp.json` を dotfiles 管理する
+- Claude Code は `~/.claude/CLAUDE.md`、`~/.claude/statusline.sh`、`~/.claude/auto-save.sh`、`~/.claude/lsp-hint.sh`、`commands/`、`.mcp.json` を dotfiles 管理する
 - `~/.claude/settings.json` 本体はローカル管理（Claude Code が `permissions` / `model` / `effortLevel` / `statusLine` を随時書き込むため）。baseline キー（`autoUpdatesChannel` / `env.ENABLE_TOOL_SEARCH` / `hooks`）だけ `make ai-repair` が upsert する
 - `~/.claude/settings.local.json` はマシン固有のオーバーライド用でローカル管理
 - `~/.claude/skills/`（gws skills 等）は `post-setup.sh` が配置し、dotfiles 本体では管理しない
@@ -729,7 +728,6 @@ dotfiles/
 │   │   ├── executable_statusline.sh # -> ~/.claude/statusline.sh
 │   │   ├── executable_auto-save.sh # -> ~/.claude/auto-save.sh
 │   │   ├── executable_lsp-hint.sh  # -> ~/.claude/lsp-hint.sh (PreToolUse advisory)
-│   │   ├── executable_session-topic.sh # -> ~/.claude/session-topic.sh (Haiku session topic)
 │   │   ├── dot_mcp.json            # -> ~/.claude/.mcp.json
 │   │   └── commands/               # -> ~/.claude/commands/* (18 コマンドガイド)
 │   ├── dot_codex/

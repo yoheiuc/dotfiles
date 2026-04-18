@@ -102,7 +102,7 @@ if [[ -f "${HOME}/.claude/settings.json" ]]; then
   # Hooks are baseline-managed by dotfiles. Verify each expected command is
   # wired up; tolerate extra user-added hooks under other matchers.
   _claude_hooks_cmds="$(ai_config_json_read "${HOME}/.claude/settings.json" "sorted({h.get('command','') for events in d.get('hooks',{}).values() if isinstance(events,list) for entry in events if isinstance(entry,dict) for h in entry.get('hooks',[]) if isinstance(h,dict)})" 2>/dev/null || true)"
-  for _expected_cmd in '$HOME/.claude/lsp-hint.sh' '$HOME/.claude/auto-save.sh' '$HOME/.claude/session-topic.sh'; do
+  for _expected_cmd in '$HOME/.claude/lsp-hint.sh' '$HOME/.claude/auto-save.sh'; do
     if [[ "${_claude_hooks_cmds}" == *"${_expected_cmd}"* ]]; then
       ok "Claude Code: hook registered (${_expected_cmd})"
     else

@@ -190,14 +190,6 @@ CLAUDE_HOOKS_BLOCK='{
       ]
     }
   ],
-  "UserPromptSubmit": [
-    {
-      "matcher": "",
-      "hooks": [
-        { "type": "command", "command": "$HOME/.claude/session-topic.sh" }
-      ]
-    }
-  ],
   "Stop": [
     {
       "matcher": "",

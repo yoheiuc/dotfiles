@@ -122,9 +122,6 @@ cat > "${HOME}/.claude/settings.json" <<'EOF'
     "PreToolUse": [
       {"matcher": "Grep", "hooks": [{"type": "command", "command": "$HOME/.claude/lsp-hint.sh"}]}
     ],
-    "UserPromptSubmit": [
-      {"matcher": "", "hooks": [{"type": "command", "command": "$HOME/.claude/session-topic.sh"}]}
-    ],
     "Stop": [
       {"matcher": "", "hooks": [{"type": "command", "command": "$HOME/.claude/auto-save.sh"}]}
     ]
@@ -187,7 +184,6 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env is set" "ai-audit should validate ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/lsp-hint.sh)" "ai-audit should validate lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/auto-save.sh)" "ai-audit should validate auto-save hook"
-assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/session-topic.sh)" "ai-audit should validate session-topic hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: registered" "ai-audit should validate Claude chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: registered" "ai-audit should validate Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should validate Claude Brave Search MCP"
@@ -253,7 +249,6 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be late
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5" "ai-audit should detect missing ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/lsp-hint.sh)" "ai-audit should detect missing lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/auto-save.sh)" "ai-audit should detect missing auto-save hook"
-assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/session-topic.sh)" "ai-audit should detect missing session-topic hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: missing or drifted" "ai-audit should detect missing Claude chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: missing or drifted" "ai-audit should detect missing Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: missing or drifted" "ai-audit should detect missing Claude Brave Search MCP"
@@ -347,9 +342,6 @@ cat > "${HOME}/.claude/settings.json" <<'EOF'
   "hooks": {
     "PreToolUse": [
       {"matcher": "Grep", "hooks": [{"type": "command", "command": "$HOME/.claude/lsp-hint.sh"}]}
-    ],
-    "UserPromptSubmit": [
-      {"matcher": "", "hooks": [{"type": "command", "command": "$HOME/.claude/session-topic.sh"}]}
     ],
     "Stop": [
       {"matcher": "", "hooks": [{"type": "command", "command": "$HOME/.claude/auto-save.sh"}]}
