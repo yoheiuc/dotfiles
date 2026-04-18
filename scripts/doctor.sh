@@ -200,6 +200,20 @@ else
   warn "mmdc not found — install via Brewfile (brew \"mermaid-cli\")"
 fi
 
+section "pandoc (optional)"
+if command -v pandoc &>/dev/null; then
+  ok "$(pandoc --version 2>&1 | head -1)"
+else
+  warn "pandoc not found — install via Brewfile (brew \"pandoc\")"
+fi
+
+section "pdflatex (optional, for Pandoc PDF output)"
+if command -v pdflatex &>/dev/null; then
+  ok "pdflatex: available ($(pdflatex --version 2>&1 | head -1 || true))"
+else
+  warn "pdflatex not found — install via Brewfile (cask \"basictex\") and restart shell"
+fi
+
 section "uv (optional)"
 if uv --version &>/dev/null; then
   ok "$(uv --version)"
