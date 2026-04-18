@@ -88,20 +88,18 @@ EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
 # not secrets. OAuth tokens themselves are managed by Claude Code, not dotfiles.
 SLACK_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.slack.com/mcp","oauth":{"clientId":"1601185624273.8899143856786","callbackPort":3118}}'
 CHROME_DEVTOOLS_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@latest"]}'
-# owlocr-mcp runs via uvx directly against the GitHub repo — no local clone,
-# no wrapper script. Serena uses a similar uvx approach but wraps it in
-# ~/.local/bin/serena-mcp for config flags; owlocr needs no such wrapping.
-# Requires macOS (Vision framework) + uv installed + the upstream repo to
-# expose an `owlocr-mcp` entry under `[project.scripts]` in its pyproject.
-# If MCP connect fails, verify with: uvx --from git+... owlocr-mcp --help
-OWLOCR_CLAUDE_ENTRY='{"type":"stdio","command":"bash","args":["-lc","uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]}'
+# vision-mcp-server is an npm-distributed Apple Vision Framework OCR MCP
+# (@tuannvm/vision-mcp-server). Runs via `npx -y` — no wrapper, no Python
+# toolchain. Requires macOS 13+ and Node.js 18+. If MCP connect fails,
+# verify with: npx -y @tuannvm/vision-mcp-server --help
+VISION_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@tuannvm/vision-mcp-server"]}'
 BRAVE_SEARCH_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["BRAVE_API_KEY","dotfiles.ai.mcp","brave-api-key","npx","-y","@modelcontextprotocol/server-brave-search"]}'
 serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
 serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
 claude_chrome_devtools_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
 claude_chrome_devtools_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
-claude_owlocr_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('owlocr',{}).get('command','')" 2>/dev/null || true)"
-claude_owlocr_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('owlocr',{}).get('args',[]))" 2>/dev/null || true)"
+claude_vision_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)"
+claude_vision_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 claude_slack_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
 claude_brave_search_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
@@ -127,15 +125,15 @@ else
   ok "Claude Code: chrome-devtools MCP already registered"
 fi
 
-_owlocr_expected_args='-lc|uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp'
-if [[ "${claude_owlocr_cmd}" != "bash" || "${claude_owlocr_args}" != "${_owlocr_expected_args}" ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" owlocr "${OWLOCR_CLAUDE_ENTRY}"
-  ok "Claude Code: owlocr MCP registered"
+_vision_expected_args='-y|@tuannvm/vision-mcp-server'
+if [[ "${claude_vision_cmd}" != "npx" || "${claude_vision_args}" != "${_vision_expected_args}" ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" vision "${VISION_CLAUDE_ENTRY}"
+  ok "Claude Code: vision MCP registered"
   restart_needed=1
 else
-  ok "Claude Code: owlocr MCP already registered"
+  ok "Claude Code: vision MCP already registered"
 fi
-unset _owlocr_expected_args
+unset _vision_expected_args
 
 if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" exa "${EXA_CLAUDE_ENTRY}"
@@ -161,7 +159,7 @@ else
   ok "Claude Code: brave-search MCP already registered"
 fi
 
-unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_owlocr_cmd claude_owlocr_args claude_exa_url claude_slack_url claude_brave_search_cmd
+unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_vision_cmd claude_vision_args claude_exa_url claude_slack_url claude_brave_search_cmd
 
 # Strip legacy MCP registrations that have been retired.
 #   playwright  → @playwright/cli + skill (see post-setup.sh)
@@ -169,7 +167,8 @@ unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_owlocr_cmd c
 #   drawio      → Mermaid (inline in .md) or mermaid-cli (mmdc) for PNG/SVG output
 #   notion      → ntn CLI + makenotion/skills (see post-setup.sh)
 #   github      → gh CLI (gh pr, gh issue, gh api …)
-for _legacy in playwright filesystem drawio notion github; do
+#   owlocr      → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
+for _legacy in playwright filesystem drawio notion github owlocr; do
   if [[ "$(ai_config_json_remove_mcp "${CLAUDE_JSON}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Claude Code: legacy ${_legacy} MCP removed"
     restart_needed=1
@@ -229,8 +228,8 @@ esac
 
 codex_chrome_devtools_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
 codex_chrome_devtools_args="$(ai_config_toml_read "${CODEX_CONFIG}" "'|'.join(d.get('mcp_servers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
-codex_owlocr_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('owlocr',{}).get('command','')" 2>/dev/null || true)"
-codex_owlocr_args="$(ai_config_toml_read "${CODEX_CONFIG}" "'|'.join(d.get('mcp_servers',{}).get('owlocr',{}).get('args',[]))" 2>/dev/null || true)"
+codex_vision_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)"
+codex_vision_args="$(ai_config_toml_read "${CODEX_CONFIG}" "'|'.join(d.get('mcp_servers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
 codex_exa_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 codex_slack_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
 codex_brave_search_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
@@ -243,15 +242,15 @@ else
   ok "Codex: chrome-devtools MCP already registered"
 fi
 
-_codex_owlocr_expected_args='-lc|uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp'
-if [[ "${codex_owlocr_cmd}" != "bash" || "${codex_owlocr_args}" != "${_codex_owlocr_expected_args}" ]]; then
-  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.owlocr]" $'command = "bash"\nargs = ["-lc", "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]'
-  ok "Codex: owlocr MCP registered"
+_codex_vision_expected_args='-y|@tuannvm/vision-mcp-server'
+if [[ "${codex_vision_cmd}" != "npx" || "${codex_vision_args}" != "${_codex_vision_expected_args}" ]]; then
+  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.vision]" $'command = "npx"\nargs = ["-y", "@tuannvm/vision-mcp-server"]'
+  ok "Codex: vision MCP registered"
   restart_needed=1
 else
-  ok "Codex: owlocr MCP already registered"
+  ok "Codex: vision MCP already registered"
 fi
-unset _codex_owlocr_expected_args
+unset _codex_vision_expected_args
 
 if [[ "${codex_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
   ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
@@ -277,10 +276,11 @@ else
   ok "Codex: brave-search MCP already registered"
 fi
 
-unset codex_chrome_devtools_cmd codex_chrome_devtools_args codex_owlocr_cmd codex_owlocr_args codex_exa_url codex_slack_url codex_brave_search_cmd
+unset codex_chrome_devtools_cmd codex_chrome_devtools_args codex_vision_cmd codex_vision_args codex_exa_url codex_slack_url codex_brave_search_cmd
 
-# Strip legacy Codex MCP registrations retired in favor of CLIs / native tools.
-for _legacy in playwright filesystem drawio notion github; do
+# Strip legacy Codex MCP registrations retired in favor of CLIs / native tools
+# or replaced by a newer MCP (owlocr → vision).
+for _legacy in playwright filesystem drawio notion github owlocr; do
   if [[ "$(ai_config_toml_remove_mcp_section "${CODEX_CONFIG}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Codex: legacy ${_legacy} MCP removed"
     restart_needed=1

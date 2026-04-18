@@ -19,11 +19,11 @@
         "chrome-devtools-mcp@latest"
       ]
     },
-    "owlocr": {
-      "command": "bash",
+    "vision": {
+      "command": "npx",
       "args": [
-        "-lc",
-        "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"
+        "-y",
+        "@tuannvm/vision-mcp-server"
       ]
     },
     "brave-search": {
