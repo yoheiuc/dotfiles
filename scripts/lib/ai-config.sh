@@ -38,14 +38,40 @@ ai_config_file_contains_regex() {
   grep -Eq "${pattern}" "${path}"
 }
 
-# Read a field from a TOML file using python3/tomllib.
+# Resolve a Python 3.11+ interpreter that has `tomllib` in its stdlib. macOS
+# ships `/usr/bin/python3` as 3.9 which lacks tomllib, so fall back to
+# homebrew-installed pythons when the default is too old. Cached per shell.
+ai_config_python_with_tomllib() {
+  if [[ -n "${_AI_CONFIG_PY_TOMLLIB:-}" ]]; then
+    printf '%s\n' "${_AI_CONFIG_PY_TOMLLIB}"
+    return 0
+  fi
+  local candidate
+  for candidate in python3 python3.14 python3.13 python3.12 python3.11; do
+    if command -v "${candidate}" >/dev/null 2>&1 \
+       && "${candidate}" -c 'import tomllib' 2>/dev/null; then
+      _AI_CONFIG_PY_TOMLLIB="${candidate}"
+      printf '%s\n' "${_AI_CONFIG_PY_TOMLLIB}"
+      return 0
+    fi
+  done
+  # No tomllib-capable Python found — caller will silently degrade (same as
+  # the pre-fallback behavior).
+  _AI_CONFIG_PY_TOMLLIB="python3"
+  printf '%s\n' "${_AI_CONFIG_PY_TOMLLIB}"
+  return 1
+}
+
+# Read a field from a TOML file using python/tomllib.
 # Usage: ai_config_toml_read <file> <python_expr>
 #   python_expr receives the parsed TOML as `d`.
 ai_config_toml_read() {
   local file="$1"
   local expr="$2"
   [[ -f "${file}" ]] || return 1
-  python3 -c "
+  local py
+  py="$(ai_config_python_with_tomllib)" || true
+  "${py}" -c "
 import sys
 try:
     import tomllib
