@@ -223,7 +223,7 @@ ghq get git@github.com:owner/repo.git
 - `slack`（remote HTTP + OAuth、`https://mcp.slack.com/mcp`）
 - `serena`
 - `chrome-devtools`
-- `owlocr`（macOS Vision framework 経由の画像 / PDF OCR、`ja-JP` 対応、`uvx --from git+https://github.com/jangisaac-dev/owlocr-mcp`）
+- `owlocr`（macOS Vision framework 経由の画像 / PDF OCR、`ja-JP` 対応、`uvx --from git+https://github.com/jangisaac-dev/owlocr-mcp`。上流 repo の `pyproject.toml` に `owlocr-mcp` script entry がある前提。MCP connect に失敗したら `uvx --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp --help` で直接確認）
 - `sequential-thinking`（`post-setup.sh` で Claude Code に登録）
 
 Notion は MCP ではなく公式 CLI (`ntn`) + skill の組み合わせを採用しています（下の「Notion CLI (ntn)」節参照）。token 効率と scripted 用途の両立を優先しました。
@@ -599,7 +599,7 @@ config-file = local.ghostty
 
 `~/.claude/CLAUDE.md` も chezmoi 管理にしており、個人用の共通メモ・MCP ツール選択ルール・Serena の使い方を置きます。
 
-`~/.claude/statusline.py` と `~/.claude/auto-save.sh` も chezmoi 管理です。`statusline.py` はステータスラインにモデル名・コスト・使用率を表示し、`auto-save.sh` は Stop フックからコンテキスト使用率が高い場合にメモリを自動保存します。
+`~/.claude/statusline.sh` と `~/.claude/auto-save.sh`、`~/.claude/lsp-hint.sh` も chezmoi 管理です。`statusline.sh` はステータスラインにモデル名・コスト・使用率を表示し、`auto-save.sh` は Stop フックからコンテキスト使用率が高い場合にメモリを自動保存します。`lsp-hint.sh` は PreToolUse フックから呼ばれる advisory で、Grep が明らかなコードシンボル検索っぽい時に Serena の LSP tool 推奨を stderr に出します（block はしない）。
 
 `~/.codex/config.toml` は chezmoi テンプレート管理にしています。主な設定:
 
@@ -707,7 +707,7 @@ Superpowers は 14 skill の agent discipline framework（clarify → design →
 
 Claude Code、Codex、Gemini CLI は、共通設定とローカル state を分けて管理します。
 
-- Claude Code は `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/statusline.py`、`~/.claude/statusline.sh`、`~/.claude/auto-save.sh`、`commands/`、`.mcp.json` を dotfiles 管理する
+- Claude Code は `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/statusline.sh`、`~/.claude/auto-save.sh`、`~/.claude/lsp-hint.sh`、`commands/`、`.mcp.json` を dotfiles 管理する
 - `~/.claude/settings.local.json` はマシン固有のオーバーライド用でローカル管理
 - `~/.claude/skills/`（gws skills 等）は `post-setup.sh` が配置し、dotfiles 本体では管理しない
 - `~/.claude/history.jsonl`、`projects/`、`sessions/`、`cache/`、`plugins/` などの運用データは管理しない
@@ -739,8 +739,8 @@ dotfiles/
 │   │   ├── CLAUDE.md               # -> ~/.claude/CLAUDE.md (MCP 選択ルール・Serena 運用)
 │   │   ├── settings.json           # -> ~/.claude/settings.json (auto mode + hooks + permissions)
 │   │   ├── executable_statusline.sh # -> ~/.claude/statusline.sh
-│   │   ├── executable_statusline.py # -> ~/.claude/statusline.py
 │   │   ├── executable_auto-save.sh # -> ~/.claude/auto-save.sh
+│   │   ├── executable_lsp-hint.sh  # -> ~/.claude/lsp-hint.sh (PreToolUse advisory)
 │   │   ├── dot_mcp.json            # -> ~/.claude/.mcp.json
 │   │   └── commands/               # -> ~/.claude/commands/* (18 コマンドガイド)
 │   ├── dot_codex/
