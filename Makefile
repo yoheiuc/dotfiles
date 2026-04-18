@@ -1,4 +1,4 @@
-.PHONY: help tips status ai-audit ai-repair ai-secrets install install-home preview preview-home update update-home sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home doctor test test-scripts uninstall
+.PHONY: help tips status ai-audit ai-repair ai-secrets install install-home preview preview-home update update-home sync-all sync sync-core sync-home brew-diff brew-diff-core brew-diff-home brew-add brew-add-core brew-add-home doctor test test-scripts uninstall
 
 help: ## このヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -43,6 +43,14 @@ update-home: ## dotfiles を最新にして home プロファイルを適用
 	bash scripts/profile.sh set home >/dev/null
 	chezmoi apply
 	bash scripts/brew-bundle.sh install home
+
+sync-all: ## pull + chezmoi apply + brew install + post-setup + doctor (フル同期)
+	PROFILE="$$(bash scripts/profile.sh get)"; \
+	git pull origin main; \
+	chezmoi apply; \
+	bash scripts/brew-bundle.sh install "$$PROFILE"; \
+	bash scripts/post-setup.sh; \
+	bash scripts/doctor.sh
 
 sync: ## 現在のプロファイルを cleanup 付きで同期
 	PROFILE="$$(bash scripts/profile.sh get)"; \
