@@ -10,8 +10,6 @@ source "${SCRIPT_DIR}/lib/ai-config.sh"
 
 SECURITY_BIN="${SECURITY_BIN:-security}"
 KEYCHAIN_SERVICE="dotfiles.ai.mcp"
-AI_SHARED_ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ai-secrets.env"
-AI_SHARED_ENV_FALLBACK_FILE="${HOME}/.config/dotfiles/ai-secrets.env"
 
 ATTENTION_COUNT=0
 
@@ -64,10 +62,6 @@ report_optional_backups() {
   attention "${label}: found backup files to review or delete"
   printf '%s\n' "${matches}" | sed 's/^/    /'
 }
-
-read_keychain_secret() { ai_config_read_keychain_secret "$@"; }
-read_legacy_env_secret() { ai_config_read_legacy_env_secret "$@"; }
-resolve_ai_secret() { ai_config_resolve_secret "$@"; }
 
 echo
 printf '\033[1m=== AI config audit ===\033[0m\n'
@@ -303,6 +297,17 @@ case "$(ai_config_codex_mcp_state "${_codex_config}" "${_serena_wrapper}")" in
     ;;
 esac
 unset _serena_wrapper _claude_json _codex_config
+
+section "MCP Credentials (Keychain)"
+# Brave Search MCP requires a key in macOS Keychain (service: dotfiles.ai.mcp,
+# account: brave-api-key) so the mcp-with-keychain-secret wrapper can inject it.
+if ! command -v "${SECURITY_BIN}" >/dev/null 2>&1; then
+  info "security CLI unavailable — skipping Keychain checks (non-macOS?)"
+elif "${SECURITY_BIN}" find-generic-password -s "${KEYCHAIN_SERVICE}" -a brave-api-key >/dev/null 2>&1; then
+  ok "Brave API key: present in Keychain (service=${KEYCHAIN_SERVICE}, account=brave-api-key)"
+else
+  attention "Brave API key: missing in Keychain — run: ai-secrets"
+fi
 
 section "Backup Files"
 report_optional_backups "Codex config backups" "${HOME}/.codex/config.toml.pre-unmanage-*"

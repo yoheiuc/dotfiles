@@ -12,16 +12,11 @@ log()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 
-SECURITY_BIN="${SECURITY_BIN:-security}"
 SERENA_WRAPPER="${HOME}/.local/bin/serena-mcp"
 KEYCHAIN_ENV_WRAPPER="${HOME}/.local/bin/mcp-with-keychain-secret"
 SERENA_CONFIG_DIR="${HOME}/.serena"
 SERENA_CONFIG_PATH="${SERENA_CONFIG_DIR}/serena_config.yml"
 SERENA_CONFIG_BACKUP_SUFFIX="$(date +%Y%m%d%H%M%S)"
-AI_SHARED_ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ai-secrets.env"
-AI_SHARED_ENV_FALLBACK_FILE="${HOME}/.config/dotfiles/ai-secrets.env"
-KEYCHAIN_SERVICE="dotfiles.ai.mcp"
-BRAVE_KEYCHAIN_ACCOUNT="brave-api-key"
 
 CLAUDE_JSON="${HOME}/.claude.json"
 CLAUDE_SETTINGS_JSON="${HOME}/.claude/settings.json"
@@ -40,10 +35,6 @@ project_serena_folder_location: "$projectDir/.serena"
 projects: []
 EOF
 }
-
-read_keychain_secret() { ai_config_read_keychain_secret "$@"; }
-read_legacy_env_secret() { ai_config_read_legacy_env_secret "$@"; }
-resolve_ai_secret() { ai_config_resolve_secret "$@"; }
 
 # ---- Serena local config -----------------------------------------------------
 log "Serena local config..."
@@ -123,27 +114,34 @@ if [[ "${claude_chrome_devtools_cmd}" != "npx" || "${claude_chrome_devtools_args
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" chrome-devtools "${CHROME_DEVTOOLS_CLAUDE_ENTRY}"
   ok "Claude Code: chrome-devtools MCP registered"
   restart_needed=1
+else
+  ok "Claude Code: chrome-devtools MCP already registered"
 fi
 
 if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" exa "${EXA_CLAUDE_ENTRY}"
   ok "Claude Code: exa MCP registered"
   restart_needed=1
+else
+  ok "Claude Code: exa MCP already registered"
 fi
 
 if [[ "${claude_slack_url}" != "https://mcp.slack.com/mcp" ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" slack "${SLACK_CLAUDE_ENTRY}"
   ok "Claude Code: slack MCP registered"
   restart_needed=1
+else
+  ok "Claude Code: slack MCP already registered"
 fi
 
 if [[ "${claude_brave_search_cmd}" != "${KEYCHAIN_ENV_WRAPPER}" ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" brave-search "${BRAVE_SEARCH_CLAUDE_ENTRY}"
   ok "Claude Code: brave-search MCP registered"
   restart_needed=1
+else
+  ok "Claude Code: brave-search MCP already registered"
 fi
 
-ok "Claude Code: baseline MCP servers (exa/slack/brave-search/chrome-devtools) normalized"
 unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_exa_url claude_slack_url claude_brave_search_cmd
 
 # Strip legacy MCP registrations that have been retired.
@@ -209,11 +207,45 @@ case "$(ai_config_codex_mcp_url_state "${CODEX_CONFIG}" openaiDeveloperDocs "${O
     ;;
 esac
 
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.chrome-devtools]" $'command = "npx"\nargs = ["-y", "chrome-devtools-mcp@latest"]'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.slack]" 'url = "https://mcp.slack.com/mcp"'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "'"${KEYCHAIN_ENV_WRAPPER}"$'"\nargs = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]'
-ok "Codex: baseline MCP servers (exa/slack/brave-search/chrome-devtools) registered"
+codex_chrome_devtools_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
+codex_chrome_devtools_args="$(ai_config_toml_read "${CODEX_CONFIG}" "'|'.join(d.get('mcp_servers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
+codex_exa_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
+codex_slack_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
+codex_brave_search_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
+
+if [[ "${codex_chrome_devtools_cmd}" != "npx" || "${codex_chrome_devtools_args}" != '-y|chrome-devtools-mcp@latest' ]]; then
+  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.chrome-devtools]" $'command = "npx"\nargs = ["-y", "chrome-devtools-mcp@latest"]'
+  ok "Codex: chrome-devtools MCP registered"
+  restart_needed=1
+else
+  ok "Codex: chrome-devtools MCP already registered"
+fi
+
+if [[ "${codex_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
+  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
+  ok "Codex: exa MCP registered"
+  restart_needed=1
+else
+  ok "Codex: exa MCP already registered"
+fi
+
+if [[ "${codex_slack_url}" != "https://mcp.slack.com/mcp" ]]; then
+  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.slack]" 'url = "https://mcp.slack.com/mcp"'
+  ok "Codex: slack MCP registered"
+  restart_needed=1
+else
+  ok "Codex: slack MCP already registered"
+fi
+
+if [[ "${codex_brave_search_cmd}" != "${KEYCHAIN_ENV_WRAPPER}" ]]; then
+  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "'"${KEYCHAIN_ENV_WRAPPER}"$'"\nargs = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]'
+  ok "Codex: brave-search MCP registered"
+  restart_needed=1
+else
+  ok "Codex: brave-search MCP already registered"
+fi
+
+unset codex_chrome_devtools_cmd codex_chrome_devtools_args codex_exa_url codex_slack_url codex_brave_search_cmd
 
 # Strip legacy Codex MCP registrations retired in favor of CLIs / native tools.
 for _legacy in playwright filesystem drawio notion; do
