@@ -291,6 +291,10 @@ args = ["-y", "@drawio/mcp@latest"]
 [mcp_servers.notion]
 url = "https://mcp.notion.com/mcp"
 
+[mcp_servers.github]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-github"]
+
 [mcp_servers.serena]
 command = "${HOME}/.local/bin/serena-mcp"
 args = ["codex"]
@@ -305,6 +309,7 @@ cat > "${HOME}/.claude.json" <<EOF
     "filesystem": {"type":"stdio","command":"bash","args":["-lc","npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]},
     "drawio": {"type":"stdio","command":"npx","args":["-y","@drawio/mcp@latest"]},
     "notion": {"type":"http","url":"https://mcp.notion.com/mcp"},
+    "github": {"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-github"]},
     "serena": {"type":"stdio","command":"${HOME}/.local/bin/serena-mcp","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}
   }
 }
@@ -330,5 +335,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code drawio MCP: legacy entry present" "
 assert_contains "${RUN_OUTPUT}" "Codex drawio MCP: legacy entry present" "ai-audit should flag legacy Codex drawio MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code notion MCP: legacy entry present" "ai-audit should flag legacy Claude Code notion MCP"
 assert_contains "${RUN_OUTPUT}" "Codex notion MCP: legacy entry present" "ai-audit should flag legacy Codex notion MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code github MCP: legacy entry present" "ai-audit should flag legacy Claude Code github MCP"
+assert_contains "${RUN_OUTPUT}" "Codex github MCP: legacy entry present" "ai-audit should flag legacy Codex github MCP"
 
 pass_test "tests/ai-audit.sh"

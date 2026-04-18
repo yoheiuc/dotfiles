@@ -150,8 +150,9 @@ if [[ -f "${_claude_json}" ]]; then
   #   filesystem  → native Claude Code Read/Write/Edit/Grep/Glob tools
   #   drawio      → Mermaid (inline in .md) or mermaid-cli (mmdc)
   #   notion      → ntn CLI + makenotion/skills
+  #   github      → gh CLI
   # Match on key presence so HTTP-type entries without `command` are still caught.
-  for _legacy in playwright filesystem drawio notion; do
+  for _legacy in playwright filesystem drawio notion github; do
     if [[ "$(ai_config_json_read "${_claude_json}" "'present' if '${_legacy}' in d.get('mcpServers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
       attention "Claude Code ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi
@@ -230,7 +231,7 @@ if [[ -f "${_codex_config}" ]]; then
   fi
 
   # Warn on legacy MCP entries that have been retired. Match on key presence.
-  for _legacy in playwright filesystem drawio notion; do
+  for _legacy in playwright filesystem drawio notion github; do
     if [[ "$(ai_config_toml_read "${_codex_config}" "'present' if '${_legacy}' in d.get('mcp_servers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
       attention "Codex ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi

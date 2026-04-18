@@ -176,6 +176,10 @@ d['mcpServers']['drawio'] = {
 d['mcpServers']['notion'] = {
   'type': 'http', 'url': 'https://mcp.notion.com/mcp'
 }
+d['mcpServers']['github'] = {
+  'type': 'stdio', 'command': 'npx',
+  'args': ['-y', '@modelcontextprotocol/server-github']
+}
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
 cat >> "${HOME}/.codex/config.toml" <<'EOF'
@@ -197,6 +201,10 @@ args = ["-y", "@drawio/mcp@latest"]
 
 [mcp_servers.notion]
 url = "https://mcp.notion.com/mcp"
+
+[mcp_servers.github]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-github"]
 EOF
 
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
@@ -205,14 +213,17 @@ assert_contains "${RUN_OUTPUT}" "legacy playwright MCP removed" "ai-repair shoul
 assert_contains "${RUN_OUTPUT}" "legacy filesystem MCP removed" "ai-repair should announce legacy filesystem removal"
 assert_contains "${RUN_OUTPUT}" "legacy drawio MCP removed" "ai-repair should announce legacy drawio removal"
 assert_contains "${RUN_OUTPUT}" "legacy notion MCP removed" "ai-repair should announce legacy notion removal"
+assert_contains "${RUN_OUTPUT}" "legacy github MCP removed" "ai-repair should announce legacy github removal"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should strip legacy playwright from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-filesystem' "ai-repair should strip legacy filesystem from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should strip legacy drawio from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'mcp.notion.com' "ai-repair should strip legacy notion from .claude.json"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-github' "ai-repair should strip legacy github from .claude.json"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright]' "ai-repair should strip legacy playwright section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright.tools.browser_navigate]' "ai-repair should strip legacy playwright tools subsections from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.filesystem]' "ai-repair should strip legacy filesystem section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.drawio]' "ai-repair should strip legacy drawio section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.notion]' "ai-repair should strip legacy notion section from Codex config"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.github]' "ai-repair should strip legacy github section from Codex config"
 
 pass_test "tests/ai-repair.sh"

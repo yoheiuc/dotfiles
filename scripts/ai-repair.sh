@@ -168,7 +168,8 @@ unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_owlocr_cmd c
 #   filesystem  → native Claude Code Read/Write/Edit/Grep/Glob tools
 #   drawio      → Mermaid (inline in .md) or mermaid-cli (mmdc) for PNG/SVG output
 #   notion      → ntn CLI + makenotion/skills (see post-setup.sh)
-for _legacy in playwright filesystem drawio notion; do
+#   github      → gh CLI (gh pr, gh issue, gh api …)
+for _legacy in playwright filesystem drawio notion github; do
   if [[ "$(ai_config_json_remove_mcp "${CLAUDE_JSON}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Claude Code: legacy ${_legacy} MCP removed"
     restart_needed=1
@@ -279,7 +280,7 @@ fi
 unset codex_chrome_devtools_cmd codex_chrome_devtools_args codex_owlocr_cmd codex_owlocr_args codex_exa_url codex_slack_url codex_brave_search_cmd
 
 # Strip legacy Codex MCP registrations retired in favor of CLIs / native tools.
-for _legacy in playwright filesystem drawio notion; do
+for _legacy in playwright filesystem drawio notion github; do
   if [[ "$(ai_config_toml_remove_mcp_section "${CODEX_CONFIG}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Codex: legacy ${_legacy} MCP removed"
     restart_needed=1
