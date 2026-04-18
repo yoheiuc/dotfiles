@@ -182,7 +182,6 @@ make doctor
 | `gcloud version` | Optional | gcloud CLI がある |
 | Python SSL compat | Optional | `sitecustomize.py` で `VERIFY_X509_STRICT` を無効化済み |
 | `ghostty --version` | Optional | Ghostty CLI が存在し、バージョンが取得できる |
-| `cmux --version` | Optional | cmux CLI が存在し、バージョンが取得できる |
 | `zellij --version` | Optional | `zellij` がある |
 | `ghq --version` | Optional | `ghq` がある |
 | `navi --version` | Optional | `navi` と cheatsheet がある |
@@ -367,21 +366,7 @@ playwright-cli install --skills       # Claude Code / Codex skill
 
 ## AI セッション
 
-AI エージェントを並行運用するためのターミナル構成です。
-
-### cmux（推奨）
-
-`cmux` は libghostty ベースの AI エージェント特化ターミナルです。Ghostty の `~/.config/ghostty/` をそのまま読むため、テーマ・フォント設定を共有できます。
-
-- タブに git branch / PR ステータス / 作業ディレクトリ / listening port を表示
-- AI エージェントが入力待ちになるとタブ・ペインがハイライト（Claude Code hooks 対応）
-- ターミナル横にスクリプタブルなブラウザペインを並べられる
-- セッション復元（ワークスペースがアプリ再起動後も残る）
-- Unix socket API / CLI で自動化可能
-
-### zellij（併用可）
-
-`zellij` は汎用のターミナルマルチプレクサとして引き続き使えます。
+AI エージェントを並行運用するためのターミナル構成です。`zellij` をマルチプレクサとして使います。
 
 `~/.config/zellij/config.kdl` は discoverability を少しだけ強めています。
 
