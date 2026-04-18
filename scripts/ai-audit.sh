@@ -140,7 +140,7 @@ check_claude_cmd_mcp() {
 _claude_json="${HOME}/.claude.json"
 if [[ -f "${_claude_json}" ]]; then
   check_claude_stdio_mcp "${_claude_json}" chrome-devtools "npx" '-y|chrome-devtools-mcp@latest'
-  check_claude_stdio_mcp "${_claude_json}" owlocr "bash" '-lc|uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp'
+  check_claude_stdio_mcp "${_claude_json}" vision "npx" '-y|@tuannvm/vision-mcp-server'
   check_claude_http_mcp  "${_claude_json}" exa "https://mcp.exa.ai/mcp"
   check_claude_http_mcp  "${_claude_json}" slack "https://mcp.slack.com/mcp"
   check_claude_cmd_mcp   "${_claude_json}" brave-search "${HOME}/.local/bin/mcp-with-keychain-secret"
@@ -151,8 +151,9 @@ if [[ -f "${_claude_json}" ]]; then
   #   drawio      → Mermaid (inline in .md) or mermaid-cli (mmdc)
   #   notion      → ntn CLI + makenotion/skills
   #   github      → gh CLI
+  #   owlocr      → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
   # Match on key presence so HTTP-type entries without `command` are still caught.
-  for _legacy in playwright filesystem drawio notion github; do
+  for _legacy in playwright filesystem drawio notion github owlocr; do
     if [[ "$(ai_config_json_read "${_claude_json}" "'present' if '${_legacy}' in d.get('mcpServers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
       attention "Claude Code ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi
@@ -201,7 +202,7 @@ if [[ -f "${_codex_config}" ]]; then
       ;;
   esac
 
-  for _server in chrome-devtools owlocr; do
+  for _server in chrome-devtools vision; do
     case "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('${_server}',{}).get('command','')" 2>/dev/null || true)" in
       "")
         attention "Codex ${_server} MCP: missing — run make ai-repair"
@@ -231,7 +232,8 @@ if [[ -f "${_codex_config}" ]]; then
   fi
 
   # Warn on legacy MCP entries that have been retired. Match on key presence.
-  for _legacy in playwright filesystem drawio notion github; do
+  # owlocr → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
+  for _legacy in playwright filesystem drawio notion github owlocr; do
     if [[ "$(ai_config_toml_read "${_codex_config}" "'present' if '${_legacy}' in d.get('mcp_servers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
       attention "Codex ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi

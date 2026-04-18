@@ -5,8 +5,8 @@
 - `local.ghostty` は共通設定から自動読込しない。使うマシンだけ手で有効化する。
 - `doctor.sh` は誤検知とハングしやすい箇所を修正済みで、required は通る。
 - Codex skill は repo 同梱方式に統一済みで、`post-setup.sh` で外部 clone しない。
-- `make ai-repair` で Serena config と Claude Code / Codex の MCP registration を期待値へ戻せる。旧 dotfiles が持っていた `playwright` / `filesystem` / `drawio` / `notion` MCP は再実行で自動的に削除される。
-- MCP baseline は `exa` / `brave-search` / `slack` / `serena` / `chrome-devtools` / `owlocr` / `sequential-thinking`。`slack` は公式 remote（HTTP + OAuth）、`notion` は MCP を外して公式 CLI (`ntn`) + `makenotion/skills` 配置に移行した。`owlocr` は macOS Vision framework + OwlOCR で画像 / PDF OCR（日本語含む）。ブラウザ操作は `@playwright/cli` + skill、ファイル操作は Claude Code の native tools、図は Mermaid（`.md` 直埋め or `mermaid-cli`）に寄せた。
+- `make ai-repair` で Serena config と Claude Code / Codex の MCP registration を期待値へ戻せる。旧 dotfiles が持っていた `playwright` / `filesystem` / `drawio` / `notion` / `github` / `owlocr` MCP は再実行で自動的に削除される。
+- MCP baseline は `exa` / `brave-search` / `slack` / `serena` / `chrome-devtools` / `vision` / `sequential-thinking`。`slack` は公式 remote（HTTP + OAuth）、`notion` は MCP を外して公式 CLI (`ntn`) + `makenotion/skills` 配置に移行した。`vision` は Apple Vision framework 経由の画像 OCR（`@tuannvm/vision-mcp-server`、`ja` / `en-US` / `zh-Hans` 等）。2026-04 に旧 `owlocr` から置き換え（upstream `jangisaac-dev/owlocr-mcp` が retire されたため）。ブラウザ操作は `@playwright/cli` + skill、ファイル操作は Claude Code の native tools、図は Mermaid（`.md` 直埋め or `mermaid-cli`）に寄せた。
 - 同梱 skill は `screenshot`, `doc`, `pdf`, `spreadsheet`, `jupyter-notebook`, `security-best-practices`, `ui-ux-pro-max`, `codex-auto-save-memory`。`playwright` skill は `post-setup.sh` が `playwright-cli install --skills` で配置するため dotfiles 本体では管理しない。
 - Claude Code は `~/.claude/CLAUDE.md` だけ管理し、`~/.claude/settings.json` はローカル管理にする。履歴や cache も管理しない。
 - Gemini CLI は `~/.gemini/settings.json` をローカル管理にし、認証・履歴・state も管理しない。

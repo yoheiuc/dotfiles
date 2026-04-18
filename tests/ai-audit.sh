@@ -106,9 +106,9 @@ args = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@mode
 command = "npx"
 args = ["-y", "chrome-devtools-mcp@latest"]
 
-[mcp_servers.owlocr]
-command = "bash"
-args = ["-lc", "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]
+[mcp_servers.vision]
+command = "npx"
+args = ["-y", "@tuannvm/vision-mcp-server"]
 
 [mcp_servers.serena]
 command = "${HOME}/.local/bin/serena-mcp"
@@ -136,10 +136,10 @@ cat > "${HOME}/.claude.json" <<EOF
       "command": "npx",
       "args": ["-y", "chrome-devtools-mcp@latest"]
     },
-    "owlocr": {
+    "vision": {
       "type": "stdio",
-      "command": "bash",
-      "args": ["-lc", "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]
+      "command": "npx",
+      "args": ["-y", "@tuannvm/vision-mcp-server"]
     },
     "brave-search": {
       "type": "stdio",
@@ -173,7 +173,7 @@ assert_contains "${RUN_OUTPUT}" "Claude settings: present" "ai-audit should repo
 assert_contains "${RUN_OUTPUT}" "Codex config: no legacy bridge settings detected" "ai-audit should scan codex config"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai-audit should validate Claude channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: registered" "ai-audit should validate Claude chrome-devtools MCP"
-assert_contains "${RUN_OUTPUT}" "Claude Code owlocr MCP: registered" "ai-audit should validate Claude owlocr MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: registered" "ai-audit should validate Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should validate Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: registered" "ai-audit should validate Claude Slack MCP"
@@ -183,7 +183,7 @@ assert_contains "${RUN_OUTPUT}" "Codex exa MCP: registered" "ai-audit should val
 assert_contains "${RUN_OUTPUT}" "Codex slack MCP: registered" "ai-audit should validate Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: registered" "ai-audit should validate Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: registered" "ai-audit should validate chrome-devtools MCP"
-assert_contains "${RUN_OUTPUT}" "Codex owlocr MCP: registered" "ai-audit should validate Codex owlocr MCP"
+assert_contains "${RUN_OUTPUT}" "Codex vision MCP: registered" "ai-audit should validate Codex vision MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: web_dashboard enabled" "ai-audit should validate Serena config"
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should report Claude MCP registration"
 assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: registered via wrapper" "ai-audit should report Codex MCP registration"
@@ -235,7 +235,7 @@ assert_contains "${RUN_OUTPUT}" "Codex config: legacy bridge or unsafe approval 
 assert_contains "${RUN_OUTPUT}" "Claude settings: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy claude settings"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be latest" "ai-audit should detect Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: missing or drifted" "ai-audit should detect missing Claude chrome-devtools MCP"
-assert_contains "${RUN_OUTPUT}" "Claude Code owlocr MCP: missing or drifted" "ai-audit should detect missing Claude owlocr MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: missing or drifted" "ai-audit should detect missing Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: missing or drifted" "ai-audit should detect missing Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: missing or drifted" "ai-audit should detect missing Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: missing or drifted" "ai-audit should detect missing Claude Slack MCP"
@@ -247,7 +247,7 @@ assert_contains "${RUN_OUTPUT}" "Codex exa MCP: missing" "ai-audit should detect
 assert_contains "${RUN_OUTPUT}" "Codex slack MCP: missing" "ai-audit should detect missing Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: missing" "ai-audit should detect missing Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: missing" "ai-audit should detect missing chrome-devtools MCP"
-assert_contains "${RUN_OUTPUT}" "Codex owlocr MCP: missing" "ai-audit should detect missing owlocr MCP"
+assert_contains "${RUN_OUTPUT}" "Codex vision MCP: missing" "ai-audit should detect missing Codex vision MCP"
 assert_contains "${RUN_OUTPUT}" "Codex config backups: found backup files to review or delete" "ai-audit should report backup files"
 assert_contains "${RUN_OUTPUT}" "AI config audit needs attention:" "ai-audit should summarize warnings"
 
@@ -295,6 +295,10 @@ url = "https://mcp.notion.com/mcp"
 command = "npx"
 args = ["-y", "@modelcontextprotocol/server-github"]
 
+[mcp_servers.owlocr]
+command = "bash"
+args = ["-lc", "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]
+
 [mcp_servers.serena]
 command = "${HOME}/.local/bin/serena-mcp"
 args = ["codex"]
@@ -310,6 +314,7 @@ cat > "${HOME}/.claude.json" <<EOF
     "drawio": {"type":"stdio","command":"npx","args":["-y","@drawio/mcp@latest"]},
     "notion": {"type":"http","url":"https://mcp.notion.com/mcp"},
     "github": {"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-github"]},
+    "owlocr": {"type":"stdio","command":"bash","args":["-lc","uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]},
     "serena": {"type":"stdio","command":"${HOME}/.local/bin/serena-mcp","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}
   }
 }
@@ -337,5 +342,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code notion MCP: legacy entry present" "
 assert_contains "${RUN_OUTPUT}" "Codex notion MCP: legacy entry present" "ai-audit should flag legacy Codex notion MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code github MCP: legacy entry present" "ai-audit should flag legacy Claude Code github MCP"
 assert_contains "${RUN_OUTPUT}" "Codex github MCP: legacy entry present" "ai-audit should flag legacy Codex github MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code owlocr MCP: legacy entry present" "ai-audit should flag legacy Claude Code owlocr MCP"
+assert_contains "${RUN_OUTPUT}" "Codex owlocr MCP: legacy entry present" "ai-audit should flag legacy Codex owlocr MCP"
 
 pass_test "tests/ai-audit.sh"
