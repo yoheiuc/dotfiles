@@ -41,6 +41,7 @@ brew "eza"                # modern ls
 brew "yazi"               # TUI file manager
 brew "difftastic"         # structural diff (complements git-delta)
 brew "poppler"            # PDF utilities (pdftoppm, pdfinfo, etc.)
+brew "mermaid-cli"        # Mermaid → PNG/SVG/PDF (mmdc)
 brew "vim"
 brew "micro"              # simple terminal text editor
 
