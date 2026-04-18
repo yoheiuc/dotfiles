@@ -122,12 +122,15 @@ else
   warn "playwright-cli install-browser failed — run manually: playwright-cli install-browser"
 fi
 
-# Install skill files into ~/.claude/skills/playwright and ~/.codex/skills/playwright.
-# The CLI manages these at install time; dotfiles do not track the skill content.
-if playwright-cli install --skills; then
+# Install skill files into ~/.claude/skills/playwright-cli.
+# `playwright-cli install --skills` is CWD-relative and writes to
+# `./.claude/skills/playwright-cli`, so force the CWD to $HOME — otherwise the
+# skill dir lands wherever post-setup happens to be invoked from
+# (e.g. the dotfiles checkout).
+if (cd "${HOME}" && playwright-cli install --skills); then
   ok "playwright-cli: skills installed for Claude Code and Codex"
 else
-  warn "playwright-cli install --skills failed — run manually: playwright-cli install --skills"
+  warn "playwright-cli install --skills failed — run manually from \$HOME: (cd \"\${HOME}\" && playwright-cli install --skills)"
 fi
 
 # ---- Aider CLI -------------------------------------------------------------
