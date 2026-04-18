@@ -88,11 +88,16 @@ EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
 # not secrets. OAuth tokens themselves are managed by Claude Code, not dotfiles.
 SLACK_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.slack.com/mcp","oauth":{"clientId":"1601185624273.8899143856786","callbackPort":3118}}'
 CHROME_DEVTOOLS_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@latest"]}'
+# owlocr-mcp runs via uvx from GitHub (no local clone; uvx handles caching).
+# Same pattern as Serena. Requires macOS (Vision framework) + uv installed.
+OWLOCR_CLAUDE_ENTRY='{"type":"stdio","command":"bash","args":["-lc","uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]}'
 BRAVE_SEARCH_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["BRAVE_API_KEY","dotfiles.ai.mcp","brave-api-key","npx","-y","@modelcontextprotocol/server-brave-search"]}'
 serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
 serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
 claude_chrome_devtools_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
 claude_chrome_devtools_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
+claude_owlocr_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('owlocr',{}).get('command','')" 2>/dev/null || true)"
+claude_owlocr_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('owlocr',{}).get('args',[]))" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 claude_slack_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
 claude_brave_search_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
@@ -118,6 +123,16 @@ else
   ok "Claude Code: chrome-devtools MCP already registered"
 fi
 
+_owlocr_expected_args='-lc|uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp'
+if [[ "${claude_owlocr_cmd}" != "bash" || "${claude_owlocr_args}" != "${_owlocr_expected_args}" ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" owlocr "${OWLOCR_CLAUDE_ENTRY}"
+  ok "Claude Code: owlocr MCP registered"
+  restart_needed=1
+else
+  ok "Claude Code: owlocr MCP already registered"
+fi
+unset _owlocr_expected_args
+
 if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" exa "${EXA_CLAUDE_ENTRY}"
   ok "Claude Code: exa MCP registered"
@@ -142,7 +157,7 @@ else
   ok "Claude Code: brave-search MCP already registered"
 fi
 
-unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_exa_url claude_slack_url claude_brave_search_cmd
+unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_owlocr_cmd claude_owlocr_args claude_exa_url claude_slack_url claude_brave_search_cmd
 
 # Strip legacy MCP registrations that have been retired.
 #   playwright  → @playwright/cli + skill (see post-setup.sh)
@@ -209,6 +224,8 @@ esac
 
 codex_chrome_devtools_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
 codex_chrome_devtools_args="$(ai_config_toml_read "${CODEX_CONFIG}" "'|'.join(d.get('mcp_servers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
+codex_owlocr_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('owlocr',{}).get('command','')" 2>/dev/null || true)"
+codex_owlocr_args="$(ai_config_toml_read "${CODEX_CONFIG}" "'|'.join(d.get('mcp_servers',{}).get('owlocr',{}).get('args',[]))" 2>/dev/null || true)"
 codex_exa_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 codex_slack_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
 codex_brave_search_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
@@ -220,6 +237,16 @@ if [[ "${codex_chrome_devtools_cmd}" != "npx" || "${codex_chrome_devtools_args}"
 else
   ok "Codex: chrome-devtools MCP already registered"
 fi
+
+_codex_owlocr_expected_args='-lc|uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp'
+if [[ "${codex_owlocr_cmd}" != "bash" || "${codex_owlocr_args}" != "${_codex_owlocr_expected_args}" ]]; then
+  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.owlocr]" $'command = "bash"\nargs = ["-lc", "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]'
+  ok "Codex: owlocr MCP registered"
+  restart_needed=1
+else
+  ok "Codex: owlocr MCP already registered"
+fi
+unset _codex_owlocr_expected_args
 
 if [[ "${codex_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
   ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
@@ -245,7 +272,7 @@ else
   ok "Codex: brave-search MCP already registered"
 fi
 
-unset codex_chrome_devtools_cmd codex_chrome_devtools_args codex_exa_url codex_slack_url codex_brave_search_cmd
+unset codex_chrome_devtools_cmd codex_chrome_devtools_args codex_owlocr_cmd codex_owlocr_args codex_exa_url codex_slack_url codex_brave_search_cmd
 
 # Strip legacy Codex MCP registrations retired in favor of CLIs / native tools.
 for _legacy in playwright filesystem drawio notion; do

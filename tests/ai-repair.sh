@@ -130,6 +130,8 @@ assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-rep
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should not register retired Playwright MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"chrome-devtools"' "ai-repair should register chrome-devtools MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should set Claude chrome-devtools MCP args"
+assert_contains "$(cat "${HOME}/.claude.json")" '"owlocr"' "ai-repair should register owlocr MCP for Claude Code"
+assert_contains "$(cat "${HOME}/.claude.json")" 'jangisaac-dev/owlocr-mcp' "ai-repair should set Claude owlocr MCP args"
 assert_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-repair should register Brave Search MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" 'mcp-with-keychain-secret' "ai-repair should route Claude Brave Search MCP through the keychain wrapper"
 assert_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should set Claude Brave Search MCP args"
@@ -139,6 +141,8 @@ assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.playwrig
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@playwright/mcp@latest" "ai-repair should not set retired Playwright MCP args in Codex"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.chrome-devtools]" "ai-repair should add chrome-devtools MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "chrome-devtools-mcp@latest" "ai-repair should set chrome-devtools MCP command args"
+assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.owlocr]" "ai-repair should add owlocr MCP section"
+assert_contains "$(cat "${HOME}/.codex/config.toml")" "jangisaac-dev/owlocr-mcp" "ai-repair should set owlocr MCP command args"
 
 # Re-run should be idempotent
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"

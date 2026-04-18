@@ -3,6 +3,17 @@
     "ENABLE_TOOL_SEARCH": "auto:5"
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/lsp-hint.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",

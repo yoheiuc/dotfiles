@@ -19,6 +19,13 @@
         "chrome-devtools-mcp@latest"
       ]
     },
+    "owlocr": {
+      "command": "bash",
+      "args": [
+        "-lc",
+        "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"
+      ]
+    },
     "brave-search": {
       "command": "bash",
       "args": [
