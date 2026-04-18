@@ -47,7 +47,6 @@ jobs:
           chezmoi execute-template < home/dot_codex/config.toml.tmpl | yq eval . > /dev/null
 
           # JSON Validation
-          jq . home/dot_claude/settings.json > /dev/null
           jq . home/dot_claude/dot_mcp.json > /dev/null
           jq . home/dot_gemini/settings.json > /dev/null
 

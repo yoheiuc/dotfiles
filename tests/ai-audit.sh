@@ -116,7 +116,16 @@ args = ["codex"]
 EOF
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
-  "autoUpdatesChannel": "latest"
+  "autoUpdatesChannel": "latest",
+  "env": {"ENABLE_TOOL_SEARCH": "auto:5"},
+  "hooks": {
+    "PreToolUse": [
+      {"matcher": "Grep", "hooks": [{"type": "command", "command": "$HOME/.claude/lsp-hint.sh"}]}
+    ],
+    "Stop": [
+      {"matcher": "", "hooks": [{"type": "command", "command": "$HOME/.claude/auto-save.sh"}]}
+    ]
+  }
 }
 EOF
 cat > "${HOME}/.claude.json" <<EOF
@@ -172,6 +181,9 @@ assert_contains "${RUN_OUTPUT}" "Codex config: present" "ai-audit should report 
 assert_contains "${RUN_OUTPUT}" "Claude settings: present" "ai-audit should report local claude settings"
 assert_contains "${RUN_OUTPUT}" "Codex config: no legacy bridge settings detected" "ai-audit should scan codex config"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai-audit should validate Claude channel"
+assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env is set" "ai-audit should validate ENABLE_TOOL_SEARCH env"
+assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/lsp-hint.sh)" "ai-audit should validate lsp-hint hook"
+assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/auto-save.sh)" "ai-audit should validate auto-save hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: registered" "ai-audit should validate Claude chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: registered" "ai-audit should validate Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should validate Claude Brave Search MCP"
@@ -234,6 +246,9 @@ assert_contains "${RUN_OUTPUT}" "Gemini settings: missing" "ai-audit should warn
 assert_contains "${RUN_OUTPUT}" "Codex config: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy codex settings"
 assert_contains "${RUN_OUTPUT}" "Claude settings: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy claude settings"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be latest" "ai-audit should detect Claude channel drift"
+assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5" "ai-audit should detect missing ENABLE_TOOL_SEARCH env"
+assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/lsp-hint.sh)" "ai-audit should detect missing lsp-hint hook"
+assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/auto-save.sh)" "ai-audit should detect missing auto-save hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: missing or drifted" "ai-audit should detect missing Claude chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: missing or drifted" "ai-audit should detect missing Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: missing or drifted" "ai-audit should detect missing Claude Brave Search MCP"
@@ -321,7 +336,18 @@ cat > "${HOME}/.claude.json" <<EOF
 EOF
 rm -f "${HOME}/.codex/config.toml.pre-unmanage-test"
 cat > "${HOME}/.claude/settings.json" <<'EOF'
-{"autoUpdatesChannel":"latest"}
+{
+  "autoUpdatesChannel": "latest",
+  "env": {"ENABLE_TOOL_SEARCH": "auto:5"},
+  "hooks": {
+    "PreToolUse": [
+      {"matcher": "Grep", "hooks": [{"type": "command", "command": "$HOME/.claude/lsp-hint.sh"}]}
+    ],
+    "Stop": [
+      {"matcher": "", "hooks": [{"type": "command", "command": "$HOME/.claude/auto-save.sh"}]}
+    ]
+  }
+}
 EOF
 cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
 language_backend: LSP

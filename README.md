@@ -572,15 +572,17 @@ config-file = local.ghostty
 
 ## Claude Code / Codex / MCP
 
-`~/.claude/settings.json` は chezmoi 管理にしています。主な設定:
+`~/.claude/settings.json` 本体はローカル管理です（Claude Code 自身が `permissions` / `model` / `effortLevel` / `statusLine` を随時書き込むため、dotfiles が全体を所有すると必ず drift する）。dotfiles は **baseline キーだけ** を `make ai-repair` で upsert し、それ以外のキーは触りません。
 
-- `permissions.defaultMode: "auto"` で AI 分類器による自動許可を有効化。`WebFetch` / `WebSearch` も auto-allow
-- 危険な操作（`curl`, `wget`, `rm`, `sudo` 等）は deny リストでブロック。`git push` 等は ask で確認を挟む
-- `effortLevel: "auto"`、`model: "opus[1m]"`
-- `ENABLE_TOOL_SEARCH: "auto:5"` でツール検索を自動化
-- `hooks.Stop` で `auto-save.sh` を実行（コンテキスト使用率が高い場合にメモリを自動保存）
-- `hooks.Notification` で macOS 通知（osascript）を表示
-- `statusLine` で `statusline.sh` 経由のカスタムステータスライン表示
+baseline として保証されるのは以下:
+
+- `autoUpdatesChannel: "latest"`
+- `env.ENABLE_TOOL_SEARCH: "auto:5"` でツール検索を自動化
+- `hooks.PreToolUse` Grep → `lsp-hint.sh`（Serena 推奨を stderr で提示、block はしない）
+- `hooks.Stop` → `auto-save.sh`（コンテキスト使用率が高い場合にメモリを自動保存）
+- `hooks.Notification` → macOS 通知（osascript）
+
+`permissions` / `model` / `effortLevel` / `statusLine` は各マシンで自由に変えられます。`make ai-audit` は baseline キーの存在だけを検査します。
 
 `~/.claude/CLAUDE.md` も chezmoi 管理にしており、個人用の共通メモ・MCP ツール選択ルール・Serena の使い方を置きます。
 
@@ -692,7 +694,8 @@ Superpowers は 14 skill の agent discipline framework（clarify → design →
 
 Claude Code、Codex、Gemini CLI は、共通設定とローカル state を分けて管理します。
 
-- Claude Code は `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/statusline.sh`、`~/.claude/auto-save.sh`、`~/.claude/lsp-hint.sh`、`commands/`、`.mcp.json` を dotfiles 管理する
+- Claude Code は `~/.claude/CLAUDE.md`、`~/.claude/statusline.sh`、`~/.claude/auto-save.sh`、`~/.claude/lsp-hint.sh`、`commands/`、`.mcp.json` を dotfiles 管理する
+- `~/.claude/settings.json` 本体はローカル管理（Claude Code が `permissions` / `model` / `effortLevel` / `statusLine` を随時書き込むため）。baseline キー（`autoUpdatesChannel` / `env.ENABLE_TOOL_SEARCH` / `hooks`）だけ `make ai-repair` が upsert する
 - `~/.claude/settings.local.json` はマシン固有のオーバーライド用でローカル管理
 - `~/.claude/skills/`（gws skills 等）は `post-setup.sh` が配置し、dotfiles 本体では管理しない
 - `~/.claude/history.jsonl`、`projects/`、`sessions/`、`cache/`、`plugins/` などの運用データは管理しない
@@ -722,7 +725,6 @@ dotfiles/
 │   ├── dot_python-version          # -> ~/.python-version
 │   ├── dot_claude/
 │   │   ├── CLAUDE.md               # -> ~/.claude/CLAUDE.md (MCP 選択ルール・Serena 運用)
-│   │   ├── settings.json           # -> ~/.claude/settings.json (auto mode + hooks + permissions)
 │   │   ├── executable_statusline.sh # -> ~/.claude/statusline.sh
 │   │   ├── executable_auto-save.sh # -> ~/.claude/auto-save.sh
 │   │   ├── executable_lsp-hint.sh  # -> ~/.claude/lsp-hint.sh (PreToolUse advisory)

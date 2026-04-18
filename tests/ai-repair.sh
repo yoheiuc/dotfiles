@@ -90,10 +90,35 @@ assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when creating missing Se
 assert_contains "${RUN_OUTPUT}" "Created Serena config" "ai-repair should create Serena config when missing"
 assert_contains "${RUN_OUTPUT}" "serena registration created" "ai-repair should register Serena for Claude Code"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel set to latest" "ai-repair should normalize Claude Code channel"
+assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env set" "ai-repair should set ENABLE_TOOL_SEARCH env"
+assert_contains "${RUN_OUTPUT}" "Claude Code: hooks reset to baseline" "ai-repair should install baseline hooks"
 assert_contains "${RUN_OUTPUT}" "Codex: baseline model/sandbox settings normalized" "ai-repair should normalize Codex baseline"
 assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP registered" "ai-repair should register Docs MCP"
 assert_contains "$(cat "${HOME}/.serena/serena_config.yml")" 'project_serena_folder_location: "$projectDir/.serena"' "ai-repair should write the expected Serena config"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"autoUpdatesChannel": "latest"' "ai-repair should write Claude auto-update channel"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"ENABLE_TOOL_SEARCH": "auto:5"' "ai-repair should write ENABLE_TOOL_SEARCH env toggle"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/lsp-hint.sh"' "ai-repair should wire lsp-hint PreToolUse hook"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/auto-save.sh"' "ai-repair should wire auto-save Stop hook"
+
+# Local-managed keys (permissions / model / effortLevel / statusLine) must be
+# preserved: Claude Code writes them itself, dotfiles must not clobber them.
+python3 -c "
+import json
+p = '${HOME}/.claude/settings.json'
+with open(p) as f: d = json.load(f)
+d['permissions'] = {'allow': ['Read(*)'], 'deny': ['Bash(rm*)']}
+d['model'] = 'opus[1m]'
+d['effortLevel'] = 'high'
+d['statusLine'] = {'type': 'command', 'command': 'my-statusline'}
+with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
+"
+run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
+assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on re-run after user-local edits"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"Read(*)"' "ai-repair must preserve user-managed permissions.allow"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"Bash(rm*)"' "ai-repair must preserve user-managed permissions.deny"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"model": "opus[1m]"' "ai-repair must preserve user-managed model"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"effortLevel": "high"' "ai-repair must preserve user-managed effortLevel"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "my-statusline"' "ai-repair must preserve user-managed statusLine"
 
 # Verify Claude Code JSON registration
 claude_json_cmd="$(python3 -c "import json; d=json.load(open('${HOME}/.claude.json')); print(d['mcpServers']['serena']['command'])")"
