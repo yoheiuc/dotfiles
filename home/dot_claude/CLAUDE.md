@@ -25,6 +25,26 @@
 | パフォーマンス・ネットワーク問題 | `mcp__chrome-devtools__*` で実測する |
 | コード構造の理解・リファクタ | Serena（下記） |
 
+## ツール選択の基準（MCP / CLI / 削除）
+
+新しいツールを足すか迷ったら、以下のマトリクスで判断する。dotfiles リポジトリ内の運用チェックリスト（更新すべきファイル一覧など）は `~/dotfiles/CLAUDE.md` 側にある。
+
+| 状況 | 採用方式 |
+|---|---|
+| 公式 CLI + 公式 skill が揃っている | **CLI + skill**（例：`playwright-cli`、`ntn`） |
+| 公式 CLI なし、公式 remote MCP がある（OAuth 認証） | **remote HTTP MCP**（例：Slack、Exa） |
+| Local stdio MCP に credential を渡す必要がある | `mcp-with-keychain-secret` wrapper 経由（例：Brave Search） |
+| agent context との tight integration が本質 | **MCP**（例：Serena、chrome-devtools、sequential-thinking） |
+| Claude Code の native tool（Read / Write / Edit / Grep / Glob）で代替できる | **削除 / 不採用** |
+| text diff フレンドリーな代替がある | **代替に移行**（例：drawio MCP → Mermaid） |
+
+優先順位の理由：
+- **CLI + skill > MCP**：token 効率（CLI 出力は pipe / file へ流せる、tool schema は毎ターン context を食う）、scripted 用途（cron / CI / Claude Code 起動外でも使える）、長時間セッション（state をディスクに持てる）
+- **remote MCP > local stdio MCP**：subprocess を起こさない、OAuth token 管理を agent 側に集約、Keychain 不要
+- **MCP > CLI**：CLI 化で `mcp__*__*` の tool 単位 schema 配信が失われると価値が消える tight integration（symbol 解析、ライブ DOM 観測等）
+
+迷ったら dotfiles の commit log（PR #26 = Playwright、#28 = Notion）を見る。同じ議論を繰り返さない。
+
 ## Serena MCP
 
 Serena は LSP ベースのコード解析ツール。Grep/テキスト検索より正確な結果が得られる場面では積極的に使う。
