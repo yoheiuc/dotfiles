@@ -20,9 +20,22 @@ alias mv='mv -i'
 
 
 # AI tools
-alias cc='claude'
-alias ccc='claude --continue'
-alias ccr='claude --resume'
+# `-D` を `--dangerously-skip-permissions` に展開する共通ラッパ。
+# （claude native の `-d` は `--debug` なので、衝突を避けて大文字 `-D` を採用）
+_cc() {
+  local a args=()
+  for a in "$@"; do
+    if [[ "$a" == "-D" ]]; then
+      args+=(--dangerously-skip-permissions)
+    else
+      args+=("$a")
+    fi
+  done
+  command claude "${args[@]}"
+}
+cc()  { _cc "$@"; }
+ccc() { _cc --continue "$@"; }
+ccr() { _cc --resume "$@"; }
 
 # Repository navigation
 alias qcd='cd "$(ghq root)/$(ghq list | fzf)"'
