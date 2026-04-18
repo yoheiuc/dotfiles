@@ -95,6 +95,7 @@ test-scripts: ## shell スクリプトの回帰テストを実行
 	bash tests/dothelp.sh
 	bash tests/status.sh
 	bash tests/ai-audit.sh
+	bash tests/playwright-zsh.sh
 
 uninstall: ## dotfiles をアンインストール
 	bash scripts/uninstall.sh

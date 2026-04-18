@@ -15,11 +15,13 @@ ZSH_CONFIG="${XDG_CONFIG_HOME}/zsh"
 #   3. tools.zsh      Tool hooks and wrappers (codex / starship / zoxide / atuin / fzf)
 #                     Must come after env so $HOMEBREW_PREFIX is set;
 #                     must come before completion so hooks can register completions.
-#   4. completion.zsh compinit
+#   4. playwright.zsh Playwright CLI session helpers (pwsession / pwlogin / ...)
+#                     Must come after env so PATH includes npm-global bins.
+#   5. completion.zsh compinit
 #                     Must be last: compinit picks up completions added by all
 #                     previous modules. Running it earlier would miss some.
 
-for _module in env aliases tools completion; do
+for _module in env aliases tools playwright completion; do
   _file="${ZSH_CONFIG}/${_module}.zsh"
   # Skip silently if module is missing — avoids hard failure on partial installs.
   [[ -f "$_file" ]] && source "$_file"

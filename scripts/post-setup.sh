@@ -91,6 +91,45 @@ else
   fi
 fi
 
+# ---- Playwright CLI --------------------------------------------------------
+log "Playwright CLI..."
+
+if command -v playwright-cli &>/dev/null; then
+  ok "playwright-cli already installed: $(playwright-cli --version 2>/dev/null | head -1 || true)"
+else
+  if ! command -v npm &>/dev/null; then
+    warn "npm not found — install the core Brew profile first."
+    exit 1
+  fi
+
+  log "Installing @playwright/cli via npm..."
+  npm install -g @playwright/cli@latest
+  hash -r
+  if command -v playwright-cli &>/dev/null; then
+    ok "playwright-cli installed: $(playwright-cli --version 2>/dev/null | head -1 || true)"
+  else
+    warn "playwright-cli still not found after install — open a new terminal and re-run."
+    exit 1
+  fi
+fi
+
+# Install Chromium browser (idempotent — CLI detects existing binaries).
+# Don't silence output: Chromium download can take minutes on slow networks and
+# the user should see progress.
+if playwright-cli install-browser; then
+  ok "playwright-cli: Chromium ready"
+else
+  warn "playwright-cli install-browser failed — run manually: playwright-cli install-browser"
+fi
+
+# Install skill files into ~/.claude/skills/playwright and ~/.codex/skills/playwright.
+# The CLI manages these at install time; dotfiles do not track the skill content.
+if playwright-cli install --skills; then
+  ok "playwright-cli: skills installed for Claude Code and Codex"
+else
+  warn "playwright-cli install --skills failed — run manually: playwright-cli install --skills"
+fi
+
 # ---- Aider CLI -------------------------------------------------------------
 log "Aider CLI..."
 

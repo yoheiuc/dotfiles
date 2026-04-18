@@ -120,6 +120,66 @@ with open(fpath, 'w') as f:
 " "${file}" "${name}" "${value}"
 }
 
+# Remove an entry from a JSON file's mcpServers map. No-op if absent.
+# Usage: ai_config_json_remove_mcp <file> <server_name>
+# Prints "removed" if the key existed (and was stripped), "absent" otherwise.
+ai_config_json_remove_mcp() {
+  local file="$1"
+  local name="$2"
+  [[ -f "${file}" ]] || { printf 'absent\n'; return 0; }
+  python3 -c "
+import json, sys
+
+fpath = sys.argv[1]
+name  = sys.argv[2]
+
+with open(fpath) as f:
+    d = json.load(f)
+
+servers = d.get('mcpServers', {})
+if name in servers:
+    del servers[name]
+    with open(fpath, 'w') as f:
+        json.dump(d, f, indent=2)
+        f.write('\n')
+    print('removed')
+else:
+    print('absent')
+" "${file}" "${name}"
+}
+
+# Remove a [mcp_servers.<name>] section and any [mcp_servers.<name>.*] child
+# sections from a TOML file. No-op if absent.
+# Usage: ai_config_toml_remove_mcp_section <file> <server_name>
+# Prints "removed" if any section was stripped, "absent" otherwise.
+ai_config_toml_remove_mcp_section() {
+  local file="$1"
+  local name="$2"
+  [[ -f "${file}" ]] || { printf 'absent\n'; return 0; }
+  python3 -c "
+import pathlib, re, sys
+
+fpath = pathlib.Path(sys.argv[1]).expanduser()
+name  = sys.argv[2]
+content = fpath.read_text()
+
+# Match the exact [mcp_servers.<name>] header or any [mcp_servers.<name>.<...>]
+# child header, and the body up to the next section.
+pattern = re.compile(
+    r'(?m)^\[mcp_servers\.' + re.escape(name) + r'(?:\..*)?\]\s*\n(?:^(?!\[).*(?:\n|$))*'
+)
+new_content, count = pattern.subn('', content)
+if count == 0:
+    print('absent')
+    sys.exit(0)
+
+# Collapse runs of 3+ blank lines left behind by removal into a single blank line.
+new_content = re.sub(r'\n{3,}', '\n\n', new_content)
+fpath.write_text(new_content.rstrip('\n') + '\n')
+print('removed')
+" "${file}" "${name}"
+}
+
 # Upsert a top-level JSON key.
 # Usage: ai_config_json_upsert_key <file> <key> <json_value>
 ai_config_json_upsert_key() {
