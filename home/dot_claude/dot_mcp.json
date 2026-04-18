@@ -1,12 +1,5 @@
 {
   "mcpServers": {
-    "filesystem": {
-      "command": "bash",
-      "args": [
-        "-lc",
-        "npx -y @modelcontextprotocol/server-filesystem \"$HOME\""
-      ]
-    },
     "exa": {
       "type": "http",
       "url": "https://mcp.exa.ai/mcp"

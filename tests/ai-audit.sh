@@ -92,10 +92,6 @@ codex_hooks = true
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
 
-[mcp_servers.filesystem]
-command = "bash"
-args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]
-
 [mcp_servers.exa]
 url = "https://mcp.exa.ai/mcp"
 
@@ -123,11 +119,6 @@ EOF
 cat > "${HOME}/.claude.json" <<EOF
 {
   "mcpServers": {
-    "filesystem": {
-      "type": "stdio",
-      "command": "bash",
-      "args": ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]
-    },
     "exa": {
       "type": "http",
       "url": "https://mcp.exa.ai/mcp"
@@ -173,14 +164,12 @@ assert_contains "${RUN_OUTPUT}" "Codex config: present" "ai-audit should report 
 assert_contains "${RUN_OUTPUT}" "Claude settings: present" "ai-audit should report local claude settings"
 assert_contains "${RUN_OUTPUT}" "Codex config: no legacy bridge settings detected" "ai-audit should scan codex config"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai-audit should validate Claude channel"
-assert_contains "${RUN_OUTPUT}" "Claude Code filesystem MCP: registered" "ai-audit should validate Claude filesystem MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code drawio MCP: registered" "ai-audit should validate Claude drawio MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: registered" "ai-audit should validate Claude chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should validate Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Codex: sandbox mode is workspace-write" "ai-audit should validate Codex sandbox"
 assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: registered" "ai-audit should validate Docs MCP"
-assert_contains "${RUN_OUTPUT}" "Codex filesystem MCP: registered" "ai-audit should validate filesystem MCP"
 assert_contains "${RUN_OUTPUT}" "Codex exa MCP: registered" "ai-audit should validate Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: registered" "ai-audit should validate Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Codex drawio MCP: registered" "ai-audit should validate drawio MCP"
@@ -234,7 +223,6 @@ assert_contains "${RUN_OUTPUT}" "Gemini settings: missing" "ai-audit should warn
 assert_contains "${RUN_OUTPUT}" "Codex config: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy codex settings"
 assert_contains "${RUN_OUTPUT}" "Claude settings: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy claude settings"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be latest" "ai-audit should detect Claude channel drift"
-assert_contains "${RUN_OUTPUT}" "Claude Code filesystem MCP: missing or drifted" "ai-audit should detect missing Claude filesystem MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code drawio MCP: missing or drifted" "ai-audit should detect missing Claude drawio MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: missing or drifted" "ai-audit should detect missing Claude chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: missing or drifted" "ai-audit should detect missing Claude Brave Search MCP"
@@ -243,7 +231,6 @@ assert_contains "${RUN_OUTPUT}" "Serena config: language_backend should be LSP" 
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should detect Claude MCP registration"
 assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: registered via wrapper" "ai-audit should detect Codex wrapper registration"
 assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: missing" "ai-audit should detect missing Docs MCP"
-assert_contains "${RUN_OUTPUT}" "Codex filesystem MCP: missing" "ai-audit should detect missing filesystem MCP"
 assert_contains "${RUN_OUTPUT}" "Codex exa MCP: missing" "ai-audit should detect missing Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: missing" "ai-audit should detect missing Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Codex drawio MCP: missing" "ai-audit should detect missing drawio MCP"
@@ -251,7 +238,7 @@ assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: missing" "ai-audit s
 assert_contains "${RUN_OUTPUT}" "Codex config backups: found backup files to review or delete" "ai-audit should report backup files"
 assert_contains "${RUN_OUTPUT}" "AI config audit needs attention:" "ai-audit should summarize warnings"
 
-# ---- Scenario 3: legacy playwright MCP still present ----
+# ---- Scenario 3: legacy MCP entries (playwright, filesystem) still present ----
 cat > "${HOME}/.codex/config.toml" <<EOF
 model = "gpt-5.4"
 model_reasoning_effort = "medium"
@@ -264,10 +251,6 @@ codex_hooks = true
 
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
-
-[mcp_servers.filesystem]
-command = "bash"
-args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]
 
 [mcp_servers.exa]
 url = "https://mcp.exa.ai/mcp"
@@ -288,6 +271,10 @@ args = ["-y", "chrome-devtools-mcp@latest"]
 command = "npx"
 args = ["-y", "@playwright/mcp@latest"]
 
+[mcp_servers.filesystem]
+command = "bash"
+args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]
+
 [mcp_servers.serena]
 command = "${HOME}/.local/bin/serena-mcp"
 args = ["codex"]
@@ -295,12 +282,12 @@ EOF
 cat > "${HOME}/.claude.json" <<EOF
 {
   "mcpServers": {
-    "filesystem": {"type":"stdio","command":"bash","args":["-lc","npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]},
     "exa": {"type":"http","url":"https://mcp.exa.ai/mcp"},
     "drawio": {"type":"stdio","command":"npx","args":["-y","@drawio/mcp@latest"]},
     "chrome-devtools": {"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@latest"]},
     "brave-search": {"type":"stdio","command":"${HOME}/.local/bin/mcp-with-keychain-secret","args":["BRAVE_API_KEY","dotfiles.ai.mcp","brave-api-key","npx","-y","@modelcontextprotocol/server-brave-search"]},
     "playwright": {"type":"stdio","command":"npx","args":["-y","@playwright/mcp@latest"]},
+    "filesystem": {"type":"stdio","command":"bash","args":["-lc","npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]},
     "serena": {"type":"stdio","command":"${HOME}/.local/bin/serena-mcp","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}
   }
 }
@@ -317,8 +304,10 @@ project_serena_folder_location: "$projectDir/.serena"
 EOF
 
 run_capture bash "${tmpdir}/scripts/ai-audit.sh"
-assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational when legacy playwright MCP is present"
+assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational when legacy MCPs are present"
 assert_contains "${RUN_OUTPUT}" "Claude Code playwright MCP: legacy entry present" "ai-audit should flag legacy Claude Code playwright MCP"
 assert_contains "${RUN_OUTPUT}" "Codex playwright MCP: legacy entry present" "ai-audit should flag legacy Codex playwright MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code filesystem MCP: legacy entry present" "ai-audit should flag legacy Claude Code filesystem MCP"
+assert_contains "${RUN_OUTPUT}" "Codex filesystem MCP: legacy entry present" "ai-audit should flag legacy Codex filesystem MCP"
 
 pass_test "tests/ai-audit.sh"
