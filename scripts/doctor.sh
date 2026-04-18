@@ -172,6 +172,21 @@ fi
 # OPTIONAL checks — warn only, never fail the script
 # ===========================================================================
 
+section "zsh compinit security (optional)"
+if command -v zsh &>/dev/null; then
+  _compaudit_out="$(zsh -fc 'autoload -Uz compaudit; compaudit' 2>/dev/null || true)"
+  if [[ -z "${_compaudit_out}" ]]; then
+    ok "compaudit: no insecure directories"
+  else
+    warn "compaudit flagged insecure directories (triggers compinit prompt on shell start):"
+    printf '%s\n' "${_compaudit_out}" | sed 's/^/    /'
+    warn "  Fix with: chmod g-w <dir>  (most common offender: /opt/homebrew/share)"
+  fi
+  unset _compaudit_out
+else
+  warn "zsh not found — skipping compaudit check"
+fi
+
 section "node (optional)"
 if node --version &>/dev/null; then
   ok "node $(node --version)"

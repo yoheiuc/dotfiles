@@ -240,6 +240,28 @@ else
   unset target agent dir
 fi
 
+# ---- Homebrew share perms (zsh compinit) ----------------------------------
+# Homebrew installs /opt/homebrew/share as group-writable (drwxrwxr-x), which
+# zsh's compinit flags as "insecure" and prompts on every shell start. Drop
+# group-write to silence the prompt. chmod is idempotent.
+log "Homebrew share perms (zsh compinit)..."
+
+_brew_share="${HOMEBREW_PREFIX:-/opt/homebrew}/share"
+if [[ -d "${_brew_share}" ]]; then
+  _before="$(stat -f '%Lp' "${_brew_share}" 2>/dev/null || echo '?')"
+  chmod g-w "${_brew_share}"
+  _after="$(stat -f '%Lp' "${_brew_share}" 2>/dev/null || echo '?')"
+  if [[ "${_before}" != "${_after}" ]]; then
+    ok "${_brew_share}: perms ${_before} -> ${_after} (dropped group-write)"
+  else
+    ok "${_brew_share}: perms ${_after}, already clean"
+  fi
+  unset _before _after
+else
+  warn "${_brew_share} not found — skipping compinit perms fix"
+fi
+unset _brew_share
+
 # ---- brew autoupdate -------------------------------------------------------
 log "brew autoupdate..."
 launchctl bootout "gui/$(id -u)/$(brew_autoupdate_label)" >/dev/null 2>&1 || true
