@@ -23,7 +23,7 @@
 | ブラウザ操作・自動化・UI 確認 | `playwright-cli`（ターミナルから CLI で起動）。`PLAYWRIGHT_CLI_SESSION` が set されていればそれを使う。skill は `~/.claude/skills/playwright/` |
 | GitHub の PR / Issue / コード検索 | `gh` CLI を使う（`gh pr`, `gh issue`, `gh api` 等） |
 | パフォーマンス・ネットワーク問題 | `mcp__chrome-devtools__*` で実測する |
-| 画像 / PDF の OCR（日本語含む） | `mcp__owlocr__*`（macOS Vision framework）。申請書 PDF のフィールド抽出、エラー画面スクショの文字列化。`ja-JP` / `en-US` を明示指定可 |
+| 画像 / PDF の OCR（日本語含む） | `mcp__vision__ocr_extract_text`（Apple Vision framework、`@tuannvm/vision-mcp-server`）。申請書 PDF のフィールド抽出、エラー画面スクショの文字列化。`ja` / `en-US` / `zh-Hans` 等を明示指定可 |
 | コード構造の理解・リファクタ | Serena（下記） |
 
 ## ツール選択の基準（MCP / CLI / 削除）

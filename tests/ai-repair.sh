@@ -130,8 +130,8 @@ assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-rep
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should not register retired Playwright MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"chrome-devtools"' "ai-repair should register chrome-devtools MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should set Claude chrome-devtools MCP args"
-assert_contains "$(cat "${HOME}/.claude.json")" '"owlocr"' "ai-repair should register owlocr MCP for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" 'jangisaac-dev/owlocr-mcp' "ai-repair should set Claude owlocr MCP args"
+assert_contains "$(cat "${HOME}/.claude.json")" '"vision"' "ai-repair should register vision MCP for Claude Code"
+assert_contains "$(cat "${HOME}/.claude.json")" '@tuannvm/vision-mcp-server' "ai-repair should set Claude vision MCP args"
 assert_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-repair should register Brave Search MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" 'mcp-with-keychain-secret' "ai-repair should route Claude Brave Search MCP through the keychain wrapper"
 assert_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should set Claude Brave Search MCP args"
@@ -141,8 +141,8 @@ assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.playwrig
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@playwright/mcp@latest" "ai-repair should not set retired Playwright MCP args in Codex"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.chrome-devtools]" "ai-repair should add chrome-devtools MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "chrome-devtools-mcp@latest" "ai-repair should set chrome-devtools MCP command args"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.owlocr]" "ai-repair should add owlocr MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "jangisaac-dev/owlocr-mcp" "ai-repair should set owlocr MCP command args"
+assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.vision]" "ai-repair should add vision MCP section"
+assert_contains "$(cat "${HOME}/.codex/config.toml")" "@tuannvm/vision-mcp-server" "ai-repair should set vision MCP command args"
 
 # Re-run should be idempotent
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
@@ -180,6 +180,10 @@ d['mcpServers']['github'] = {
   'type': 'stdio', 'command': 'npx',
   'args': ['-y', '@modelcontextprotocol/server-github']
 }
+d['mcpServers']['owlocr'] = {
+  'type': 'stdio', 'command': 'bash',
+  'args': ['-lc', 'uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp']
+}
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
 cat >> "${HOME}/.codex/config.toml" <<'EOF'
@@ -205,6 +209,10 @@ url = "https://mcp.notion.com/mcp"
 [mcp_servers.github]
 command = "npx"
 args = ["-y", "@modelcontextprotocol/server-github"]
+
+[mcp_servers.owlocr]
+command = "bash"
+args = ["-lc", "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]
 EOF
 
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
@@ -214,16 +222,19 @@ assert_contains "${RUN_OUTPUT}" "legacy filesystem MCP removed" "ai-repair shoul
 assert_contains "${RUN_OUTPUT}" "legacy drawio MCP removed" "ai-repair should announce legacy drawio removal"
 assert_contains "${RUN_OUTPUT}" "legacy notion MCP removed" "ai-repair should announce legacy notion removal"
 assert_contains "${RUN_OUTPUT}" "legacy github MCP removed" "ai-repair should announce legacy github removal"
+assert_contains "${RUN_OUTPUT}" "legacy owlocr MCP removed" "ai-repair should announce legacy owlocr removal"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should strip legacy playwright from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-filesystem' "ai-repair should strip legacy filesystem from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should strip legacy drawio from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'mcp.notion.com' "ai-repair should strip legacy notion from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-github' "ai-repair should strip legacy github from .claude.json"
+assert_not_contains "$(cat "${HOME}/.claude.json")" 'jangisaac-dev/owlocr-mcp' "ai-repair should strip legacy owlocr from .claude.json"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright]' "ai-repair should strip legacy playwright section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright.tools.browser_navigate]' "ai-repair should strip legacy playwright tools subsections from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.filesystem]' "ai-repair should strip legacy filesystem section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.drawio]' "ai-repair should strip legacy drawio section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.notion]' "ai-repair should strip legacy notion section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.github]' "ai-repair should strip legacy github section from Codex config"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.owlocr]' "ai-repair should strip legacy owlocr section from Codex config"
 
 pass_test "tests/ai-repair.sh"
