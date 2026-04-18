@@ -95,9 +95,6 @@ url = "https://developers.openai.com/mcp"
 [mcp_servers.exa]
 url = "https://mcp.exa.ai/mcp"
 
-[mcp_servers.notion]
-url = "https://mcp.notion.com/mcp"
-
 [mcp_servers.slack]
 url = "https://mcp.slack.com/mcp"
 
@@ -124,10 +121,6 @@ cat > "${HOME}/.claude.json" <<EOF
     "exa": {
       "type": "http",
       "url": "https://mcp.exa.ai/mcp"
-    },
-    "notion": {
-      "type": "http",
-      "url": "https://mcp.notion.com/mcp"
     },
     "slack": {
       "type": "http",
@@ -173,12 +166,10 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: registered" "ai-audit should validate Claude chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should validate Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
-assert_contains "${RUN_OUTPUT}" "Claude Code notion MCP: registered" "ai-audit should validate Claude Notion MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: registered" "ai-audit should validate Claude Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Codex: sandbox mode is workspace-write" "ai-audit should validate Codex sandbox"
 assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: registered" "ai-audit should validate Docs MCP"
 assert_contains "${RUN_OUTPUT}" "Codex exa MCP: registered" "ai-audit should validate Exa MCP"
-assert_contains "${RUN_OUTPUT}" "Codex notion MCP: registered" "ai-audit should validate Notion MCP"
 assert_contains "${RUN_OUTPUT}" "Codex slack MCP: registered" "ai-audit should validate Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: registered" "ai-audit should validate Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: registered" "ai-audit should validate chrome-devtools MCP"
@@ -234,14 +225,12 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be late
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: missing or drifted" "ai-audit should detect missing Claude chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: missing or drifted" "ai-audit should detect missing Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: missing or drifted" "ai-audit should detect missing Claude Exa MCP"
-assert_contains "${RUN_OUTPUT}" "Claude Code notion MCP: missing or drifted" "ai-audit should detect missing Claude Notion MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: missing or drifted" "ai-audit should detect missing Claude Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: language_backend should be LSP" "ai-audit should detect Serena config drift"
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should detect Claude MCP registration"
 assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: registered via wrapper" "ai-audit should detect Codex wrapper registration"
 assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: missing" "ai-audit should detect missing Docs MCP"
 assert_contains "${RUN_OUTPUT}" "Codex exa MCP: missing" "ai-audit should detect missing Exa MCP"
-assert_contains "${RUN_OUTPUT}" "Codex notion MCP: missing" "ai-audit should detect missing Notion MCP"
 assert_contains "${RUN_OUTPUT}" "Codex slack MCP: missing" "ai-audit should detect missing Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: missing" "ai-audit should detect missing Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: missing" "ai-audit should detect missing chrome-devtools MCP"
@@ -285,6 +274,9 @@ args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]
 command = "npx"
 args = ["-y", "@drawio/mcp@latest"]
 
+[mcp_servers.notion]
+url = "https://mcp.notion.com/mcp"
+
 [mcp_servers.serena]
 command = "${HOME}/.local/bin/serena-mcp"
 args = ["codex"]
@@ -298,6 +290,7 @@ cat > "${HOME}/.claude.json" <<EOF
     "playwright": {"type":"stdio","command":"npx","args":["-y","@playwright/mcp@latest"]},
     "filesystem": {"type":"stdio","command":"bash","args":["-lc","npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]},
     "drawio": {"type":"stdio","command":"npx","args":["-y","@drawio/mcp@latest"]},
+    "notion": {"type":"http","url":"https://mcp.notion.com/mcp"},
     "serena": {"type":"stdio","command":"${HOME}/.local/bin/serena-mcp","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}
   }
 }
@@ -321,5 +314,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code filesystem MCP: legacy entry presen
 assert_contains "${RUN_OUTPUT}" "Codex filesystem MCP: legacy entry present" "ai-audit should flag legacy Codex filesystem MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code drawio MCP: legacy entry present" "ai-audit should flag legacy Claude Code drawio MCP"
 assert_contains "${RUN_OUTPUT}" "Codex drawio MCP: legacy entry present" "ai-audit should flag legacy Codex drawio MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code notion MCP: legacy entry present" "ai-audit should flag legacy Claude Code notion MCP"
+assert_contains "${RUN_OUTPUT}" "Codex notion MCP: legacy entry present" "ai-audit should flag legacy Codex notion MCP"
 
 pass_test "tests/ai-audit.sh"

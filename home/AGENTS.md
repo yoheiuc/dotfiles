@@ -17,7 +17,7 @@
 | やりたいこと | 使うツール |
 |---|---|
 | 知らないこと・最新情報を調べる | `exa__web_search_exa` / `exa__web_fetch_exa`。「わかりません」の前にまず検索する |
-| Notion の情報検索・参照・更新 | `notion__*`（remote + OAuth）。社内ナレッジベースの検索、ページ読み取り、DB クエリに使う |
+| Notion の情報検索・参照・更新 | `ntn` CLI（Notion 公式）。`ntn api ...` で API 叩き、`ntn files ...` / `ntn workers ...` も。skill は `~/.codex/skills/notion-cli/`。認証は `ntn login` または `NOTION_API_TOKEN` env var |
 | Slack のメッセージ検索・投稿・チャンネル操作 | `slack__*`（remote + OAuth）。インシデント履歴の調査、チャンネルの要約、通知投稿に使う |
 | 図で説明した方が早い構成・フロー | Mermaid を使う。`.md` に ```mermaid ブロックで直接埋める。PNG / SVG が要るときは `mmdc -i in.mmd -o out.svg`（`mermaid-cli`） |
 | ブラウザ操作・自動化・UI 確認 | `playwright-cli`（ターミナルから CLI で起動）。`PLAYWRIGHT_CLI_SESSION` が set されていればそれを使う。skill は `~/.codex/skills/playwright/` |
