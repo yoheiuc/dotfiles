@@ -115,10 +115,55 @@ fi
 
 parts+=("$(format_elapsed "$elapsed_min")")
 
+# Session label shown right-aligned. Preference order:
+#   1. explicit name fields (user-provided via `claude -n` if ever exposed)
+#   2. the auto-generated slug from the transcript (what /resume shows)
+#   3. first 8 chars of session_id as last resort
+session_label=$(printf '%s' "$input" | jq -r '
+  .name // .session.name // .session_name // .display_name // empty
+' 2>/dev/null)
+
+if [ -z "$session_label" ]; then
+  transcript_path=$(printf '%s' "$input" | jq -r '.transcript_path // empty' 2>/dev/null)
+  if [ -n "$transcript_path" ] && [ -r "$transcript_path" ]; then
+    # Slug is written on nearly every entry; read the tail to keep this cheap.
+    session_label=$(tail -n 50 "$transcript_path" 2>/dev/null \
+      | grep -oE '"slug":"[^"]+"' \
+      | tail -n 1 \
+      | sed -E 's/"slug":"([^"]+)"/\1/')
+  fi
+fi
+
+if [ -z "$session_label" ]; then
+  session_id=$(printf '%s' "$input" | jq -r '.session_id // .session.id // empty' 2>/dev/null)
+  if [ -n "$session_id" ]; then
+    session_label="${session_id:0:8}"
+  fi
+fi
+
+# Build left side into a string so we can measure width for right-alignment.
+left=""
 for i in "${!parts[@]}"; do
   if [ "$i" -gt 0 ]; then
-    printf ' | '
+    left+=" | "
   fi
-  printf '%s' "${parts[$i]}"
+  left+="${parts[$i]}"
 done
-printf '\n'
+
+if [ -n "$session_label" ]; then
+  cols="${COLUMNS:-}"
+  if [ -z "$cols" ]; then
+    cols=$(tput cols 2>/dev/null || echo 80)
+  fi
+  left_len=${#left}
+  right_len=${#session_label}
+  pad=$((cols - left_len - right_len))
+  # Single space if we'd otherwise overflow, so layout stays readable.
+  if [ "$pad" -lt 1 ]; then
+    pad=1
+  fi
+  # \e[2m = dim, \e[0m = reset. Session label is secondary info.
+  printf '%s%*s\033[2m%s\033[0m\n' "$left" "$pad" '' "$session_label"
+else
+  printf '%s\n' "$left"
+fi
