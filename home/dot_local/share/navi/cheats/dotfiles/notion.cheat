@@ -1,0 +1,28 @@
+% notion, ntn
+
+# Notion 認証（初回のみ、browser OAuth）
+ntn login
+
+# 現在の認証情報を確認
+ntn auth status
+
+# ページ情報を JSON で取得
+ntn api pages/<page-id>
+
+# ページ本文を Markdown で読む（推奨：context 効率が良い）
+ntn block list <page-id> --md --depth 3
+
+# Markdown ファイルをページに追記
+ntn block append <page-id> --file <doc.md>
+
+# データベースをクエリ（filter は JSON）
+ntn api databases/<db-id>/query
+
+# ファイルアップロード
+ntn files upload <local-path>
+
+# Notion workers をデプロイ
+ntn workers deploy
+
+# CI / scripted 用途では env で token 渡す
+NOTION_API_TOKEN=<token> ntn api users/me
