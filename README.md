@@ -220,6 +220,8 @@ ghq get git@github.com:owner/repo.git
 
 - `exa`
 - `brave-search`
+- `notion`（remote HTTP + OAuth、`https://mcp.notion.com/mcp`）
+- `slack`（remote HTTP + OAuth、`https://mcp.slack.com/mcp`）
 - `serena`
 - `chrome-devtools`
 - `sequential-thinking`（`post-setup.sh` で Claude Code に登録）
@@ -235,6 +237,30 @@ ai-secrets
 make ai-audit
 make ai-repair
 ```
+
+## Notion / Slack MCP（remote + OAuth）
+
+Notion と Slack はどちらも **remote HTTP MCP + OAuth** 方式で導入しています。ローカルに stdio プロセスを生やさず、token も Keychain に置かない（OAuth token は Claude Code 側が管理）のが設計上のポイントです。
+
+### 初回認証
+
+Claude Code では `/mcp` コマンドからブラウザが開いて OAuth フローが走ります。認証承認後は `make ai-audit` で `registered` が出ます。
+
+- Notion は初回認証後、**使いたいページを integration と共有する**必要があります（ページ ••• メニュー → Add connections）。共有していないと `object not found` が返ります
+- Slack は OAuth 画面でスコープを選べます。デフォルトは次の方針で
+
+### スコープの方針（blast radius 最小化）
+
+| MCP | 推奨スコープ | 避けるスコープ |
+|---|---|---|
+| Notion | 閲覧したい workspace 単位に絞る。admin workspace には接続しない | Notion admin workspace への接続 |
+| Slack | `channels:history` / `groups:history` / `search:read` / `chat:write`（通知用）まで | `admin.*` 系、`files:write`、全 workspace 管理系トークン |
+
+AI セッション用のスコープは **読み取り中心 + 必要最低限の書き込み** に絞り、管理系権限は別の運用アカウントに分けるのが Playwright CLI でも採用している方針と同じです。
+
+### なぜ CLI ではなく MCP か
+
+Notion も Slack も公式 CLI は（ドキュメント整備状況が）弱く、Notion は API を Markdown に整形してから返す hosted MCP を公式が最優先サポートしています。Slack 公式 MCP も OAuth フロー込みで配布されているため、独自実装するより公式 remote に乗るのが token 効率・保守性ともに優位です。
 
 ## Playwright CLI（ブラウザ自動化）
 
@@ -536,7 +562,7 @@ config-file = local.ghostty
 - `approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`（`--full-auto` 相当）
 - `[features]`: `multi_agent = true`、`codex_hooks = true`
 - `[plugins]`: Google Calendar, GitHub, Gmail, Google Drive, build-macos-apps, build-ios-apps, Notion
-- MCP サーバー: Serena, chrome-devtools, exa, brave-search, OpenAI Developer Docs
+- MCP サーバー: Serena, chrome-devtools, exa, brave-search, notion, slack, OpenAI Developer Docs
 - マシン固有のパスは `{{ .chezmoi.homeDir }}` で展開
 
 `~/.codex/hooks.json` も chezmoi 管理にしています。Stop フックで `codex-auto-save-memory` skill を実行し、セッション終了時にメモリを自動保存します。
@@ -587,7 +613,7 @@ make ai-audit
 `make ai-audit` は次の観点をまとめて確認します。
 
 - `~/.claude.json` / `~/.codex/config.toml` の baseline（model, sandbox, approval, features, hooks）
-- Serena wrapper / OpenAI Docs MCP / exa/brave-search/chrome-devtools の登録有無（レガシーな `playwright` / `filesystem` / `drawio` MCP が残っていれば warning）
+- Serena wrapper / OpenAI Docs MCP / exa/notion/slack/brave-search/chrome-devtools の登録有無（レガシーな `playwright` / `filesystem` / `drawio` MCP が残っていれば warning）
 - Brave API key が Keychain に存在するか
 - Serena config の主要キー（`language_backend`, `web_dashboard`, `project_serena_folder_location`）
 - 古い bridge 設定や危険な approval 設定が残っていないか

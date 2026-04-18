@@ -97,6 +97,10 @@ command = "npx"
 args = ["-y", "chrome-devtools-mcp@latest"]
 [mcp_servers.exa]
 url = "https://mcp.exa.ai/mcp"
+[mcp_servers.notion]
+url = "https://mcp.notion.com/mcp"
+[mcp_servers.slack]
+url = "https://mcp.slack.com/mcp"
 [mcp_servers.brave-search]
 command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-with-keychain-secret"
 args = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
