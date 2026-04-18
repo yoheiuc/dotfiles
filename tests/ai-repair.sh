@@ -106,9 +106,8 @@ assert_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.openaiDevelo
 assert_contains "$(cat "${HOME}/.codex/config.toml")" 'url = "https://developers.openai.com/mcp"' "ai-repair should set Docs MCP URL"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.serena]" "ai-repair should add Codex MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "args = [\"codex\"]" "ai-repair should set correct Codex args"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.filesystem]" "ai-repair should add filesystem MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/server-filesystem" "ai-repair should set filesystem MCP command args"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '$HOME/ghq' "ai-repair should not register nonexistent optional filesystem roots"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.filesystem]" "ai-repair should not register retired filesystem MCP in Codex"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/server-filesystem" "ai-repair should not set retired filesystem MCP args in Codex"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.github]" "ai-repair should not add removed GitHub MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.exa]" "ai-repair should add Exa MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" 'url = "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL"
@@ -118,22 +117,18 @@ assert_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/ser
 assert_not_contains "$(cat "${HOME}/.claude.json")" '"github"' "ai-repair should not register removed GitHub MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-repair should register Exa MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" '"filesystem"' "ai-repair should register filesystem MCP for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-filesystem' "ai-repair should set Claude filesystem MCP args"
-assert_not_contains "$(cat "${HOME}/.claude.json")" '$HOME/ghq' "ai-repair should not register nonexistent optional Claude filesystem roots"
-assert_contains "$(cat "${HOME}/.claude.json")" '"drawio"' "ai-repair should register drawio MCP for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should set Claude drawio MCP args"
-assert_contains "$(cat "${HOME}/.claude.json")" '"playwright"' "ai-repair should register Playwright MCP for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should set Claude Playwright MCP args"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-filesystem' "ai-repair should not register retired filesystem MCP for Claude Code"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should not register retired drawio MCP for Claude Code"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should not register retired Playwright MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"chrome-devtools"' "ai-repair should register chrome-devtools MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should set Claude chrome-devtools MCP args"
 assert_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-repair should register Brave Search MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" 'mcp-with-keychain-secret' "ai-repair should route Claude Brave Search MCP through the keychain wrapper"
 assert_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should set Claude Brave Search MCP args"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.drawio]" "ai-repair should add drawio MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "@drawio/mcp@latest" "ai-repair should set drawio MCP command args"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.playwright]" "ai-repair should add Playwright MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "@playwright/mcp@latest" "ai-repair should set Playwright MCP command args"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.drawio]" "ai-repair should not register retired drawio MCP in Codex"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@drawio/mcp@latest" "ai-repair should not set retired drawio MCP args in Codex"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.playwright]" "ai-repair should not register retired Playwright MCP in Codex"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@playwright/mcp@latest" "ai-repair should not set retired Playwright MCP args in Codex"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.chrome-devtools]" "ai-repair should add chrome-devtools MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "chrome-devtools-mcp@latest" "ai-repair should set chrome-devtools MCP command args"
 
@@ -150,5 +145,53 @@ run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when keychain secrets are present"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'BSAtest_key_12345' "ai-repair should not write the Brave API key into Codex config"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'BSAtest_key_12345' "ai-repair should not write the Brave API key into Claude Code config"
+
+# Legacy MCP removal — simulate an old dotfiles install and verify convergence.
+python3 -c "
+import json
+p = '${HOME}/.claude.json'
+with open(p) as f: d = json.load(f)
+d.setdefault('mcpServers', {})['playwright'] = {
+  'type': 'stdio', 'command': 'npx', 'args': ['-y', '@playwright/mcp@latest']
+}
+d['mcpServers']['filesystem'] = {
+  'type': 'stdio', 'command': 'bash',
+  'args': ['-lc', 'npx -y @modelcontextprotocol/server-filesystem \"\$HOME\"']
+}
+d['mcpServers']['drawio'] = {
+  'type': 'stdio', 'command': 'npx', 'args': ['-y', '@drawio/mcp@latest']
+}
+with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
+"
+cat >> "${HOME}/.codex/config.toml" <<'EOF'
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
+
+[mcp_servers.playwright.tools.browser_navigate]
+approval_mode = "approve"
+
+[mcp_servers.filesystem]
+command = "bash"
+args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"$HOME\""]
+
+[mcp_servers.drawio]
+command = "npx"
+args = ["-y", "@drawio/mcp@latest"]
+EOF
+
+run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
+assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when purging legacy MCPs"
+assert_contains "${RUN_OUTPUT}" "legacy playwright MCP removed" "ai-repair should announce legacy playwright removal"
+assert_contains "${RUN_OUTPUT}" "legacy filesystem MCP removed" "ai-repair should announce legacy filesystem removal"
+assert_contains "${RUN_OUTPUT}" "legacy drawio MCP removed" "ai-repair should announce legacy drawio removal"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should strip legacy playwright from .claude.json"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-filesystem' "ai-repair should strip legacy filesystem from .claude.json"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should strip legacy drawio from .claude.json"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright]' "ai-repair should strip legacy playwright section from Codex config"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright.tools.browser_navigate]' "ai-repair should strip legacy playwright tools subsections from Codex config"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.filesystem]' "ai-repair should strip legacy filesystem section from Codex config"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.drawio]' "ai-repair should strip legacy drawio section from Codex config"
 
 pass_test "tests/ai-repair.sh"

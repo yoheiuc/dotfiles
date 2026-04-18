@@ -218,24 +218,81 @@ ghq get git@github.com:owner/repo.git
 
 `home/dot_claude/dot_mcp.json` に、記事ベースの「とりあえずこれ入れておけ」構成を反映しています。
 
-- `filesystem`
 - `exa`
 - `brave-search`
-- `drawio`
 - `serena`
-- `playwright`
 - `chrome-devtools`
 - `sequential-thinking`（`post-setup.sh` で Claude Code に登録）
 
+ブラウザ自動化は `@playwright/cli` + skill 方式に寄せているので、`@playwright/mcp` は含めていません（下の「Playwright CLI」節参照）。ファイル操作は Claude Code の native `Read` / `Write` / `Edit` / `Grep` / `Glob` で代替できるため、`filesystem` MCP も外しました。図は Mermaid（`.md` 直埋め）か `mermaid-cli` の `mmdc` で text diff フレンドリーに扱えるため、`@drawio/mcp` も外しています。
+
 検索系は `Exa MCP`（`https://mcp.exa.ai/mcp`、API key 不要）と `brave-search`（`@modelcontextprotocol/server-brave-search`、`BRAVE_API_KEY` を `mcp-with-keychain-secret` wrapper 経由で macOS Keychain から注入）の両方を入れています。
 
-同じ baseline は `make ai-repair` 実行時に Claude Code の `~/.claude.json` と Codex の `~/.codex/config.toml` に再生成されます。`filesystem` は `"$HOME"` のみを root にし、存在しない optional directory は起動引数へ入れません。`make ai-audit` は MCP 登録が壊れている場合に warning を出します。
+同じ baseline は `make ai-repair` 実行時に Claude Code の `~/.claude.json` と Codex の `~/.codex/config.toml` に再生成されます。`make ai-audit` は MCP 登録が壊れている場合に warning を出します。旧 dotfiles の `playwright` / `filesystem` / `drawio` MCP 登録が残っている場合も `make ai-repair` で自動的に削除されます。
 
 ```bash
 ai-secrets
 make ai-audit
 make ai-repair
 ```
+
+## Playwright CLI（ブラウザ自動化）
+
+情シス業務の自動化（SaaS 管理画面の巡回、チケットの一括処理など）向けに、`@playwright/cli` を CLI + Skill 方式で導入しています。Claude Code / Codex から長時間のブラウザセッションを回すのが目的です。
+
+### MCP ではなく CLI を選んでいる理由
+
+- **トークン効率が高い**：snapshot をディスクに書き出すので、agent の context を食わない
+- **長時間セッションに強い**：`--persistent` で Cookie / localStorage を保持し、ログインを使い回せる
+- **Claude Code が自動で理解する**：`playwright-cli install --skills` が `~/.claude/skills/playwright/` と `~/.codex/skills/playwright/` を配置し、両 agent から skill として認識される
+
+### インストール
+
+`make install-home` が走ると `scripts/post-setup.sh` が自動で以下を流します（idempotent）。
+
+```bash
+npm install -g @playwright/cli@latest
+playwright-cli install-browser        # Chromium
+playwright-cli install --skills       # Claude Code / Codex skill
+```
+
+前提は Node.js / npm（core Brewfile の `brew "node"` で入る）。
+
+### zsh ヘルパー
+
+`home/dot_config/zsh/playwright.zsh` で 6 関数を提供しています。
+
+| コマンド | 用途 |
+|---|---|
+| `pwsession <name>` | セッション名を `PLAYWRIGHT_CLI_SESSION` に export |
+| `pwlogin <name> <url>` | `--headed --persistent` で起動し、手動ログイン用に可視ブラウザを開く |
+| `pwlist` | `playwright-cli list`：永続セッション一覧 |
+| `pwshow` | `playwright-cli show`：ダッシュボードを起動して実行中セッションを監視 |
+| `pwkill <name>` | 指定セッションの永続データを削除 |
+| `pwkillall` | 全 playwright-cli プロセスを強制終了 |
+
+プロジェクト単位で `.envrc` に `export PLAYWRIGHT_CLI_SESSION=<name>` を置けば、`cd` だけで切り替わります。テンプレは `docs/examples/envrc.playwright.example` にあります。
+
+### セッション運用ルール
+
+- **タスク / SaaS 単位で分離する**：`-s=freshservice`、`-s=intune-admin` のように名前で境界を引く
+- **管理者権限アカウントでは AI 用セッションを作らない**。read-only / 閲覧権限の別アカウントでログインする
+- **初回ログインフロー**：`pwlogin <name> <url>` で可視起動 → 手動ログイン（2FA 含む）→ 閉じる → 以降は Claude Code から headless で利用可能
+- **セッション切れ時**：同じ名前で `pwlogin` を再実行するだけで上書き再ログインできる
+- **不要になったセッションは `pwkill <name>` で削除**
+
+### セキュリティ上の注意
+
+`--persistent` で保存されるプロファイル（Cookie / localStorage / IndexedDB）は macOS の Keychain Safe Storage で暗号化されますが、**ユーザー権限で動くマルウェアからは読めます**。特に Cookie 窃取は 2FA もパスワードも迂回されるため、情報窃取型マルウェア（Lumma Stealer、RedLine など）の主要な標的です。FileVault は起動中マルウェアに対しては無力（盗難時のオフライン読み出し対策のみ）。
+
+設計原則：
+
+- AI 用セッションを分ける意義は「漏洩を防ぐ」ではなく「**blast radius を最小化する**」
+- 権限を持つアカウント（全社管理者など）のセッションは AI 用に作らない
+- IdP 側 session lifetime を絞って Cookie の寿命を短くする
+- `pwshow` のダッシュボードを可視運用で回し、想定外の操作が走っていないか監視する
+- EDR / XProtect は常時有効にする
+- 機微データ・規制対象データ（PII、財務情報など）を扱うセッションでは使わない
 
 ## AI セッション
 
@@ -479,7 +536,7 @@ config-file = local.ghostty
 - `approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`（`--full-auto` 相当）
 - `[features]`: `multi_agent = true`、`codex_hooks = true`
 - `[plugins]`: Google Calendar, GitHub, Gmail, Google Drive, build-macos-apps, build-ios-apps, Notion
-- MCP サーバー: Serena, filesystem, drawio, playwright, chrome-devtools, exa, brave-search, OpenAI Developer Docs
+- MCP サーバー: Serena, chrome-devtools, exa, brave-search, OpenAI Developer Docs
 - マシン固有のパスは `{{ .chezmoi.homeDir }}` で展開
 
 `~/.codex/hooks.json` も chezmoi 管理にしています。Stop フックで `codex-auto-save-memory` skill を実行し、セッション終了時にメモリを自動保存します。
@@ -530,7 +587,7 @@ make ai-audit
 `make ai-audit` は次の観点をまとめて確認します。
 
 - `~/.claude.json` / `~/.codex/config.toml` の baseline（model, sandbox, approval, features, hooks）
-- Serena wrapper / OpenAI Docs MCP / filesystem/exa/brave-search/drawio/playwright/chrome-devtools の登録有無
+- Serena wrapper / OpenAI Docs MCP / exa/brave-search/chrome-devtools の登録有無（レガシーな `playwright` / `filesystem` / `drawio` MCP が残っていれば warning）
 - Brave API key が Keychain に存在するか
 - Serena config の主要キー（`language_backend`, `web_dashboard`, `project_serena_folder_location`）
 - 古い bridge 設定や危険な approval 設定が残っていないか
@@ -538,8 +595,8 @@ make ai-audit
 
 よくあるトラブルは次の 3 つです。
 
-1. `filesystem` MCP が `initialize` で落ちる  
-   原因の多くは存在しないディレクトリを root に渡していることです。この repo の baseline は `"$HOME"` だけを使います。`make ai-repair` で戻せます。
+1. 旧 dotfiles から移行したら `playwright` / `filesystem` / `drawio` MCP が残っている  
+   `make ai-repair` が自動的に削除します。残っていれば `make ai-audit` が warning を出すので、それを目印に repair を走らせてください。
 2. `ai-secrets` が古い wrapper を掴んで失敗する  
    `chezmoi apply ~/.local/bin/ai-secrets` で wrapper を再展開してください。
 3. `brave-search` MCP が起動しない  
@@ -557,11 +614,11 @@ make doctor
 
 セットアップ系のスクリプトは Bash 前提で書いているので、呼び出しは `bash` 明示です。日常利用は普段どおり `zsh` のままで問題ありません。
 
-同梱している skill は `~/.codex/skills` に入り、`chezmoi apply` で反映されます。現在は `playwright`、`screenshot`、`doc`、`pdf`、`spreadsheet`、`jupyter-notebook`、`security-best-practices`、`ui-ux-pro-max`、`codex-auto-save-memory` を同梱しています。`ui-ux-pro-max` は `nextlevelbuilder/ui-ux-pro-max-skill` の Codex 向け構成を repo 同梱化したものです。たとえば:
+同梱している skill は `~/.codex/skills` に入り、`chezmoi apply` で反映されます。現在は `screenshot`、`doc`、`pdf`、`spreadsheet`、`jupyter-notebook`、`security-best-practices`、`ui-ux-pro-max`、`codex-auto-save-memory` を同梱しています。`ui-ux-pro-max` は `nextlevelbuilder/ui-ux-pro-max-skill` の Codex 向け構成を repo 同梱化したものです。`playwright` skill は `post-setup.sh` が `playwright-cli install --skills` で配置するため dotfiles 本体では管理しません（gws skills と同じ扱い）。たとえば:
 
 ```zsh
-~/.codex/skills/playwright/scripts/playwright_cli.sh open https://example.com
-~/.codex/skills/playwright/scripts/playwright_cli.sh snapshot
+playwright-cli open https://example.com
+playwright-cli snapshot
 python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp --active-window
 python3 ~/.codex/skills/ui-ux-pro-max/scripts/search.py "SaaS B2B analytics" --design-system -f markdown
 ```
@@ -615,8 +672,7 @@ dotfiles/
 │   ├── dot_codex/
 │   │   ├── config.toml.tmpl        # -> ~/.codex/config.toml (chezmoi template)
 │   │   ├── hooks.json              # -> ~/.codex/hooks.json (auto-save memory)
-│   │   └── skills/                 # -> ~/.codex/skills/* (9 skills)
-│   │       ├── playwright/
+│   │   └── skills/                 # -> ~/.codex/skills/* (8 skills; playwright は post-setup が CLI 配置)
 │   │       ├── screenshot/
 │   │       ├── doc/
 │   │       ├── pdf/
