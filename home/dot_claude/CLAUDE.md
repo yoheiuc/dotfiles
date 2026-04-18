@@ -23,6 +23,7 @@
 | ブラウザ操作・自動化・UI 確認 | `playwright-cli`（ターミナルから CLI で起動）。`PLAYWRIGHT_CLI_SESSION` が set されていればそれを使う。skill は `~/.claude/skills/playwright/` |
 | GitHub の PR / Issue / コード検索 | `gh` CLI を使う（`gh pr`, `gh issue`, `gh api` 等） |
 | パフォーマンス・ネットワーク問題 | `mcp__chrome-devtools__*` で実測する |
+| 画像 / PDF の OCR（日本語含む） | `mcp__owlocr__*`（macOS Vision framework）。申請書 PDF のフィールド抽出、エラー画面スクショの文字列化。`ja-JP` / `en-US` を明示指定可 |
 | コード構造の理解・リファクタ | Serena（下記） |
 
 ## ツール選択の基準（MCP / CLI / 削除）
@@ -44,6 +45,22 @@
 - **MCP > CLI**：CLI 化で `mcp__*__*` の tool 単位 schema 配信が失われると価値が消える tight integration（symbol 解析、ライブ DOM 観測等）
 
 迷ったら dotfiles の commit log（PR #26 = Playwright、#28 = Notion）を見る。同じ議論を繰り返さない。
+
+## Subagent のモデル振り分け
+
+`Agent` tool を呼ぶときは、タスクの性質に合わせて `model` を明示する。デフォルト（親と同じモデル）に任せるとコスト 2-3 倍になる場面がある。
+
+| タスクの性質 | 推奨モデル |
+|---|---|
+| 探索 / 検索 / ファイル一覧 / 単純な情報集約 / 横断 grep | `haiku` |
+| コードベース全体の俯瞰 / アーキテクチャ要約 | `haiku`（要約が主目的なら） |
+| 実装 / refactor / API 設計 / セキュリティレビュー | `sonnet` or `opus`（親モデル） |
+| 複雑な Web 調査 / 裏取りが必要な事実確認 | `sonnet`（haiku では裏取り精度が足りない場面がある） |
+| 大規模変更の独立レビュー（この repo でやる `general-purpose` レビュー agent 等） | `sonnet` or 親モデル |
+
+Escalation rule：haiku で投げて品質不足（根拠が薄い / 事実誤認）だった場合は、同じプロンプトを `sonnet` で再試行する。最初から opus を投げるのはコスト効率が悪い。
+
+コスト目安：haiku は sonnet の 1/5〜1/10、opus の 1/20。探索系で haiku が使えるなら全体コストが 40-50% 下がる報告あり。
 
 ## Serena MCP
 

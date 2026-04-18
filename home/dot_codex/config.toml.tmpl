@@ -92,6 +92,9 @@ url = "https://developers.openai.com/mcp"
 [mcp_servers.chrome-devtools]
 command = "npx"
 args = ["-y", "chrome-devtools-mcp@latest"]
+[mcp_servers.owlocr]
+command = "bash"
+args = ["-lc", "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]
 [mcp_servers.exa]
 url = "https://mcp.exa.ai/mcp"
 [mcp_servers.slack]

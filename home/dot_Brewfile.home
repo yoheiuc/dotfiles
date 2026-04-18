@@ -10,3 +10,10 @@ cask "bitwarden", args: { appdir: "/Applications" }  # password manager
 
 # ---------- Browser ----------
 cask "google-chrome"             # auto-deployed on work laptop
+
+# ---------- Productivity ----------
+# Maccy: clipboard manager. Before enabling the maccy-clipboard-mcp later,
+# configure Maccy's Ignore list to exclude password managers (Keeper Desktop,
+# Bitwarden, etc.) and set a short retention period — history is queryable
+# by AI if the MCP is added.
+cask "maccy"

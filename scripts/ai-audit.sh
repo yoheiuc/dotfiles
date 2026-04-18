@@ -140,6 +140,7 @@ check_claude_cmd_mcp() {
 _claude_json="${HOME}/.claude.json"
 if [[ -f "${_claude_json}" ]]; then
   check_claude_stdio_mcp "${_claude_json}" chrome-devtools "npx" '-y|chrome-devtools-mcp@latest'
+  check_claude_stdio_mcp "${_claude_json}" owlocr "bash" '-lc|uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp'
   check_claude_http_mcp  "${_claude_json}" exa "https://mcp.exa.ai/mcp"
   check_claude_http_mcp  "${_claude_json}" slack "https://mcp.slack.com/mcp"
   check_claude_cmd_mcp   "${_claude_json}" brave-search "${HOME}/.local/bin/mcp-with-keychain-secret"
@@ -199,7 +200,7 @@ if [[ -f "${_codex_config}" ]]; then
       ;;
   esac
 
-  for _server in chrome-devtools; do
+  for _server in chrome-devtools owlocr; do
     case "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('${_server}',{}).get('command','')" 2>/dev/null || true)" in
       "")
         attention "Codex ${_server} MCP: missing — run make ai-repair"
