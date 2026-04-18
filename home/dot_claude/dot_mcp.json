@@ -4,13 +4,6 @@
       "type": "http",
       "url": "https://mcp.exa.ai/mcp"
     },
-    "drawio": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@drawio/mcp@latest"
-      ]
-    },
     "chrome-devtools": {
       "command": "npx",
       "args": [

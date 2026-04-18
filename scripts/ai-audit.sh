@@ -145,7 +145,6 @@ check_claude_cmd_mcp() {
 
 _claude_json="${HOME}/.claude.json"
 if [[ -f "${_claude_json}" ]]; then
-  check_claude_stdio_mcp "${_claude_json}" drawio "npx" '-y|@drawio/mcp@latest'
   check_claude_stdio_mcp "${_claude_json}" chrome-devtools "npx" '-y|chrome-devtools-mcp@latest'
   check_claude_http_mcp  "${_claude_json}" exa "https://mcp.exa.ai/mcp"
   check_claude_cmd_mcp   "${_claude_json}" brave-search "${HOME}/.local/bin/mcp-with-keychain-secret"
@@ -153,7 +152,8 @@ if [[ -f "${_claude_json}" ]]; then
   # Warn on legacy MCP entries that have been retired.
   #   playwright  → @playwright/cli + skill
   #   filesystem  → native Claude Code Read/Write/Edit/Grep/Glob tools
-  for _legacy in playwright filesystem; do
+  #   drawio      → Mermaid (inline in .md) or mermaid-cli (mmdc)
+  for _legacy in playwright filesystem drawio; do
     if [[ -n "$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('${_legacy}',{}).get('command','')" 2>/dev/null || true)" ]]; then
       attention "Claude Code ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi
@@ -202,7 +202,7 @@ if [[ -f "${_codex_config}" ]]; then
       ;;
   esac
 
-  for _server in drawio chrome-devtools; do
+  for _server in chrome-devtools; do
     case "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('${_server}',{}).get('command','')" 2>/dev/null || true)" in
       "")
         attention "Codex ${_server} MCP: missing — run make ai-repair"
@@ -226,7 +226,7 @@ if [[ -f "${_codex_config}" ]]; then
   fi
 
   # Warn on legacy MCP entries that have been retired.
-  for _legacy in playwright filesystem; do
+  for _legacy in playwright filesystem drawio; do
     if [[ -n "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('${_legacy}',{}).get('command','')" 2>/dev/null || true)" ]]; then
       attention "Codex ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi

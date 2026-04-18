@@ -92,13 +92,10 @@ fi
 log "Claude Code MCP registration..."
 SERENA_CLAUDE_ENTRY='{"type":"stdio","command":"'"${SERENA_WRAPPER}"'","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}'
 EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
-DRAWIO_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@drawio/mcp@latest"]}'
 CHROME_DEVTOOLS_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@latest"]}'
 BRAVE_SEARCH_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["BRAVE_API_KEY","dotfiles.ai.mcp","brave-api-key","npx","-y","@modelcontextprotocol/server-brave-search"]}'
 serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
 serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
-claude_drawio_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('drawio',{}).get('command','')" 2>/dev/null || true)"
-claude_drawio_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('drawio',{}).get('args',[]))" 2>/dev/null || true)"
 claude_chrome_devtools_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
 claude_chrome_devtools_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
@@ -116,12 +113,6 @@ else
   restart_needed=1
 fi
 unset serena_cmd_state serena_uv_tls
-
-if [[ "${claude_drawio_cmd}" != "npx" || "${claude_drawio_args}" != '-y|@drawio/mcp@latest' ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" drawio "${DRAWIO_CLAUDE_ENTRY}"
-  ok "Claude Code: drawio MCP registered"
-  restart_needed=1
-fi
 
 if [[ "${claude_chrome_devtools_cmd}" != "npx" || "${claude_chrome_devtools_args}" != '-y|chrome-devtools-mcp@latest' ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" chrome-devtools "${CHROME_DEVTOOLS_CLAUDE_ENTRY}"
@@ -141,13 +132,14 @@ if [[ "${claude_brave_search_cmd}" != "${KEYCHAIN_ENV_WRAPPER}" ]]; then
   restart_needed=1
 fi
 
-ok "Claude Code: baseline MCP servers (exa/brave-search/drawio/chrome-devtools) normalized"
-unset claude_drawio_cmd claude_drawio_args claude_chrome_devtools_cmd claude_chrome_devtools_args claude_exa_url claude_brave_search_cmd
+ok "Claude Code: baseline MCP servers (exa/brave-search/chrome-devtools) normalized"
+unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_exa_url claude_brave_search_cmd
 
 # Strip legacy MCP registrations that have been retired.
 #   playwright  → @playwright/cli + skill (see post-setup.sh)
 #   filesystem  → native Claude Code Read/Write/Edit/Grep/Glob tools
-for _legacy in playwright filesystem; do
+#   drawio      → Mermaid (inline in .md) or mermaid-cli (mmdc) for PNG/SVG output
+for _legacy in playwright filesystem drawio; do
   if [[ "$(ai_config_json_remove_mcp "${CLAUDE_JSON}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Claude Code: legacy ${_legacy} MCP removed"
     restart_needed=1
@@ -205,14 +197,13 @@ case "$(ai_config_codex_mcp_url_state "${CODEX_CONFIG}" openaiDeveloperDocs "${O
     ;;
 esac
 
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.drawio]" $'command = "npx"\nargs = ["-y", "@drawio/mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.chrome-devtools]" $'command = "npx"\nargs = ["-y", "chrome-devtools-mcp@latest"]'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
 ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "'"${KEYCHAIN_ENV_WRAPPER}"$'"\nargs = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]'
-ok "Codex: baseline MCP servers (exa/brave-search/drawio/chrome-devtools) registered"
+ok "Codex: baseline MCP servers (exa/brave-search/chrome-devtools) registered"
 
 # Strip legacy Codex MCP registrations retired in favor of CLIs / native tools.
-for _legacy in playwright filesystem; do
+for _legacy in playwright filesystem drawio; do
   if [[ "$(ai_config_toml_remove_mcp_section "${CODEX_CONFIG}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Codex: legacy ${_legacy} MCP removed"
     restart_needed=1
