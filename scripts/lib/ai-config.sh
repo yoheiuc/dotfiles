@@ -233,6 +233,39 @@ with open(fpath, 'w') as f:
 " "${file}" "${key}" "${value}"
 }
 
+# Upsert a JSON key at a dotted path, creating intermediate dicts as needed.
+# Existing siblings at each level are preserved — only the leaf key is replaced.
+# Usage: ai_config_json_upsert_nested_key <file> <dotted.key> <json_value>
+ai_config_json_upsert_nested_key() {
+  local file="$1"
+  local path="$2"
+  local value="$3"
+  python3 -c "
+import json, sys, os
+
+fpath = sys.argv[1]
+parts = sys.argv[2].split('.')
+value = json.loads(sys.argv[3])
+
+if os.path.isfile(fpath):
+    with open(fpath) as f:
+        d = json.load(f)
+else:
+    d = {}
+
+node = d
+for p in parts[:-1]:
+    if not isinstance(node.get(p), dict):
+        node[p] = {}
+    node = node[p]
+node[parts[-1]] = value
+
+with open(fpath, 'w') as f:
+    json.dump(d, f, indent=2)
+    f.write('\n')
+" "${file}" "${path}" "${value}"
+}
+
 ai_config_toml_upsert_top_level() {
   local file="$1"
   local key="$2"
