@@ -1,0 +1,29 @@
+% playwright, browser
+
+# セッション名を現在の shell に export
+pwsession <name>
+
+# 可視ブラウザで手動ログイン（2FA 含む）→ 閉じると以降は headless 再利用
+pwlogin <name> <url>
+
+# 永続セッション一覧
+pwlist
+
+# ダッシュボードを起動して実行中セッションを監視
+pwshow
+
+# 指定セッションの永続データを削除
+pwkill <name>
+
+# 全 playwright-cli プロセスを強制終了
+pwkillall
+
+# ページを開いて snapshot（--session は PLAYWRIGHT_CLI_SESSION から自動補完）
+playwright-cli open <url>
+playwright-cli snapshot
+
+# 要素参照でクリック（snapshot 内の eXX を指定）
+playwright-cli click <ref>
+
+# スクリーンショット
+playwright-cli screenshot

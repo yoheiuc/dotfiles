@@ -179,6 +179,13 @@ else
   warn "node not found — needed for Codex CLI installs via npm"
 fi
 
+section "playwright-cli (optional)"
+if command -v playwright-cli &>/dev/null; then
+  ok "$(playwright-cli --version 2>&1 | head -1)"
+else
+  warn "playwright-cli not found — run: ./scripts/post-setup.sh"
+fi
+
 section "uv (optional)"
 if uv --version &>/dev/null; then
   ok "$(uv --version)"
