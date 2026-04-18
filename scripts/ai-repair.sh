@@ -177,6 +177,37 @@ done
 unset _legacy
 
 # ---- Claude Code local settings baseline -----------------------------------
+# settings.json is local-managed (permissions / model / effortLevel etc. are
+# written by Claude Code itself). We only upsert the baseline keys dotfiles
+# owns — env toggles, hooks wired to dotfiles-managed scripts, and the
+# auto-update channel. Sibling keys stay untouched.
+CLAUDE_HOOKS_BLOCK='{
+  "PreToolUse": [
+    {
+      "matcher": "Grep",
+      "hooks": [
+        { "type": "command", "command": "$HOME/.claude/lsp-hint.sh" }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": "",
+      "hooks": [
+        { "type": "command", "command": "$HOME/.claude/auto-save.sh" }
+      ]
+    }
+  ],
+  "Notification": [
+    {
+      "matcher": "",
+      "hooks": [
+        { "type": "command", "command": "osascript -e '"'"'display notification \"'"'"'\"$CLAUDE_NOTIFICATION_MESSAGE\"'"'"'\" with title \"Claude Code\" sound name \"Glass\"'"'"'" }
+      ]
+    }
+  ]
+}'
+
 log "Claude Code local settings..."
 mkdir -p "$(dirname "${CLAUDE_SETTINGS_JSON}")"
 if [[ "$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "d.get('autoUpdatesChannel','')" 2>/dev/null || true)" == "latest" ]]; then
@@ -185,6 +216,25 @@ else
   ai_config_json_upsert_key "${CLAUDE_SETTINGS_JSON}" autoUpdatesChannel '"latest"'
   ok "Claude Code: auto-update channel set to latest"
 fi
+
+if [[ "$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "d.get('env',{}).get('ENABLE_TOOL_SEARCH','')" 2>/dev/null || true)" == "auto:5" ]]; then
+  ok "Claude Code: ENABLE_TOOL_SEARCH env already set"
+else
+  ai_config_json_upsert_nested_key "${CLAUDE_SETTINGS_JSON}" env.ENABLE_TOOL_SEARCH '"auto:5"'
+  ok "Claude Code: ENABLE_TOOL_SEARCH env set"
+fi
+
+# Hooks point at dotfiles-managed scripts (auto-save.sh / lsp-hint.sh), so the
+# block is owned end-to-end by dotfiles — replace wholesale rather than merge.
+_claude_hooks_current="$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "json.dumps(d.get('hooks',{}),sort_keys=True)" 2>/dev/null || true)"
+_claude_hooks_expected="$(python3 -c "import json,sys; print(json.dumps(json.loads(sys.stdin.read()),sort_keys=True))" <<<"${CLAUDE_HOOKS_BLOCK}")"
+if [[ "${_claude_hooks_current}" == "${_claude_hooks_expected}" ]]; then
+  ok "Claude Code: hooks already match baseline"
+else
+  ai_config_json_upsert_key "${CLAUDE_SETTINGS_JSON}" hooks "${CLAUDE_HOOKS_BLOCK}"
+  ok "Claude Code: hooks reset to baseline"
+fi
+unset _claude_hooks_current _claude_hooks_expected
 
 # ---- Codex baseline ---------------------------------------------------------
 log "Codex baseline..."

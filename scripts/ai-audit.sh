@@ -92,6 +92,24 @@ if [[ -f "${HOME}/.claude/settings.json" ]]; then
   else
     attention "Claude Code: auto-update channel should be latest"
   fi
+
+  if [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('env',{}).get('ENABLE_TOOL_SEARCH','')" 2>/dev/null || true)" == "auto:5" ]]; then
+    ok "Claude Code: ENABLE_TOOL_SEARCH env is set"
+  else
+    attention "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5 — run make ai-repair"
+  fi
+
+  # Hooks are baseline-managed by dotfiles. Verify each expected command is
+  # wired up; tolerate extra user-added hooks under other matchers.
+  _claude_hooks_cmds="$(ai_config_json_read "${HOME}/.claude/settings.json" "sorted({h.get('command','') for events in d.get('hooks',{}).values() if isinstance(events,list) for entry in events if isinstance(entry,dict) for h in entry.get('hooks',[]) if isinstance(h,dict)})" 2>/dev/null || true)"
+  for _expected_cmd in '$HOME/.claude/lsp-hint.sh' '$HOME/.claude/auto-save.sh'; do
+    if [[ "${_claude_hooks_cmds}" == *"${_expected_cmd}"* ]]; then
+      ok "Claude Code: hook registered (${_expected_cmd})"
+    else
+      attention "Claude Code: hook missing (${_expected_cmd}) — run make ai-repair"
+    fi
+  done
+  unset _claude_hooks_cmds _expected_cmd
 else
   attention "Claude Code settings: missing (${HOME}/.claude/settings.json)"
 fi
