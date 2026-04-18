@@ -161,6 +161,23 @@ fi
 
 unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_vision_cmd claude_vision_args claude_exa_url claude_slack_url claude_brave_search_cmd
 
+# Strip retired hook artifacts. The hooks block itself is wholesale-rewritten
+# below (so orphan UserPromptSubmit entries for session-topic disappear from
+# settings.json), but chezmoi does not auto-remove the script file / cache dir
+# once their source is deleted. Clean them up actively so other machines
+# converge on `make ai-repair`.
+for _orphan in "${HOME}/.claude/session-topic.sh"; do
+  if [[ -e "${_orphan}" ]]; then
+    rm -f "${_orphan}"
+    ok "Claude Code: removed retired hook script ${_orphan/#${HOME}/\~}"
+  fi
+done
+if [[ -d "${HOME}/.claude/session-topics" ]]; then
+  rm -rf "${HOME}/.claude/session-topics"
+  ok "Claude Code: removed retired session-topics cache"
+fi
+unset _orphan
+
 # Strip legacy MCP registrations that have been retired.
 #   playwright  → @playwright/cli + skill (see post-setup.sh)
 #   filesystem  → native Claude Code Read/Write/Edit/Grep/Glob tools
