@@ -111,8 +111,8 @@ assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.github]" "ai-repair should not add removed GitHub MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.exa]" "ai-repair should add Exa MCP section"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" 'url = "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.notion]" "ai-repair should add Notion MCP section in Codex"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" 'url = "https://mcp.notion.com/mcp"' "ai-repair should set Notion MCP URL in Codex"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.notion]" "ai-repair should not register retired Notion MCP in Codex"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'mcp.notion.com' "ai-repair should not set retired Notion MCP URL in Codex"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.slack]" "ai-repair should add Slack MCP section in Codex"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" 'url = "https://mcp.slack.com/mcp"' "ai-repair should set Slack MCP URL in Codex"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.brave-search]" "ai-repair should add Brave Search MCP section"
@@ -121,8 +121,7 @@ assert_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/ser
 assert_not_contains "$(cat "${HOME}/.claude.json")" '"github"' "ai-repair should not register removed GitHub MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-repair should register Exa MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" '"notion"' "ai-repair should register Notion MCP for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.notion.com/mcp"' "ai-repair should set Notion MCP URL for Claude Code"
+assert_not_contains "$(cat "${HOME}/.claude.json")" 'mcp.notion.com' "ai-repair should not register retired Notion MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"slack"' "ai-repair should register Slack MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.slack.com/mcp"' "ai-repair should set Slack MCP URL for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"callbackPort": 3118' "ai-repair should include Slack OAuth callbackPort"
@@ -170,6 +169,9 @@ d['mcpServers']['filesystem'] = {
 d['mcpServers']['drawio'] = {
   'type': 'stdio', 'command': 'npx', 'args': ['-y', '@drawio/mcp@latest']
 }
+d['mcpServers']['notion'] = {
+  'type': 'http', 'url': 'https://mcp.notion.com/mcp'
+}
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
 cat >> "${HOME}/.codex/config.toml" <<'EOF'
@@ -188,6 +190,9 @@ args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"$HOME\""]
 [mcp_servers.drawio]
 command = "npx"
 args = ["-y", "@drawio/mcp@latest"]
+
+[mcp_servers.notion]
+url = "https://mcp.notion.com/mcp"
 EOF
 
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
@@ -195,12 +200,15 @@ assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when purging legacy MCPs
 assert_contains "${RUN_OUTPUT}" "legacy playwright MCP removed" "ai-repair should announce legacy playwright removal"
 assert_contains "${RUN_OUTPUT}" "legacy filesystem MCP removed" "ai-repair should announce legacy filesystem removal"
 assert_contains "${RUN_OUTPUT}" "legacy drawio MCP removed" "ai-repair should announce legacy drawio removal"
+assert_contains "${RUN_OUTPUT}" "legacy notion MCP removed" "ai-repair should announce legacy notion removal"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should strip legacy playwright from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-filesystem' "ai-repair should strip legacy filesystem from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should strip legacy drawio from .claude.json"
+assert_not_contains "$(cat "${HOME}/.claude.json")" 'mcp.notion.com' "ai-repair should strip legacy notion from .claude.json"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright]' "ai-repair should strip legacy playwright section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright.tools.browser_navigate]' "ai-repair should strip legacy playwright tools subsections from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.filesystem]' "ai-repair should strip legacy filesystem section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.drawio]' "ai-repair should strip legacy drawio section from Codex config"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.notion]' "ai-repair should strip legacy notion section from Codex config"
 
 pass_test "tests/ai-repair.sh"
