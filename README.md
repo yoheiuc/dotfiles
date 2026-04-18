@@ -237,6 +237,64 @@ make ai-audit
 make ai-repair
 ```
 
+## Playwright CLI（ブラウザ自動化）
+
+情シス業務の自動化（SaaS 管理画面の巡回、チケットの一括処理など）向けに、`@playwright/cli` を CLI + Skill 方式で導入しています。Claude Code / Codex から長時間のブラウザセッションを回すのが目的です。
+
+### MCP ではなく CLI を選んでいる理由
+
+- **トークン効率が高い**：snapshot をディスクに書き出すので、agent の context を食わない
+- **長時間セッションに強い**：`--persistent` で Cookie / localStorage を保持し、ログインを使い回せる
+- **Claude Code が自動で理解する**：`playwright-cli install --skills` が `~/.claude/skills/playwright/` と `~/.codex/skills/playwright/` を配置し、両 agent から skill として認識される
+
+### インストール
+
+`make install-home` が走ると `scripts/post-setup.sh` が自動で以下を流します（idempotent）。
+
+```bash
+npm install -g @playwright/cli@latest
+playwright-cli install-browser        # Chromium
+playwright-cli install --skills       # Claude Code / Codex skill
+```
+
+前提は Node.js / npm（core Brewfile の `brew "node"` で入る）。
+
+### zsh ヘルパー
+
+`home/dot_config/zsh/playwright.zsh` で 6 関数を提供しています。
+
+| コマンド | 用途 |
+|---|---|
+| `pwsession <name>` | セッション名を `PLAYWRIGHT_CLI_SESSION` に export |
+| `pwlogin <name> <url>` | `--headed --persistent` で起動し、手動ログイン用に可視ブラウザを開く |
+| `pwlist` | `playwright-cli list`：永続セッション一覧 |
+| `pwshow` | `playwright-cli show`：ダッシュボードを起動して実行中セッションを監視 |
+| `pwkill <name>` | 指定セッションの永続データを削除 |
+| `pwkillall` | 全 playwright-cli プロセスを強制終了 |
+
+プロジェクト単位で `.envrc` に `export PLAYWRIGHT_CLI_SESSION=<name>` を置けば、`cd` だけで切り替わります。テンプレは `docs/examples/envrc.playwright.example` にあります。
+
+### セッション運用ルール
+
+- **タスク / SaaS 単位で分離する**：`-s=freshservice`、`-s=intune-admin` のように名前で境界を引く
+- **管理者権限アカウントでは AI 用セッションを作らない**。read-only / 閲覧権限の別アカウントでログインする
+- **初回ログインフロー**：`pwlogin <name> <url>` で可視起動 → 手動ログイン（2FA 含む）→ 閉じる → 以降は Claude Code から headless で利用可能
+- **セッション切れ時**：同じ名前で `pwlogin` を再実行するだけで上書き再ログインできる
+- **不要になったセッションは `pwkill <name>` で削除**
+
+### セキュリティ上の注意
+
+`--persistent` で保存されるプロファイル（Cookie / localStorage / IndexedDB）は macOS の Keychain Safe Storage で暗号化されますが、**ユーザー権限で動くマルウェアからは読めます**。特に Cookie 窃取は 2FA もパスワードも迂回されるため、情報窃取型マルウェア（Lumma Stealer、RedLine など）の主要な標的です。FileVault は起動中マルウェアに対しては無力（盗難時のオフライン読み出し対策のみ）。
+
+設計原則：
+
+- AI 用セッションを分ける意義は「漏洩を防ぐ」ではなく「**blast radius を最小化する**」
+- 権限を持つアカウント（全社管理者など）のセッションは AI 用に作らない
+- IdP 側 session lifetime を絞って Cookie の寿命を短くする
+- `pwshow` のダッシュボードを可視運用で回し、想定外の操作が走っていないか監視する
+- EDR / XProtect は常時有効にする
+- 機微データ・規制対象データ（PII、財務情報など）を扱うセッションでは使わない
+
 ## AI セッション
 
 AI エージェントを並行運用するためのターミナル構成です。

@@ -1,0 +1,16 @@
+# Playwright CLI session pinning — copy to your project as .envrc and edit.
+#
+# Usage:
+#   1. Copy this file to your project root:
+#        cp <dotfiles>/docs/examples/envrc.playwright.example <project>/.envrc
+#   2. Edit the session name below to match the SaaS / task you're automating.
+#   3. direnv allow
+#   4. cd into the project — PLAYWRIGHT_CLI_SESSION is auto-exported.
+#
+# Naming convention: one session per SaaS / task boundary.
+#   e.g. freshservice, intune-admin, slack-read, jira-ro
+#
+# Do NOT create an AI session under an admin-privileged account.
+# Use a read-only / viewer account so the blast radius of a stolen cookie is bounded.
+
+export PLAYWRIGHT_CLI_SESSION=example-saas
