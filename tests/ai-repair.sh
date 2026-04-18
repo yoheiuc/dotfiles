@@ -99,6 +99,7 @@ assert_contains "$(cat "${HOME}/.claude/settings.json")" '"autoUpdatesChannel": 
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"ENABLE_TOOL_SEARCH": "auto:5"' "ai-repair should write ENABLE_TOOL_SEARCH env toggle"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/lsp-hint.sh"' "ai-repair should wire lsp-hint PreToolUse hook"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/auto-save.sh"' "ai-repair should wire auto-save Stop hook"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/session-topic.sh"' "ai-repair should wire session-topic UserPromptSubmit hook"
 
 # Local-managed keys (permissions / model / effortLevel / statusLine) must be
 # preserved: Claude Code writes them itself, dotfiles must not clobber them.
