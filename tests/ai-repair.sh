@@ -262,4 +262,32 @@ assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.notion]'
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.github]' "ai-repair should strip legacy github section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.owlocr]' "ai-repair should strip legacy owlocr section from Codex config"
 
+# Retired session-topic hook cleanup — simulate an old dotfiles install that
+# had the Haiku session-topic feature installed, and verify convergence:
+# the orphan UserPromptSubmit entry gets stripped from settings.json by the
+# wholesale hooks rewrite, and the script file + cache dir are actively
+# removed by the orphan cleanup loop.
+touch "${HOME}/.claude/session-topic.sh"
+chmod +x "${HOME}/.claude/session-topic.sh"
+mkdir -p "${HOME}/.claude/session-topics"
+touch "${HOME}/.claude/session-topics/abc123.count"
+python3 -c "
+import json
+p = '${HOME}/.claude/settings.json'
+with open(p) as f: d = json.load(f)
+d.setdefault('hooks', {})['UserPromptSubmit'] = [{
+  'matcher': '',
+  'hooks': [{'type': 'command', 'command': '\$HOME/.claude/session-topic.sh'}]
+}]
+with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
+"
+run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
+assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when cleaning retired session-topic hook"
+assert_contains "${RUN_OUTPUT}" "removed retired hook script" "ai-repair should announce session-topic.sh removal"
+assert_contains "${RUN_OUTPUT}" "removed retired session-topics cache" "ai-repair should announce session-topics cache removal"
+assert_not_contains "$(cat "${HOME}/.claude/settings.json")" 'session-topic.sh' "ai-repair should strip orphan UserPromptSubmit hook from settings.json"
+assert_not_contains "$(cat "${HOME}/.claude/settings.json")" 'UserPromptSubmit' "ai-repair should leave no UserPromptSubmit hook entry in settings.json"
+[[ ! -e "${HOME}/.claude/session-topic.sh" ]] || fail_test "session-topic.sh should be removed"
+[[ ! -d "${HOME}/.claude/session-topics" ]] || fail_test "session-topics cache dir should be removed"
+
 pass_test "tests/ai-repair.sh"
