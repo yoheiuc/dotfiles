@@ -12,6 +12,35 @@ ORIGINAL_PATH="${PATH}"
 STUB_BIN="${tmpdir}/bin"
 mkdir -p "${STUB_BIN}"
 
+# Strip any PATH directory that shadows an optional tool the drift scenario
+# expects to be "not found" (currently: clasp). On CI the tool is unavailable
+# so this is a no-op; on dev boxes with brew-installed clasp, PATH would
+# otherwise leak the real binary through ORIGINAL_PATH and break the
+# "clasp not found" assertion.
+sanitize_path_for_optional_tools() {
+  local original="$1"
+  shift
+  local tools=("$@")
+  local out=""
+  local IFS=:
+  local part
+  for part in ${original}; do
+    local keep=1
+    local tool
+    for tool in "${tools[@]}"; do
+      if [[ -x "${part}/${tool}" ]]; then
+        keep=0
+        break
+      fi
+    done
+    if [[ "${keep}" == "1" ]]; then
+      out="${out:+${out}:}${part}"
+    fi
+  done
+  printf '%s\n' "${out}"
+}
+SANITIZED_PATH="$(sanitize_path_for_optional_tools "${ORIGINAL_PATH}" clasp)"
+
 cat > "${STUB_BIN}/brew" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -217,7 +246,8 @@ run_doctor() {
   cp "${REPO_ROOT}/scripts/lib/ai-config.sh" "${home_dir}/dotfiles/scripts/lib/ai-config.sh"
   cp "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh" "${home_dir}/dotfiles/scripts/lib/brew-autoupdate.sh"
 
-  env HOME="${home_dir}" PATH="${STUB_BIN}:${ORIGINAL_PATH}" "$@" DOTFILES_REPO_ROOT="${home_dir}/dotfiles" \
+  local runtime_path="${DOCTOR_TEST_PATH_OVERRIDE:-${STUB_BIN}:${ORIGINAL_PATH}}"
+  env HOME="${home_dir}" PATH="${runtime_path}" "$@" DOTFILES_REPO_ROOT="${home_dir}/dotfiles" \
     bash "${REPO_ROOT}/scripts/doctor.sh"
 }
 
@@ -329,10 +359,14 @@ cat > "${home_drift}/Library/LaunchAgents/com.github.domt4.homebrew-autoupdate.p
 <plist version="1.0"><dict><key>StartInterval</key><integer>3600</integer></dict></plist>
 EOF
 
-# Hide clasp stub so drift scenario triggers the warning
+# Hide clasp stub so drift scenario triggers the warning. Also drop any
+# directory from ORIGINAL_PATH that exposes a real clasp binary — otherwise
+# dev boxes with brew-installed clasp would shadow through from
+# /opt/homebrew/bin after the STUB_BIN stub is moved.
 mv "${STUB_BIN}/clasp" "${STUB_BIN}/_clasp.bak"
 
-run_capture run_doctor "${home_drift}" \
+DOCTOR_TEST_PATH_OVERRIDE="${STUB_BIN}:${SANITIZED_PATH}" \
+  run_capture run_doctor "${home_drift}" \
   LAUNCHCTL_AUTUPDATE_LOADED=1 \
   BREW_DOCTOR_CLT_WARN=1 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
