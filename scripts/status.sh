@@ -155,6 +155,23 @@ else
   warn "ntn not found — run: ./scripts/post-setup.sh"
 fi
 
+section "Document toolchain"
+if command -v pandoc >/dev/null 2>&1; then
+  ok "pandoc: $(pandoc --version 2>&1 | head -1)"
+else
+  warn "pandoc not found — install via Brewfile (brew \"pandoc\")"
+fi
+if command -v pdflatex >/dev/null 2>&1; then
+  ok "pdflatex: available (needed for pandoc PDF output)"
+else
+  warn "pdflatex not found — install via Brewfile (cask \"basictex\") and open a new terminal"
+fi
+if command -v mmdc >/dev/null 2>&1; then
+  ok "mmdc (mermaid-cli): $(mmdc --version 2>&1 | head -1)"
+else
+  warn "mmdc not found — install via Brewfile (brew \"mermaid-cli\")"
+fi
+
 section "brew-autoupdate"
 if command -v brew >/dev/null 2>&1 && command -v launchctl >/dev/null 2>&1 && command -v plutil >/dev/null 2>&1; then
   if brew_autoupdate_is_loaded || [[ -f "$(brew_autoupdate_plist_path)" ]]; then
