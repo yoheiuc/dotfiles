@@ -153,8 +153,9 @@ if [[ -f "${_claude_json}" ]]; then
   #   playwright  → @playwright/cli + skill
   #   filesystem  → native Claude Code Read/Write/Edit/Grep/Glob tools
   #   drawio      → Mermaid (inline in .md) or mermaid-cli (mmdc)
+  # Match on key presence so HTTP-type entries without `command` are still caught.
   for _legacy in playwright filesystem drawio; do
-    if [[ -n "$(ai_config_json_read "${_claude_json}" "d.get('mcpServers',{}).get('${_legacy}',{}).get('command','')" 2>/dev/null || true)" ]]; then
+    if [[ "$(ai_config_json_read "${_claude_json}" "'present' if '${_legacy}' in d.get('mcpServers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
       attention "Claude Code ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi
   done
@@ -225,9 +226,9 @@ if [[ -f "${_codex_config}" ]]; then
     attention "Codex brave-search MCP: missing — run make ai-repair"
   fi
 
-  # Warn on legacy MCP entries that have been retired.
+  # Warn on legacy MCP entries that have been retired. Match on key presence.
   for _legacy in playwright filesystem drawio; do
-    if [[ -n "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('${_legacy}',{}).get('command','')" 2>/dev/null || true)" ]]; then
+    if [[ "$(ai_config_toml_read "${_codex_config}" "'present' if '${_legacy}' in d.get('mcp_servers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
       attention "Codex ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi
   done

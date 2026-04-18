@@ -114,7 +114,9 @@ else
 fi
 
 # Install Chromium browser (idempotent — CLI detects existing binaries).
-if playwright-cli install-browser >/dev/null 2>&1; then
+# Don't silence output: Chromium download can take minutes on slow networks and
+# the user should see progress.
+if playwright-cli install-browser; then
   ok "playwright-cli: Chromium ready"
 else
   warn "playwright-cli install-browser failed — run manually: playwright-cli install-browser"
@@ -122,7 +124,7 @@ fi
 
 # Install skill files into ~/.claude/skills/playwright and ~/.codex/skills/playwright.
 # The CLI manages these at install time; dotfiles do not track the skill content.
-if playwright-cli install --skills >/dev/null 2>&1; then
+if playwright-cli install --skills; then
   ok "playwright-cli: skills installed for Claude Code and Codex"
 else
   warn "playwright-cli install --skills failed — run manually: playwright-cli install --skills"

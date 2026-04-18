@@ -18,14 +18,22 @@ pwsession() {
 
 # pwlogin <name> <url> — 手動ログイン用に可視ブラウザを --persistent で開く。
 # 2FA 含め人間が一度ログインし終えたら閉じる。以降は headless で再利用される。
+# 失敗時は PLAYWRIGHT_CLI_SESSION を汚染しない（成功後にだけ export する）。
 pwlogin() {
   if (( $# != 2 )); then
     echo "usage: pwlogin <name> <url>" >&2
     return 1
   fi
   local name="$1" url="$2"
-  export PLAYWRIGHT_CLI_SESSION="${name}"
-  playwright-cli --session "${name}" --headed --persistent open "${url}"
+  # Canonical argv: --session=<name> before subcommand, subcommand-specific
+  # flags (--headed / --persistent) after `open`.
+  if playwright-cli --session="${name}" open --headed --persistent "${url}"; then
+    export PLAYWRIGHT_CLI_SESSION="${name}"
+  else
+    local rc=$?
+    echo "pwlogin: playwright-cli exited ${rc}; PLAYWRIGHT_CLI_SESSION left unchanged" >&2
+    return "${rc}"
+  fi
 }
 
 # pwlist — 既存セッションの一覧表示。
