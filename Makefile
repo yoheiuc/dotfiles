@@ -98,6 +98,7 @@ test-scripts: ## shell スクリプトの回帰テストを実行
 	bash tests/playwright-zsh.sh
 	bash tests/notion-cli.sh
 	bash tests/ai-config.sh
+	bash tests/lsp-hint.sh
 
 uninstall: ## dotfiles をアンインストール
 	bash scripts/uninstall.sh

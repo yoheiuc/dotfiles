@@ -88,8 +88,12 @@ EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
 # not secrets. OAuth tokens themselves are managed by Claude Code, not dotfiles.
 SLACK_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.slack.com/mcp","oauth":{"clientId":"1601185624273.8899143856786","callbackPort":3118}}'
 CHROME_DEVTOOLS_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@latest"]}'
-# owlocr-mcp runs via uvx from GitHub (no local clone; uvx handles caching).
-# Same pattern as Serena. Requires macOS (Vision framework) + uv installed.
+# owlocr-mcp runs via uvx directly against the GitHub repo — no local clone,
+# no wrapper script. Serena uses a similar uvx approach but wraps it in
+# ~/.local/bin/serena-mcp for config flags; owlocr needs no such wrapping.
+# Requires macOS (Vision framework) + uv installed + the upstream repo to
+# expose an `owlocr-mcp` entry under `[project.scripts]` in its pyproject.
+# If MCP connect fails, verify with: uvx --from git+... owlocr-mcp --help
 OWLOCR_CLAUDE_ENTRY='{"type":"stdio","command":"bash","args":["-lc","uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]}'
 BRAVE_SEARCH_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["BRAVE_API_KEY","dotfiles.ai.mcp","brave-api-key","npx","-y","@modelcontextprotocol/server-brave-search"]}'
 serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
