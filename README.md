@@ -218,7 +218,6 @@ ghq get git@github.com:owner/repo.git
 
 `home/dot_claude/dot_mcp.json` に、記事ベースの「とりあえずこれ入れておけ」構成を反映しています。
 
-- `filesystem`
 - `exa`
 - `brave-search`
 - `drawio`
@@ -226,11 +225,11 @@ ghq get git@github.com:owner/repo.git
 - `chrome-devtools`
 - `sequential-thinking`（`post-setup.sh` で Claude Code に登録）
 
-ブラウザ自動化は `@playwright/cli` + skill 方式に寄せているので、`@playwright/mcp` は含めていません（下の「Playwright CLI」節参照）。
+ブラウザ自動化は `@playwright/cli` + skill 方式に寄せているので、`@playwright/mcp` は含めていません（下の「Playwright CLI」節参照）。ファイル操作は Claude Code の native `Read` / `Write` / `Edit` / `Grep` / `Glob` で代替できるため、`filesystem` MCP も外しました。
 
 検索系は `Exa MCP`（`https://mcp.exa.ai/mcp`、API key 不要）と `brave-search`（`@modelcontextprotocol/server-brave-search`、`BRAVE_API_KEY` を `mcp-with-keychain-secret` wrapper 経由で macOS Keychain から注入）の両方を入れています。
 
-同じ baseline は `make ai-repair` 実行時に Claude Code の `~/.claude.json` と Codex の `~/.codex/config.toml` に再生成されます。`filesystem` は `"$HOME"` のみを root にし、存在しない optional directory は起動引数へ入れません。`make ai-audit` は MCP 登録が壊れている場合に warning を出します。
+同じ baseline は `make ai-repair` 実行時に Claude Code の `~/.claude.json` と Codex の `~/.codex/config.toml` に再生成されます。`make ai-audit` は MCP 登録が壊れている場合に warning を出します。旧 dotfiles の `playwright` / `filesystem` MCP 登録が残っている場合も `make ai-repair` で自動的に削除されます。
 
 ```bash
 ai-secrets
@@ -538,7 +537,7 @@ config-file = local.ghostty
 - `approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`（`--full-auto` 相当）
 - `[features]`: `multi_agent = true`、`codex_hooks = true`
 - `[plugins]`: Google Calendar, GitHub, Gmail, Google Drive, build-macos-apps, build-ios-apps, Notion
-- MCP サーバー: Serena, filesystem, drawio, chrome-devtools, exa, brave-search, OpenAI Developer Docs
+- MCP サーバー: Serena, drawio, chrome-devtools, exa, brave-search, OpenAI Developer Docs
 - マシン固有のパスは `{{ .chezmoi.homeDir }}` で展開
 
 `~/.codex/hooks.json` も chezmoi 管理にしています。Stop フックで `codex-auto-save-memory` skill を実行し、セッション終了時にメモリを自動保存します。
@@ -589,7 +588,7 @@ make ai-audit
 `make ai-audit` は次の観点をまとめて確認します。
 
 - `~/.claude.json` / `~/.codex/config.toml` の baseline（model, sandbox, approval, features, hooks）
-- Serena wrapper / OpenAI Docs MCP / filesystem/exa/brave-search/drawio/chrome-devtools の登録有無（レガシーな `playwright` MCP が残っていれば warning）
+- Serena wrapper / OpenAI Docs MCP / exa/brave-search/drawio/chrome-devtools の登録有無（レガシーな `playwright` / `filesystem` MCP が残っていれば warning）
 - Brave API key が Keychain に存在するか
 - Serena config の主要キー（`language_backend`, `web_dashboard`, `project_serena_folder_location`）
 - 古い bridge 設定や危険な approval 設定が残っていないか
@@ -597,8 +596,8 @@ make ai-audit
 
 よくあるトラブルは次の 3 つです。
 
-1. `filesystem` MCP が `initialize` で落ちる  
-   原因の多くは存在しないディレクトリを root に渡していることです。この repo の baseline は `"$HOME"` だけを使います。`make ai-repair` で戻せます。
+1. 旧 dotfiles から移行したら `playwright` / `filesystem` MCP が残っている  
+   `make ai-repair` が自動的に削除します。残っていれば `make ai-audit` が warning を出すので、それを目印に repair を走らせてください。
 2. `ai-secrets` が古い wrapper を掴んで失敗する  
    `chezmoi apply ~/.local/bin/ai-secrets` で wrapper を再展開してください。
 3. `brave-search` MCP が起動しない  
