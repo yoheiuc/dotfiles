@@ -67,8 +67,6 @@ brew "tfenv"              # Terraform version manager
 
 # ---------- Casks: terminal / AI ----------
 cask "ghostty"            # GPU-accelerated terminal
-tap  "manaflow-ai/cmux"
-cask "cmux"               # AI agent terminal (built on libghostty)
 cask "claude"             # Claude desktop
 cask "visual-studio-code", args: { appdir: "/Applications" }
 cask "codex-app"                 # OpenAI Codex desktop app
