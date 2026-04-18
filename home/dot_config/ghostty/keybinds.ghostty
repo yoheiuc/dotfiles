@@ -12,6 +12,10 @@ keybind = cmd+plus=increase_font_size:1
 keybind = cmd+minus=decrease_font_size:1
 keybind = cmd+zero=reset_font_size
 
-# Pane splitting is handled by Zellij (Ctrl+p → n/r/d).
-# Ghostty's native splits are intentionally disabled to avoid
-# conflicting with the Zellij pane model.
+# Pane splitting: use Ghostty's macOS defaults. No rebinds needed.
+#   cmd+d              split right
+#   cmd+shift+d        split down
+#   cmd+option+←/→/↑/↓ focus neighbour split
+#   cmd+shift+enter    toggle zoom on current split
+#   cmd+w              close current split / tab
+# Zellij remains available when long-running multiplexer sessions are needed.
