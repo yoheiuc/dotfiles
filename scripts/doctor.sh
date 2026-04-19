@@ -387,6 +387,12 @@ if command -v claude &>/dev/null; then
       ;;
   esac
   unset _claude_json
+
+  if [[ -f "${HOME}/.claude/skills/frontend-design/SKILL.md" ]]; then
+    ok "frontend-design skill: present"
+  else
+    warn "frontend-design skill missing — run: chezmoi apply"
+  fi
 else
   warn "claude not found — run: ./scripts/post-setup.sh"
 fi

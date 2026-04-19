@@ -9,6 +9,7 @@
 - MCP サーバーの追加・削除は特に影響範囲が広い。`dot_mcp.json`、`config.toml.tmpl`、`ai-repair.sh`、`ai-audit.sh`、`ai-secrets.sh`（credential が必要な場合）、`README.md`、`CLAUDE.md`、および `tests/` 配下の対応テストをすべて更新する。さらに routing table も同時に直す（Claude: `home/dot_claude/CLAUDE.md`、Codex: `home/AGENTS.md`）。関連する `home/dot_claude/commands/*.md` の記述も揃える
 - MCP を廃止するときは `ai-repair.sh` 側で残存エントリを `ai_config_json_remove_mcp` / `ai_config_toml_remove_mcp_section` で能動的に削除し、`ai-audit.sh` にも legacy 警告を追加する。こうしないと既存マシンが収束しない
 - CLI 系ツール（`playwright-cli` のような npm global / brew など）を追加するときは、`scripts/post-setup.sh`、`scripts/doctor.sh`、`home/dot_config/zsh/` の対応モジュール、`home/dot_local/share/navi/cheats/dotfiles/` の cheat、該当する `home/dot_claude/commands/*.md`、`README.md`、および `tests/` 配下の回帰テストを同時に更新する
+- Claude Code の skill は 2 通りの配布方式がある。**公式 CLI で配布される** skill（gws / playwright / notion など）は `scripts/post-setup.sh` が install 時に `~/.claude/skills/` へ配置し、dotfiles source には入れない。**plugin 経由でのみ配布される** skill（`anthropics/claude-plugins-official` の `frontend-design` など）は `home/dot_claude/skills/<name>/` に vendor し、`SKILL.md` と `LICENSE.txt` を同梱、`scripts/doctor.sh` の `Claude Code (optional)` セクションに存在確認を追加、`tests/<skill>.sh` に回帰テストを追加、`README.md` の skill ストレージ説明と tree 図を更新する
 
 ## ツール採用基準（MCP / CLI / 削除）
 
