@@ -272,3 +272,12 @@ ok "brew autoupdate: disabled by dotfiles policy"
 printf '\nVerify with: make doctor\n'
 printf '             codex login    (one-time auth)\n'
 printf '             ntn login      (one-time Notion OAuth)\n'
+
+if command -v playwright-cli >/dev/null 2>&1; then
+  printf '\n\033[1mTo let agents drive your logged-in Chrome (Playwright CLI attach):\033[0m\n'
+  printf '  1. one-time per Chrome profile, in Chrome 144+:\n'
+  printf '       open chrome://inspect/#remote-debugging → toggle ON\n'
+  printf '       "Allow remote debugging for this browser instance"\n'
+  printf '  2. then in a terminal: pwattach\n'
+  printf '     (exports PLAYWRIGHT_CLI_SESSION=chrome; launch Claude Code / Codex from that shell)\n'
+fi

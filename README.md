@@ -349,10 +349,20 @@ playwright-cli install --skills       # Claude Code / Codex skill
 
 `@playwright/cli` v0.1.8+ の `attach --cdp=chrome` を使うと、サンドボックス Chromium を起動せず、**いま動いている自分の Chrome に CDP 接続**できます。ログイン状態・拡張機能・開いているタブをそのまま AI が操作するモードです。
 
-1. **Chrome 側で remote debugging を ON**（初回のみ）：Chrome 144 以上で `chrome://inspect/#remote-debugging` → "Allow remote debugging for this browser instance" を ON
-2. `pwattach` を実行 → `PLAYWRIGHT_CLI_SESSION=chrome` が export される
-3. そのまま Claude Code / Codex を起動して作業を依頼。agent 側 routing は `PLAYWRIGHT_CLI_SESSION=chrome` を見て「実 Chrome を操作する」モードで動く
-4. 終わったら `pwdetach`（Chrome 本体は生きたまま、CDP セッションだけ閉じる）
+> **🔑 初回のみやること（Chrome プロファイル単位で 1 回）**
+>
+> Chrome 144 以上を起動し、**`chrome://inspect/#remote-debugging`** を開いて
+> **"Allow remote debugging for this browser instance"** のトグルを **ON** にする。
+>
+> Chrome 136+ は `--remote-debugging-port` をユーザープロファイルに対して無視するようになった（マルウェア対策）。opt-in はこのトグルが唯一の入口で、CLI 側からは自動 ON できない仕様。一度 ON にすれば以後そのプロファイルでは保持される。
+>
+> `make sync-all` / `make install-home` 実行後にもこの案内を出します（`post-setup.sh`）。
+
+上が済んでいれば、日常の使い方は 3 ステップ:
+
+1. シェルで `pwattach` → `PLAYWRIGHT_CLI_SESSION=chrome` が export される（attach 失敗時は export されないので、エラーが出たら上の toggle 設定を確認）
+2. そのまま Claude Code / Codex を起動して作業を依頼。agent 側 routing は `PLAYWRIGHT_CLI_SESSION=chrome` を見て「実 Chrome を操作する」モードで動く
+3. 終わったら `pwdetach`（Chrome 本体は生きたまま、CDP セッションだけ閉じる）
 
 **AI への指示例**：
 
