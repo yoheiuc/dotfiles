@@ -20,17 +20,40 @@ pwsession() {
 # を export する。以降このシェルから起動した Claude Code / Codex の
 # playwright-cli 呼び出しは、サンドボックス Chromium ではなくユーザーが
 # ログイン済みの Chrome を操作する。
-# 前提：Chrome 144+ で chrome://inspect/#remote-debugging の
-#       "Allow remote debugging for this browser instance" を ON にしてある。
+#
+# ポリシー：AI 専用 Chrome プロファイルでだけ使う（普段使いプロファイルの
+# 全ログイン状態を agent に渡してしまうのを避ける）。ユーザー側で
+#   1. AI 専用 Chrome プロファイルを作成
+#   2. そのプロファイルでだけ chrome://inspect/#remote-debugging の
+#      "Allow remote debugging for this browser instance" を ON
+#   3. ~/.zshenv に `export PLAYWRIGHT_AI_CHROME_READY=1` を追加
+# を済ませた宣言として PLAYWRIGHT_AI_CHROME_READY を見る。
+# セット無しだと pwattach は拒否する（事故防止）。
 # 失敗時は PLAYWRIGHT_CLI_SESSION を汚染しない（成功後にだけ export する）。
 pwattach() {
+  if [[ -z "${PLAYWRIGHT_AI_CHROME_READY:-}" ]]; then
+    cat >&2 <<'EOF'
+pwattach: refusing to run — PLAYWRIGHT_AI_CHROME_READY is not set.
+  policy: pwattach must target an AI-dedicated Chrome profile, not your
+          everyday browser. Set up once:
+    1. create a dedicated Chrome profile (profile picker → "Add")
+    2. open chrome://inspect/#remote-debugging in THAT profile and
+       toggle "Allow remote debugging for this browser instance" ON
+       (keep your main profile's toggle OFF)
+    3. add to ~/.zshenv:  export PLAYWRIGHT_AI_CHROME_READY=1
+    4. restart the shell and re-run pwattach
+  see README.md "pwattach のセキュリティ" for the rationale.
+EOF
+    return 2
+  fi
   if playwright-cli --session=chrome attach --cdp=chrome; then
     export PLAYWRIGHT_CLI_SESSION=chrome
-    echo "PLAYWRIGHT_CLI_SESSION=chrome (attached to real Chrome)"
+    echo "PLAYWRIGHT_CLI_SESSION=chrome (attached to AI-dedicated Chrome)"
   else
     local rc=$?
     echo "pwattach: playwright-cli exited ${rc}; PLAYWRIGHT_CLI_SESSION left unchanged" >&2
-    echo "  check: Chrome 144+ and chrome://inspect/#remote-debugging toggle is ON" >&2
+    echo "  check: Chrome 144+, the AI-dedicated profile is foreground, and" >&2
+    echo "         chrome://inspect/#remote-debugging is ON in that profile" >&2
     return "${rc}"
   fi
 }

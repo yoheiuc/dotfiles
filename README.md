@@ -349,36 +349,63 @@ playwright-cli install --skills       # Claude Code / Codex skill
 
 `@playwright/cli` v0.1.8+ の `attach --cdp=chrome` を使うと、サンドボックス Chromium を起動せず、**いま動いている自分の Chrome に CDP 接続**できます。ログイン状態・拡張機能・開いているタブをそのまま AI が操作するモードです。
 
-> **🔑 初回のみやること（Chrome プロファイル単位で 1 回）**
+> **⚠️ ポリシー：`pwattach` は必ず AI 専用の Chrome プロファイルで使う**
 >
-> Chrome 144 以上を起動し、**`chrome://inspect/#remote-debugging`** を開いて
-> **"Allow remote debugging for this browser instance"** のトグルを **ON** にする。
+> 普段使いプロファイルに attach すると、Gmail / 銀行 / 個人 / 業務 admin 等 **全ログインセッション**が agent の操作対象になります。prompt injection や CDP 経由の Cookie 窃取で漏洩する blast radius が実生活まで及ぶため、dotfiles 側ではこれを**ソフトに強制**しています：
 >
-> Chrome 136+ は `--remote-debugging-port` をユーザープロファイルに対して無視するようになった（マルウェア対策）。opt-in はこのトグルが唯一の入口で、CLI 側からは自動 ON できない仕様。一度 ON にすれば以後そのプロファイルでは保持される。
+> - `pwattach` は `PLAYWRIGHT_AI_CHROME_READY=1` が export されていないと **拒否して停止**（`home/dot_config/zsh/playwright.zsh`）
+> - セットアップ完了済みというユーザー自身の宣言としてこの env var を扱う
 >
-> `make sync-all` / `make install-home` 実行後にもこの案内を出します（`post-setup.sh`）。
+> `pwlogin`（別 persistent profile）はこの強制の対象外。`pwattach` 固有のリスクが `pwlogin` より高いための差です。詳細は下の「pwattach のセキュリティ」参照。
 
-上が済んでいれば、日常の使い方は 3 ステップ:
+#### 初回セットアップ（マシン単位で 1 回）
 
-1. シェルで `pwattach` → `PLAYWRIGHT_CLI_SESSION=chrome` が export される（attach 失敗時は export されないので、エラーが出たら上の toggle 設定を確認）
-2. そのまま Claude Code / Codex を起動して作業を依頼。agent 側 routing は `PLAYWRIGHT_CLI_SESSION=chrome` を見て「実 Chrome を操作する」モードで動く
-3. 終わったら `pwdetach`（Chrome 本体は生きたまま、CDP セッションだけ閉じる）
+1. **AI 専用 Chrome プロファイルを作る**：Chrome 右上のプロフィール アイコン → "他のプロフィールを追加" → 名前は `AI` など
+2. **その AI 用プロファイルでだけ** `chrome://inspect/#remote-debugging` を開いて **"Allow remote debugging for this browser instance"** を ON（Chrome 144+ 必須）。**普段使いプロファイルでは絶対にこの toggle を ON にしない**（Chrome 136+ が `--remote-debugging-port` をプロファイルに対して無視する設計の意図が、これで無効化される）
+3. AI に触らせたい SaaS にはこの AI 用プロファイルで **閲覧権限 / 読み取り専用 / 非特権アカウント** でログイン（普段使いアカウントは持ち込まない）
+4. `~/.zshenv` に `export PLAYWRIGHT_AI_CHROME_READY=1` を追加 → 新しいシェルを開く
 
-**AI への指示例**：
+`make sync-all` / `make install-home` 実行後の onboarding メッセージ（`scripts/post-setup.sh`）にもこの 4 ステップを表示します。
+
+#### 日常の使い方
+
+1. **AI 用プロファイルの Chrome ウィンドウを手前にしてから**、シェルで `pwattach` → `PLAYWRIGHT_CLI_SESSION=chrome` が export される
+2. そのまま Claude Code / Codex を起動して作業を依頼。routing は `PLAYWRIGHT_CLI_SESSION=chrome` を見て「実 Chrome を操作する」モードで動く
+3. 終わったら `pwdetach`（CDP セッションを閉じる）。機微な作業後は、AI 用プロファイルを閉じるか `chrome://inspect` の toggle を一時的に OFF に戻すのを推奨
+
+#### AI への指示例
 
 - 環境変数方式：`pwattach` してから Claude Code を起動。routing の時点で実 Chrome が選ばれる
-- 明示方式：「自分の Chrome でログイン状態のまま見て」「今開いてるタブで作業して」と伝えると、agent は `pwattach` 前提のフローに切り替える。未 attach なら先に `chrome://inspect` の toggle 確認を案内する
+- 明示方式：「自分の Chrome でログイン状態のまま見て」「今開いてるタブで作業して」と伝えると、agent は `pwattach` 前提のフローに切り替える。未 attach（`PLAYWRIGHT_CLI_SESSION` 未設定）なら、セットアップ手順を案内してから止まる
 
-**`pwlogin` との使い分け**：
+#### `pwlogin` との使い分け
 
 | 観点 | `pwattach`（実 Chrome） | `pwlogin`（persistent profile） |
 |---|---|---|
-| Cookie / 拡張 / 履歴 | ユーザーの主ブラウザそのまま | 別プロファイル（isolation あり） |
-| ログイン | ユーザーが普段通りにログイン済み | 初回に可視ブラウザで手動ログイン（2FA 含む） |
-| 残り方 | Chrome を閉じるまで残る | `pwkill <name>` するまでディスクに残る |
-| 向く用途 | 「今見てる画面のこれ、AI にやらせたい」 | 長期運用・権限を絞った読み取り専用アカウント |
+| プロファイル | **AI 専用プロファイル必須**（強制） | playwright 管理の別プロファイル |
+| Cookie / 拡張 / 履歴 | AI 用プロファイルの状態 | playwright が名前付きで管理 |
+| ログイン | ユーザーが AI 用 Chrome で普通にログイン | 初回に可視ブラウザで手動ログイン（2FA 含む） |
+| 残り方 | AI 用 Chrome を閉じるまで残る | `pwkill <name>` するまでディスクに残る |
+| 向く用途 | 「今見てる画面のこれ、AI にやらせたい」 | SaaS 単位で isolation した長期運用 |
 
-**注意**：`pwattach` 中は AI がユーザーの全ログインセッションに触れます。blast radius は非常に広いので、管理者権限アカウントでログインしている Chrome で走らせないこと。`pwdetach` は Chrome を閉じないので、席を立つ前に明示的に切ること。
+### `pwattach` のセキュリティ（実 Chrome アタッチ特有のリスク）
+
+`pwlogin` は `--persistent` のディスク暗号化が焦点だが、`pwattach` は **live session を丸ごと agent に渡す**性質なので、リスクの種類がまったく違う。上の「必ず AI 専用プロファイル」の運用は、下の 4 リスクのうち最も深刻な 1 と 3 を同時に抑えるために存在する。
+
+| リスク | 深刻度 | 内容 | 対策 |
+|---|---|---|---|
+| **1. Prompt injection → 資格情報窃取** | 高 | attach 中の Chrome に agent はフル権限でアクセスできる。ログイン済みの全セッションに touch 可能。agent が読むコンテキスト（Web / Notion / メール / Slack）に隠し指示があれば `playwright-cli` 経由で Cookie / localStorage を外部に流せる。CDP 経由のアクセスには Same-Origin Policy が効かない | AI 用プロファイルに機微アカウントを入れない。外部コンテキストを信頼しきらない。機微タスクを `pwattach` 中に並行させない |
+| **2. toggle の永続化** | 中 | `chrome://inspect/#remote-debugging` の toggle はプロファイル属性として保持され、`pwdetach` しても OFF にならない。localhost に接続できる任意のプロセスが以後も attach できる。Lumma Stealer / RedLine 系情報窃取マルウェアは localhost CDP を探すのが既知パターン | AI 用プロファイルでだけ toggle ON（普段使いは OFF のまま）。常用しないマシンでは使い終わったら toggle 自体を OFF に戻す。`pwdetach` は toggle を OFF にしない |
+| **3. scope 分離が効かない** | 中 | `pwlogin <name>` は SaaS 単位でプロファイルを分けられるが、`pwattach` はプロファイル丸ごと渡す。同じプロファイル内の全タブに agent が飛べる | **AI 専用プロファイル必須**（dotfiles 側で強制）。そのプロファイルには非特権・読み取り系アカウントだけを入れる |
+| **4. 拡張機能による副作用** | 低 | attach 中の Chrome の拡張機能（パスワードマネージャ / Autofill 等）は agent の操作にも反映される。意図しない送信欄にクレデンシャルが埋まることがある | AI 用プロファイルは最小構成。パスワードマネージャ系を入れない |
+
+### pwattach を使う時のセーフガード（運用）
+
+- **admin / root 級アカウントを AI 用プロファイルに入れない**
+- `pwshow` のダッシュボードを可視で動かしておき、agent が想定外のタブ / 操作を走らせていないか監視
+- AI 用プロファイルに機微データ（PII / 財務 / 健康 / 規制対象）を表示したタブを置かない
+- 作業終了時は `pwdetach` + AI 用 Chrome を閉じる。長期放置するマシンでは `chrome://inspect` の toggle も OFF に戻す
+- agent が外部コンテキスト（Slack / Notion / メール / GitHub Issue）を読み込んだ直後に `pwattach` 下でブラウザ操作を依頼しない（prompt injection の窓口になりうる）
 
 ### セッション運用ルール
 
