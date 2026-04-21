@@ -98,10 +98,6 @@ url = "https://mcp.exa.ai/mcp"
 [mcp_servers.slack]
 url = "https://mcp.slack.com/mcp"
 
-[mcp_servers.brave-search]
-command = "${HOME}/.local/bin/mcp-with-keychain-secret"
-args = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
-
 [mcp_servers.vision]
 command = "npx"
 args = ["-y", "@tuannvm/vision-mcp-server"]
@@ -141,11 +137,6 @@ cat > "${HOME}/.claude.json" <<EOF
       "command": "npx",
       "args": ["-y", "@tuannvm/vision-mcp-server"]
     },
-    "brave-search": {
-      "type": "stdio",
-      "command": "${HOME}/.local/bin/mcp-with-keychain-secret",
-      "args": ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
-    },
     "serena": {
       "type": "stdio",
       "command": "${HOME}/.local/bin/serena-mcp",
@@ -165,7 +156,6 @@ web_dashboard: true
 web_dashboard_open_on_launch: false
 project_serena_folder_location: "$projectDir/.serena"
 EOF
-"${SECURITY_BIN}" add-generic-password -U -s dotfiles.ai.mcp -a brave-api-key -w BSAtest_audit_key
 run_capture bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should succeed in the clean case"
 assert_contains "${RUN_OUTPUT}" "Codex config: present" "ai-audit should report local codex config"
@@ -176,19 +166,18 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env is set" "ai
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/lsp-hint.sh)" "ai-audit should validate lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/auto-save.sh)" "ai-audit should validate auto-save hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: registered" "ai-audit should validate Claude vision MCP"
-assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should validate Claude Brave Search MCP"
+assert_not_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should not expect retired Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: registered" "ai-audit should validate Claude Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Codex: sandbox mode is workspace-write" "ai-audit should validate Codex sandbox"
 assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: registered" "ai-audit should validate Docs MCP"
 assert_contains "${RUN_OUTPUT}" "Codex exa MCP: registered" "ai-audit should validate Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Codex slack MCP: registered" "ai-audit should validate Slack MCP"
-assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: registered" "ai-audit should validate Brave Search MCP"
+assert_not_contains "${RUN_OUTPUT}" "Codex brave-search MCP: registered" "ai-audit should not expect retired Codex Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Codex vision MCP: registered" "ai-audit should validate Codex vision MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: web_dashboard enabled" "ai-audit should validate Serena config"
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should report Claude MCP registration"
 assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: registered via wrapper" "ai-audit should report Codex MCP registration"
-assert_contains "${RUN_OUTPUT}" "Brave API key: present in Keychain" "ai-audit should confirm Brave key is in Keychain in clean case"
 assert_contains "${RUN_OUTPUT}" "AI config audit looks good." "ai-audit should report a clean result"
 
 # ---- Scenario 2: drift + registrations ----
@@ -239,7 +228,6 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env should be a
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/lsp-hint.sh)" "ai-audit should detect missing lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/auto-save.sh)" "ai-audit should detect missing auto-save hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: missing or drifted" "ai-audit should detect missing Claude vision MCP"
-assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: missing or drifted" "ai-audit should detect missing Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: missing or drifted" "ai-audit should detect missing Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: missing or drifted" "ai-audit should detect missing Claude Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: language_backend should be LSP" "ai-audit should detect Serena config drift"
@@ -248,7 +236,6 @@ assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: registered via wrapper" "ai-a
 assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: missing" "ai-audit should detect missing Docs MCP"
 assert_contains "${RUN_OUTPUT}" "Codex exa MCP: missing" "ai-audit should detect missing Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Codex slack MCP: missing" "ai-audit should detect missing Slack MCP"
-assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: missing" "ai-audit should detect missing Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Codex vision MCP: missing" "ai-audit should detect missing Codex vision MCP"
 assert_contains "${RUN_OUTPUT}" "Codex config backups: found backup files to review or delete" "ai-audit should report backup files"
 assert_contains "${RUN_OUTPUT}" "AI config audit needs attention:" "ai-audit should summarize warnings"
@@ -359,5 +346,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code owlocr MCP: legacy entry present" "
 assert_contains "${RUN_OUTPUT}" "Codex owlocr MCP: legacy entry present" "ai-audit should flag legacy Codex owlocr MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: legacy entry present" "ai-audit should flag legacy Claude Code chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: legacy entry present" "ai-audit should flag legacy Codex chrome-devtools MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: legacy entry present" "ai-audit should flag legacy Claude Code brave-search MCP"
+assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: legacy entry present" "ai-audit should flag legacy Codex brave-search MCP"
 
 pass_test "tests/ai-audit.sh"

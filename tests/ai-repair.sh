@@ -140,9 +140,8 @@ assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.notion]"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'mcp.notion.com' "ai-repair should not set retired Notion MCP URL in Codex"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.slack]" "ai-repair should add Slack MCP section in Codex"
 assert_contains "$(cat "${HOME}/.codex/config.toml")" 'url = "https://mcp.slack.com/mcp"' "ai-repair should set Slack MCP URL in Codex"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.brave-search]" "ai-repair should add Brave Search MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" 'mcp-with-keychain-secret' "ai-repair should route Brave Search MCP through the keychain wrapper"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/server-brave-search" "ai-repair should set Brave Search MCP command args"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.brave-search]" "ai-repair should not register retired Brave Search MCP in Codex"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/server-brave-search" "ai-repair should not set retired Brave Search MCP args in Codex"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '"github"' "ai-repair should not register removed GitHub MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-repair should register Exa MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL for Claude Code"
@@ -156,9 +155,8 @@ assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should not register retired chrome-devtools MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"vision"' "ai-repair should register vision MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '@tuannvm/vision-mcp-server' "ai-repair should set Claude vision MCP args"
-assert_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-repair should register Brave Search MCP for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" 'mcp-with-keychain-secret' "ai-repair should route Claude Brave Search MCP through the keychain wrapper"
-assert_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should set Claude Brave Search MCP args"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-repair should not register retired Brave Search MCP for Claude Code"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should not set retired Claude Brave Search MCP args"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.drawio]" "ai-repair should not register retired drawio MCP in Codex"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@drawio/mcp@latest" "ai-repair should not set retired drawio MCP args in Codex"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.playwright]" "ai-repair should not register retired Playwright MCP in Codex"
@@ -174,13 +172,6 @@ assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on re-run"
 assert_contains "${RUN_OUTPUT}" "already registered" "ai-repair should detect existing registration"
 assert_contains "${RUN_OUTPUT}" "auto-update channel already set to latest" "ai-repair should detect existing Claude baseline"
 assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP already registered" "ai-repair should detect existing Docs MCP"
-
-# Keychain should feed both Claude Code and Codex without plaintext config values
-"${SECURITY_BIN}" add-generic-password -U -s dotfiles.ai.mcp -a brave-api-key -w BSAtest_key_12345
-run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
-assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when keychain secrets are present"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'BSAtest_key_12345' "ai-repair should not write the Brave API key into Codex config"
-assert_not_contains "$(cat "${HOME}/.claude.json")" 'BSAtest_key_12345' "ai-repair should not write the Brave API key into Claude Code config"
 
 # Legacy MCP removal — simulate an old dotfiles install and verify convergence.
 python3 -c "
@@ -212,9 +203,13 @@ d['mcpServers']['chrome-devtools'] = {
   'type': 'stdio', 'command': 'npx',
   'args': ['-y', 'chrome-devtools-mcp@latest']
 }
+d['mcpServers']['brave-search'] = {
+  'type': 'stdio', 'command': '${HOME}/.local/bin/mcp-with-keychain-secret',
+  'args': ['BRAVE_API_KEY', 'dotfiles.ai.mcp', 'brave-api-key', 'npx', '-y', '@modelcontextprotocol/server-brave-search']
+}
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
-cat >> "${HOME}/.codex/config.toml" <<'EOF'
+cat >> "${HOME}/.codex/config.toml" <<EOF
 
 [mcp_servers.playwright]
 command = "npx"
@@ -225,7 +220,7 @@ approval_mode = "approve"
 
 [mcp_servers.filesystem]
 command = "bash"
-args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"$HOME\""]
+args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]
 
 [mcp_servers.drawio]
 command = "npx"
@@ -245,6 +240,10 @@ args = ["-lc", "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-m
 [mcp_servers.chrome-devtools]
 command = "npx"
 args = ["-y", "chrome-devtools-mcp@latest"]
+
+[mcp_servers.brave-search]
+command = "${HOME}/.local/bin/mcp-with-keychain-secret"
+args = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
 EOF
 
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
@@ -256,6 +255,7 @@ assert_contains "${RUN_OUTPUT}" "legacy notion MCP removed" "ai-repair should an
 assert_contains "${RUN_OUTPUT}" "legacy github MCP removed" "ai-repair should announce legacy github removal"
 assert_contains "${RUN_OUTPUT}" "legacy owlocr MCP removed" "ai-repair should announce legacy owlocr removal"
 assert_contains "${RUN_OUTPUT}" "legacy chrome-devtools MCP removed" "ai-repair should announce legacy chrome-devtools removal"
+assert_contains "${RUN_OUTPUT}" "legacy brave-search MCP removed" "ai-repair should announce legacy brave-search removal"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should strip legacy playwright from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-filesystem' "ai-repair should strip legacy filesystem from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should strip legacy drawio from .claude.json"
@@ -263,6 +263,7 @@ assert_not_contains "$(cat "${HOME}/.claude.json")" 'mcp.notion.com' "ai-repair 
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-github' "ai-repair should strip legacy github from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'jangisaac-dev/owlocr-mcp' "ai-repair should strip legacy owlocr from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should strip legacy chrome-devtools from .claude.json"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should strip legacy brave-search from .claude.json"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright]' "ai-repair should strip legacy playwright section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright.tools.browser_navigate]' "ai-repair should strip legacy playwright tools subsections from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.filesystem]' "ai-repair should strip legacy filesystem section from Codex config"
@@ -271,6 +272,7 @@ assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.notion]'
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.github]' "ai-repair should strip legacy github section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.owlocr]' "ai-repair should strip legacy owlocr section from Codex config"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.chrome-devtools]' "ai-repair should strip legacy chrome-devtools section from Codex config"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.brave-search]' "ai-repair should strip legacy brave-search section from Codex config"
 
 # Retired session-topic hook cleanup — simulate an old dotfiles install that
 # had the Haiku session-topic feature installed, and verify convergence:

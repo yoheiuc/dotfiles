@@ -8,9 +8,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/ai-config.sh"
 
-SECURITY_BIN="${SECURITY_BIN:-security}"
-KEYCHAIN_SERVICE="dotfiles.ai.mcp"
-
 ATTENTION_COUNT=0
 
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
@@ -160,7 +157,6 @@ if [[ -f "${_claude_json}" ]]; then
   check_claude_stdio_mcp "${_claude_json}" vision "npx" '-y|@tuannvm/vision-mcp-server'
   check_claude_http_mcp  "${_claude_json}" exa "https://mcp.exa.ai/mcp"
   check_claude_http_mcp  "${_claude_json}" slack "https://mcp.slack.com/mcp"
-  check_claude_cmd_mcp   "${_claude_json}" brave-search "${HOME}/.local/bin/mcp-with-keychain-secret"
 
   # Warn on legacy MCP entries that have been retired.
   #   playwright       → @playwright/cli + skill
@@ -170,8 +166,9 @@ if [[ -f "${_claude_json}" ]]; then
   #   github           → gh CLI
   #   owlocr           → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
   #   chrome-devtools  → playwright-cli attach --cdp=chrome (pwattach helper)
+  #   brave-search     → Exa MCP alone covers web search
   # Match on key presence so HTTP-type entries without `command` are still caught.
-  for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools; do
+  for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search; do
     if [[ "$(ai_config_json_read "${_claude_json}" "'present' if '${_legacy}' in d.get('mcpServers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
       attention "Claude Code ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi
@@ -243,16 +240,11 @@ if [[ -f "${_codex_config}" ]]; then
     attention "Codex slack MCP: missing — run make ai-repair"
   fi
 
-  if [[ -n "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)" ]]; then
-    ok "Codex brave-search MCP: registered"
-  else
-    attention "Codex brave-search MCP: missing — run make ai-repair"
-  fi
-
   # Warn on legacy MCP entries that have been retired. Match on key presence.
   #   owlocr           → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
   #   chrome-devtools  → playwright-cli attach --cdp=chrome (pwattach helper)
-  for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools; do
+  #   brave-search     → Exa MCP alone covers web search
+  for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search; do
     if [[ "$(ai_config_toml_read "${_codex_config}" "'present' if '${_legacy}' in d.get('mcp_servers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
       attention "Codex ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi
@@ -320,17 +312,6 @@ case "$(ai_config_codex_mcp_state "${_codex_config}" "${_serena_wrapper}")" in
     ;;
 esac
 unset _serena_wrapper _claude_json _codex_config
-
-section "MCP Credentials (Keychain)"
-# Brave Search MCP requires a key in macOS Keychain (service: dotfiles.ai.mcp,
-# account: brave-api-key) so the mcp-with-keychain-secret wrapper can inject it.
-if ! command -v "${SECURITY_BIN}" >/dev/null 2>&1; then
-  info "security CLI unavailable — skipping Keychain checks (non-macOS?)"
-elif "${SECURITY_BIN}" find-generic-password -s "${KEYCHAIN_SERVICE}" -a brave-api-key >/dev/null 2>&1; then
-  ok "Brave API key: present in Keychain (service=${KEYCHAIN_SERVICE}, account=brave-api-key)"
-else
-  attention "Brave API key: missing in Keychain — run: ai-secrets"
-fi
 
 section "Backup Files"
 report_optional_backups "Codex config backups" "${HOME}/.codex/config.toml.pre-unmanage-*"

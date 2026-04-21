@@ -86,6 +86,6 @@ run_capture env \
 assert_eq "0" "${RUN_STATUS}" "ai-secrets wrapper should succeed"
 assert_not_contains "${RUN_OUTPUT}" "BSAtest_from_wrapper" "ai-secrets wrapper should not echo the Brave API key"
 assert_contains "$(cat "${FAKE_SECURITY_DB}")" $'dotfiles.ai.mcp\tbrave-api-key\tBSAtest_from_wrapper' "ai-secrets wrapper should persist the Brave API key to Keychain"
-assert_contains "$(cat "${fake_home}/.codex/config.toml")" 'mcp-with-keychain-secret' "ai-secrets wrapper should refresh Codex config"
+assert_contains "$(cat "${fake_home}/.codex/config.toml")" 'sandbox_mode = "workspace-write"' "ai-secrets wrapper should refresh Codex config via ai-repair"
 
 pass_test "tests/ai-secrets-wrapper.sh"

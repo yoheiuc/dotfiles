@@ -96,6 +96,3 @@ args = ["-y", "@tuannvm/vision-mcp-server"]
 url = "https://mcp.exa.ai/mcp"
 [mcp_servers.slack]
 url = "https://mcp.slack.com/mcp"
-[mcp_servers.brave-search]
-command = "{{ .chezmoi.homeDir }}/.local/bin/mcp-with-keychain-secret"
-args = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
