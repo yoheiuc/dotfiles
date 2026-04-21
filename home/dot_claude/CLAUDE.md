@@ -16,7 +16,7 @@
 
 | やりたいこと | 使うツール |
 |---|---|
-| 知らないこと・最新情報を調べる | `mcp__exa__web_search_exa` / `mcp__exa__web_fetch_exa` または `mcp__brave-search__brave_web_search`。Exa は技術系・構造化検索向き、Brave は汎用 Web 検索向き。「わかりません」の前にまず検索する |
+| 知らないこと・最新情報を調べる | `mcp__exa__web_search_exa` / `mcp__exa__web_fetch_exa`。技術系・構造化検索・汎用 Web 検索のいずれも Exa で行う。「わかりません」の前にまず検索する |
 | Notion の情報検索・参照・更新 | `ntn` CLI（Notion 公式）。`ntn api ...` で API 叩き、`ntn files ...` / `ntn workers ...` も。skill は `~/.claude/skills/notion-cli/`。認証は `ntn login`（browser OAuth）または `NOTION_API_TOKEN` env var |
 | Slack のメッセージ検索・投稿・チャンネル操作 | `mcp__slack__*`（remote + OAuth）。インシデント対応の履歴調査、チャンネルの要約、通知投稿に使う |
 | 図で説明した方が早い構成・フロー | Mermaid を使う。`.md` に ```mermaid ブロックで直接埋める（GitHub / VS Code / Obsidian が自動レンダリング）。PNG / SVG が要るときは `mmdc -i in.mmd -o out.svg`（`mermaid-cli`） |
@@ -33,7 +33,7 @@
 |---|---|
 | 公式 CLI + 公式 skill が揃っている | **CLI + skill**（例：`playwright-cli`、`ntn`） |
 | 公式 CLI なし、公式 remote MCP がある（OAuth 認証） | **remote HTTP MCP**（例：Slack、Exa） |
-| Local stdio MCP に credential を渡す必要がある | `mcp-with-keychain-secret` wrapper 経由（例：Brave Search） |
+| Local stdio MCP に credential を渡す必要がある | `mcp-with-keychain-secret` wrapper 経由で Keychain から注入（現状デフォルトの consumer なし、将来の stdio MCP 用に残置） |
 | agent context との tight integration が本質 | **MCP**（例：Serena、sequential-thinking） |
 | Claude Code の native tool（Read / Write / Edit / Grep / Glob）で代替できる | **削除 / 不採用** |
 | text diff フレンドリーな代替がある | **代替に移行**（例：drawio MCP → Mermaid） |

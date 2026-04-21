@@ -16,7 +16,7 @@
 
 | やりたいこと | 使うツール |
 |---|---|
-| 知らないこと・最新情報を調べる | `exa__web_search_exa` / `exa__web_fetch_exa` または `brave-search__brave_web_search`。Exa は技術系・構造化検索向き、Brave は汎用 Web 検索向き。「わかりません」の前にまず検索する |
+| 知らないこと・最新情報を調べる | `exa__web_search_exa` / `exa__web_fetch_exa`。技術系・構造化検索・汎用 Web 検索のいずれも Exa で行う。「わかりません」の前にまず検索する |
 | Notion の情報検索・参照・更新 | `ntn` CLI（Notion 公式）。`ntn api ...` で API 叩き、`ntn files ...` / `ntn workers ...` も。skill は `~/.codex/skills/notion-cli/`。認証は `ntn login` または `NOTION_API_TOKEN` env var |
 | Slack のメッセージ検索・投稿・チャンネル操作 | `slack__*`（remote + OAuth）。インシデント履歴の調査、チャンネルの要約、通知投稿に使う |
 | 図で説明した方が早い構成・フロー | Mermaid を使う。`.md` に ```mermaid ブロックで直接埋める。PNG / SVG が要るときは `mmdc -i in.mmd -o out.svg`（`mermaid-cli`） |

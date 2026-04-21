@@ -13,7 +13,6 @@ ok()   { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 
 SERENA_WRAPPER="${HOME}/.local/bin/serena-mcp"
-KEYCHAIN_ENV_WRAPPER="${HOME}/.local/bin/mcp-with-keychain-secret"
 SERENA_CONFIG_DIR="${HOME}/.serena"
 SERENA_CONFIG_PATH="${SERENA_CONFIG_DIR}/serena_config.yml"
 SERENA_CONFIG_BACKUP_SUFFIX="$(date +%Y%m%d%H%M%S)"
@@ -92,14 +91,12 @@ SLACK_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.slack.com/mcp","oauth":{"c
 # toolchain. Requires macOS 13+ and Node.js 18+. If MCP connect fails,
 # verify with: npx -y @tuannvm/vision-mcp-server --help
 VISION_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@tuannvm/vision-mcp-server"]}'
-BRAVE_SEARCH_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["BRAVE_API_KEY","dotfiles.ai.mcp","brave-api-key","npx","-y","@modelcontextprotocol/server-brave-search"]}'
 serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
 serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
 claude_vision_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)"
 claude_vision_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 claude_slack_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
-claude_brave_search_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
 
 if [[ "${serena_cmd_state}" == "ok" && "${serena_uv_tls}" == "true" ]]; then
   ok "Claude Code: serena already registered with wrapper and UV_NATIVE_TLS"
@@ -140,15 +137,7 @@ else
   ok "Claude Code: slack MCP already registered"
 fi
 
-if [[ "${claude_brave_search_cmd}" != "${KEYCHAIN_ENV_WRAPPER}" ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" brave-search "${BRAVE_SEARCH_CLAUDE_ENTRY}"
-  ok "Claude Code: brave-search MCP registered"
-  restart_needed=1
-else
-  ok "Claude Code: brave-search MCP already registered"
-fi
-
-unset claude_vision_cmd claude_vision_args claude_exa_url claude_slack_url claude_brave_search_cmd
+unset claude_vision_cmd claude_vision_args claude_exa_url claude_slack_url
 
 # Strip retired hook artifacts. The hooks block itself is wholesale-rewritten
 # below (so orphan UserPromptSubmit entries for session-topic disappear from
@@ -177,7 +166,10 @@ unset _orphan
 #   chrome-devtools  → playwright-cli attach --cdp=chrome (see pwattach zsh helper);
 #                      MCP kept spawning its own throwaway Chrome which defeats the
 #                      whole point of driving the user's logged-in session
-for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools; do
+#   brave-search     → Exa MCP covers the same web-search surface; brave required
+#                      a Keychain-backed API key whose value stopped justifying the
+#                      extra wrapper + ai-secrets flow
+for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search; do
   if [[ "$(ai_config_json_remove_mcp "${CLAUDE_JSON}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Claude Code: legacy ${_legacy} MCP removed"
     restart_needed=1
@@ -289,7 +281,6 @@ codex_vision_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{
 codex_vision_args="$(ai_config_toml_read "${CODEX_CONFIG}" "'|'.join(d.get('mcp_servers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
 codex_exa_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 codex_slack_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
-codex_brave_search_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
 
 _codex_vision_expected_args='-y|@tuannvm/vision-mcp-server'
 if [[ "${codex_vision_cmd}" != "npx" || "${codex_vision_args}" != "${_codex_vision_expected_args}" ]]; then
@@ -317,21 +308,14 @@ else
   ok "Codex: slack MCP already registered"
 fi
 
-if [[ "${codex_brave_search_cmd}" != "${KEYCHAIN_ENV_WRAPPER}" ]]; then
-  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.brave-search]" $'command = "'"${KEYCHAIN_ENV_WRAPPER}"$'"\nargs = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]'
-  ok "Codex: brave-search MCP registered"
-  restart_needed=1
-else
-  ok "Codex: brave-search MCP already registered"
-fi
-
-unset codex_vision_cmd codex_vision_args codex_exa_url codex_slack_url codex_brave_search_cmd
+unset codex_vision_cmd codex_vision_args codex_exa_url codex_slack_url
 
 # Strip legacy Codex MCP registrations retired in favor of CLIs / native tools
 # or replaced by a newer MCP (owlocr → vision). chrome-devtools retired in
 # favor of playwright-cli attach --cdp=chrome — MCP kept launching its own
 # throwaway Chrome instead of driving the user's logged-in session.
-for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools; do
+# brave-search retired in favor of Exa MCP alone.
+for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search; do
   if [[ "$(ai_config_toml_remove_mcp_section "${CODEX_CONFIG}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Codex: legacy ${_legacy} MCP removed"
     restart_needed=1

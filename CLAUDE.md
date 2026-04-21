@@ -19,7 +19,7 @@
 |---|---|---|
 | 公式 CLI + 公式 skill が揃っている | **CLI + skill**（`scripts/post-setup.sh` で install） | `playwright-cli` + `playwright-cli install --skills`、`ntn` + `makenotion/skills` |
 | 公式 CLI なし、公式 remote MCP のみ（OAuth で認証） | **remote HTTP MCP**（`dot_mcp.json` / `config.toml.tmpl` に URL のみ） | Slack、Exa、（過去の）Notion remote |
-| Local stdio MCP に credential を渡す必要がある | **`mcp-with-keychain-secret` wrapper 経由**で Keychain から注入 | Brave Search |
+| Local stdio MCP に credential を渡す必要がある | **`mcp-with-keychain-secret` wrapper 経由**で Keychain から注入 | （現状デフォルトの consumer なし、将来の stdio MCP 用に framework を残置） |
 | agent context との tight integration が本質（symbol 解析、CoT scaffolding など） | **MCP**（CLI 化すると価値が消える） | Serena、sequential-thinking |
 | Claude Code の native tool（`Read` / `Write` / `Edit` / `Grep` / `Glob`）で代替できる | **削除**（追加せず、既存も外す） | filesystem MCP |
 | text diff フレンドリーな代替がある | **代替に移行**（バイナリ依存の MCP は外す） | drawio MCP → Mermaid `.md` 直埋め + `mermaid-cli` |

@@ -86,9 +86,9 @@ assert_contains "${RUN_OUTPUT}" "Saved Brave API key to Keychain service dotfile
 assert_not_contains "${RUN_OUTPUT}" "BSAtest_prompted_key" "ai-secrets should not print the Brave API key"
 
 assert_contains "$(cat "${FAKE_SECURITY_DB}")" $'dotfiles.ai.mcp\tbrave-api-key\tBSAtest_prompted_key' "ai-secrets should persist the Brave API key to Keychain"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" 'mcp-with-keychain-secret' "ai-secrets should configure Codex to use the keychain wrapper"
 assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-secrets should keep Exa registered for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-secrets should register Brave Search MCP for Claude Code"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-secrets should not re-register retired Brave Search MCP"
+assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.brave-search]' "ai-secrets should not re-register retired Brave Search MCP in Codex"
 assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'BSAtest_prompted_key' "ai-secrets should not write the Brave API key into Codex config"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'BSAtest_prompted_key' "ai-secrets should not write the Brave API key into Claude config"
 assert_not_contains "$(ls -a "${HOME}/.config/dotfiles" 2>/dev/null || true)" 'ai-secrets.env' "ai-secrets should not leave a plaintext secrets file"
