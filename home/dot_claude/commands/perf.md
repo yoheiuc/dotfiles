@@ -1,25 +1,21 @@
-Performance audit and optimization. Leverages chrome-devtools MCP for web performance analysis.
+Performance audit and optimization. Web performance profiling is done via CLI tools (standalone Lighthouse, `playwright-cli` traces) — the `chrome-devtools` MCP was retired; drive the user's real browser with `playwright-cli attach --cdp=chrome` (`pwattach`) when live traces are needed.
 
-## Available MCP tools
+## Web performance tooling
 
-### Chrome DevTools (for web performance)
-- `mcp__chrome-devtools__lighthouse_audit` — full Lighthouse audit (performance, a11y, SEO, best practices)
-- `mcp__chrome-devtools__performance_start_trace` — start performance recording
-- `mcp__chrome-devtools__performance_stop_trace` — stop and analyze trace
-- `mcp__chrome-devtools__performance_analyze_insight` — deep-dive into trace insights
-- `mcp__chrome-devtools__take_memory_snapshot` — capture heap snapshot
-- `mcp__chrome-devtools__list_network_requests` — inspect network waterfall
-- `mcp__chrome-devtools__get_network_request` — inspect individual request details
+- **Lighthouse** (CLI): `npx lighthouse <url> --view` — full audit (perf / a11y / SEO / best practices). Headless Chrome, JSON / HTML report.
+- **`playwright-cli tracing-start` / `tracing-stop`**: capture a runtime trace against the user's attached Chrome (after `pwattach`) or a persistent profile.
+- **Browser DevTools by hand**: for one-off deep dives (Performance panel, Memory heap snapshot, Network waterfall), just drive the user's Chrome directly via `pwattach` and let the user inspect the devtools UI.
+- **Backend profilers**: language-native (`cProfile` / `py-spy` for Python, `--prof` for Node, `pprof` for Go).
 
 ## Workflow
 
 ### Web performance
-1. **Lighthouse first**: run `lighthouse_audit` to get a baseline score and prioritized recommendations.
-2. **Identify the bottleneck**: is it network, rendering, JavaScript, or server?
-3. **Trace**: use `performance_start_trace` / `performance_stop_trace` for detailed runtime analysis.
-4. **Network analysis**: use `list_network_requests` to find slow or large requests.
-5. **Memory**: use `take_memory_snapshot` if memory leaks are suspected.
-6. **Fix and re-measure**: after each optimization, re-run Lighthouse to confirm improvement.
+1. **Lighthouse first**: `npx lighthouse <url>` for a baseline score and prioritized recommendations.
+2. **Identify the bottleneck**: network, rendering, JavaScript, or server?
+3. **Trace**: `pwattach` → `playwright-cli tracing-start` → reproduce the interaction → `tracing-stop`. Inspect via `playwright show-trace <file>`.
+4. **Network analysis**: DevTools Network panel in the attached Chrome, or `playwright-cli` network APIs.
+5. **Memory**: DevTools Memory panel → heap snapshot, in the attached Chrome.
+6. **Fix and re-measure**: re-run Lighthouse after each optimization to confirm improvement.
 
 ### Backend performance
 1. **Profiling**: use language-specific profilers (Python: `cProfile`/`py-spy`, Node: `--prof`, Go: `pprof`).

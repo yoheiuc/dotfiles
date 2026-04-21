@@ -20,9 +20,8 @@
 | Notion の情報検索・参照・更新 | `ntn` CLI（Notion 公式）。`ntn api ...` で API 叩き、`ntn files ...` / `ntn workers ...` も。skill は `~/.codex/skills/notion-cli/`。認証は `ntn login` または `NOTION_API_TOKEN` env var |
 | Slack のメッセージ検索・投稿・チャンネル操作 | `slack__*`（remote + OAuth）。インシデント履歴の調査、チャンネルの要約、通知投稿に使う |
 | 図で説明した方が早い構成・フロー | Mermaid を使う。`.md` に ```mermaid ブロックで直接埋める。PNG / SVG が要るときは `mmdc -i in.mmd -o out.svg`（`mermaid-cli`） |
-| ブラウザ操作・自動化・UI 確認 | `playwright-cli`（ターミナルから CLI で起動）。`PLAYWRIGHT_CLI_SESSION` が set されていればそれを使う。skill は `~/.codex/skills/playwright/` |
+| ブラウザ操作・自動化・UI 確認 | `playwright-cli`（ターミナルから CLI で起動）。`PLAYWRIGHT_CLI_SESSION` が set されていればそれを使う。`PLAYWRIGHT_CLI_SESSION=chrome` はユーザーがログイン済みの実 Chrome に attach 済み（`pwattach` 済み）を意味するので、勝手に detach しない。skill は `~/.codex/skills/playwright/` |
 | GitHub の PR / Issue / コード検索 | `gh` CLI を使う（`gh pr`, `gh issue`, `gh api` 等） |
-| パフォーマンス・ネットワーク問題 | `chrome-devtools__*` で実測する |
 | 画像 / PDF の OCR（日本語含む） | `vision__ocr_extract_text`（Apple Vision framework、`@tuannvm/vision-mcp-server`）。申請書 PDF のフィールド抽出、エラー画面スクショの文字列化。`ja` / `en-US` / `zh-Hans` 等を明示指定可 |
 | コード構造の理解・リファクタ | Serena（下記） |
 

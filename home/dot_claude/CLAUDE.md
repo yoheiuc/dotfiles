@@ -20,9 +20,8 @@
 | Notion の情報検索・参照・更新 | `ntn` CLI（Notion 公式）。`ntn api ...` で API 叩き、`ntn files ...` / `ntn workers ...` も。skill は `~/.claude/skills/notion-cli/`。認証は `ntn login`（browser OAuth）または `NOTION_API_TOKEN` env var |
 | Slack のメッセージ検索・投稿・チャンネル操作 | `mcp__slack__*`（remote + OAuth）。インシデント対応の履歴調査、チャンネルの要約、通知投稿に使う |
 | 図で説明した方が早い構成・フロー | Mermaid を使う。`.md` に ```mermaid ブロックで直接埋める（GitHub / VS Code / Obsidian が自動レンダリング）。PNG / SVG が要るときは `mmdc -i in.mmd -o out.svg`（`mermaid-cli`） |
-| ブラウザ操作・自動化・UI 確認 | `playwright-cli`（ターミナルから CLI で起動）。`PLAYWRIGHT_CLI_SESSION` が set されていればそれを使う。skill は `~/.claude/skills/playwright/` |
+| ブラウザ操作・自動化・UI 確認 | `playwright-cli`（ターミナルから CLI で起動）。`PLAYWRIGHT_CLI_SESSION` が set されていればそれを使う。`PLAYWRIGHT_CLI_SESSION=chrome` はユーザーがログイン済みの実 Chrome に attach 済み（`pwattach` 済み）を意味するので、勝手に detach しない。skill は `~/.claude/skills/playwright/` |
 | GitHub の PR / Issue / コード検索 | `gh` CLI を使う（`gh pr`, `gh issue`, `gh api` 等） |
-| パフォーマンス・ネットワーク問題 | `mcp__chrome-devtools__*` で実測する |
 | 画像 / PDF の OCR（日本語含む） | `mcp__vision__ocr_extract_text`（Apple Vision framework、`@tuannvm/vision-mcp-server`）。申請書 PDF のフィールド抽出、エラー画面スクショの文字列化。`ja` / `en-US` / `zh-Hans` 等を明示指定可 |
 | コード構造の理解・リファクタ | Serena（下記） |
 
@@ -35,7 +34,7 @@
 | 公式 CLI + 公式 skill が揃っている | **CLI + skill**（例：`playwright-cli`、`ntn`） |
 | 公式 CLI なし、公式 remote MCP がある（OAuth 認証） | **remote HTTP MCP**（例：Slack、Exa） |
 | Local stdio MCP に credential を渡す必要がある | `mcp-with-keychain-secret` wrapper 経由（例：Brave Search） |
-| agent context との tight integration が本質 | **MCP**（例：Serena、chrome-devtools、sequential-thinking） |
+| agent context との tight integration が本質 | **MCP**（例：Serena、sequential-thinking） |
 | Claude Code の native tool（Read / Write / Edit / Grep / Glob）で代替できる | **削除 / 不採用** |
 | text diff フレンドリーな代替がある | **代替に移行**（例：drawio MCP → Mermaid） |
 

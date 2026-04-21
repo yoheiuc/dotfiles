@@ -87,7 +87,6 @@ EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
 # official docs (https://docs.slack.dev/ai/slack-mcp-server/connect-to-claude/),
 # not secrets. OAuth tokens themselves are managed by Claude Code, not dotfiles.
 SLACK_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.slack.com/mcp","oauth":{"clientId":"1601185624273.8899143856786","callbackPort":3118}}'
-CHROME_DEVTOOLS_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@latest"]}'
 # vision-mcp-server is an npm-distributed Apple Vision Framework OCR MCP
 # (@tuannvm/vision-mcp-server). Runs via `npx -y` — no wrapper, no Python
 # toolchain. Requires macOS 13+ and Node.js 18+. If MCP connect fails,
@@ -96,8 +95,6 @@ VISION_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@tuannvm/visi
 BRAVE_SEARCH_CLAUDE_ENTRY='{"type":"stdio","command":"'"${KEYCHAIN_ENV_WRAPPER}"'","args":["BRAVE_API_KEY","dotfiles.ai.mcp","brave-api-key","npx","-y","@modelcontextprotocol/server-brave-search"]}'
 serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
 serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
-claude_chrome_devtools_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
-claude_chrome_devtools_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
 claude_vision_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)"
 claude_vision_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
@@ -116,14 +113,6 @@ else
   restart_needed=1
 fi
 unset serena_cmd_state serena_uv_tls
-
-if [[ "${claude_chrome_devtools_cmd}" != "npx" || "${claude_chrome_devtools_args}" != '-y|chrome-devtools-mcp@latest' ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" chrome-devtools "${CHROME_DEVTOOLS_CLAUDE_ENTRY}"
-  ok "Claude Code: chrome-devtools MCP registered"
-  restart_needed=1
-else
-  ok "Claude Code: chrome-devtools MCP already registered"
-fi
 
 _vision_expected_args='-y|@tuannvm/vision-mcp-server'
 if [[ "${claude_vision_cmd}" != "npx" || "${claude_vision_args}" != "${_vision_expected_args}" ]]; then
@@ -159,7 +148,7 @@ else
   ok "Claude Code: brave-search MCP already registered"
 fi
 
-unset claude_chrome_devtools_cmd claude_chrome_devtools_args claude_vision_cmd claude_vision_args claude_exa_url claude_slack_url claude_brave_search_cmd
+unset claude_vision_cmd claude_vision_args claude_exa_url claude_slack_url claude_brave_search_cmd
 
 # Strip retired hook artifacts. The hooks block itself is wholesale-rewritten
 # below (so orphan UserPromptSubmit entries for session-topic disappear from
@@ -179,13 +168,16 @@ fi
 unset _orphan
 
 # Strip legacy MCP registrations that have been retired.
-#   playwright  → @playwright/cli + skill (see post-setup.sh)
-#   filesystem  → native Claude Code Read/Write/Edit/Grep/Glob tools
-#   drawio      → Mermaid (inline in .md) or mermaid-cli (mmdc) for PNG/SVG output
-#   notion      → ntn CLI + makenotion/skills (see post-setup.sh)
-#   github      → gh CLI (gh pr, gh issue, gh api …)
-#   owlocr      → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
-for _legacy in playwright filesystem drawio notion github owlocr; do
+#   playwright       → @playwright/cli + skill (see post-setup.sh)
+#   filesystem       → native Claude Code Read/Write/Edit/Grep/Glob tools
+#   drawio           → Mermaid (inline in .md) or mermaid-cli (mmdc) for PNG/SVG output
+#   notion           → ntn CLI + makenotion/skills (see post-setup.sh)
+#   github           → gh CLI (gh pr, gh issue, gh api …)
+#   owlocr           → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
+#   chrome-devtools  → playwright-cli attach --cdp=chrome (see pwattach zsh helper);
+#                      MCP kept spawning its own throwaway Chrome which defeats the
+#                      whole point of driving the user's logged-in session
+for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools; do
   if [[ "$(ai_config_json_remove_mcp "${CLAUDE_JSON}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Claude Code: legacy ${_legacy} MCP removed"
     restart_needed=1
@@ -293,21 +285,11 @@ case "$(ai_config_codex_mcp_url_state "${CODEX_CONFIG}" openaiDeveloperDocs "${O
     ;;
 esac
 
-codex_chrome_devtools_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('chrome-devtools',{}).get('command','')" 2>/dev/null || true)"
-codex_chrome_devtools_args="$(ai_config_toml_read "${CODEX_CONFIG}" "'|'.join(d.get('mcp_servers',{}).get('chrome-devtools',{}).get('args',[]))" 2>/dev/null || true)"
 codex_vision_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)"
 codex_vision_args="$(ai_config_toml_read "${CODEX_CONFIG}" "'|'.join(d.get('mcp_servers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
 codex_exa_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 codex_slack_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
 codex_brave_search_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('brave-search',{}).get('command','')" 2>/dev/null || true)"
-
-if [[ "${codex_chrome_devtools_cmd}" != "npx" || "${codex_chrome_devtools_args}" != '-y|chrome-devtools-mcp@latest' ]]; then
-  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.chrome-devtools]" $'command = "npx"\nargs = ["-y", "chrome-devtools-mcp@latest"]'
-  ok "Codex: chrome-devtools MCP registered"
-  restart_needed=1
-else
-  ok "Codex: chrome-devtools MCP already registered"
-fi
 
 _codex_vision_expected_args='-y|@tuannvm/vision-mcp-server'
 if [[ "${codex_vision_cmd}" != "npx" || "${codex_vision_args}" != "${_codex_vision_expected_args}" ]]; then
@@ -343,11 +325,13 @@ else
   ok "Codex: brave-search MCP already registered"
 fi
 
-unset codex_chrome_devtools_cmd codex_chrome_devtools_args codex_vision_cmd codex_vision_args codex_exa_url codex_slack_url codex_brave_search_cmd
+unset codex_vision_cmd codex_vision_args codex_exa_url codex_slack_url codex_brave_search_cmd
 
 # Strip legacy Codex MCP registrations retired in favor of CLIs / native tools
-# or replaced by a newer MCP (owlocr → vision).
-for _legacy in playwright filesystem drawio notion github owlocr; do
+# or replaced by a newer MCP (owlocr → vision). chrome-devtools retired in
+# favor of playwright-cli attach --cdp=chrome — MCP kept launching its own
+# throwaway Chrome instead of driving the user's logged-in session.
+for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools; do
   if [[ "$(ai_config_toml_remove_mcp_section "${CODEX_CONFIG}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Codex: legacy ${_legacy} MCP removed"
     restart_needed=1
