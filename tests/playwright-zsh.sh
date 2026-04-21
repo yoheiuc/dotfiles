@@ -98,11 +98,24 @@ assert_contains "${stub_invocation}" "list" "pwlist should call list"
 assert_contains "${stub_invocation}" "show" "pwshow should call show"
 assert_contains "${stub_invocation}" "kill-all" "pwkillall should call kill-all"
 
-# 10. pwattach must call `playwright-cli --session=chrome attach --cdp=chrome`
-#     and export PLAYWRIGHT_CLI_SESSION=chrome on success.
+# 10a. pwattach must REFUSE when PLAYWRIGHT_AI_CHROME_READY is unset (policy:
+#      force the user through the AI-dedicated Chrome profile setup so the
+#      attach can't accidentally land on an everyday profile).
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; pwattach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
-assert_contains "${RUN_OUTPUT}" "rc=0" "pwattach should propagate stub exit 0"
+run_capture env PATH="${tmpdir}:${PATH}" zsh -c "unset PLAYWRIGHT_AI_CHROME_READY; source '${MODULE}'; pwattach 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+assert_contains "${RUN_OUTPUT}" "rc=2" "pwattach should exit 2 when PLAYWRIGHT_AI_CHROME_READY is unset"
+assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwattach should NOT export PLAYWRIGHT_CLI_SESSION when refusing"
+assert_contains "${RUN_OUTPUT}" "PLAYWRIGHT_AI_CHROME_READY" "pwattach should surface the env var name in its refusal message"
+assert_contains "${RUN_OUTPUT}" "AI-dedicated Chrome profile" "pwattach refusal should mention the AI-dedicated profile policy"
+# And the stub must not have been invoked.
+stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
+assert_eq "" "${stub_invocation}" "pwattach should not invoke playwright-cli when refusing"
+
+# 10b. pwattach must call `playwright-cli --session=chrome attach --cdp=chrome`
+#      and export PLAYWRIGHT_CLI_SESSION=chrome on success when the env var is set.
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_AI_CHROME_READY=1 zsh -c "source '${MODULE}'; pwattach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "pwattach should propagate stub exit 0 when env var is set"
 assert_contains "${RUN_OUTPUT}" "session=chrome" "pwattach should export PLAYWRIGHT_CLI_SESSION=chrome on success"
 stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
 assert_contains "${stub_invocation}" "--session=chrome" "pwattach should use --session=chrome form"
@@ -111,7 +124,7 @@ assert_contains "${stub_invocation}" "--cdp=chrome" "pwattach should pass --cdp=
 
 # 11. pwattach must NOT export PLAYWRIGHT_CLI_SESSION if playwright-cli fails.
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PW_STUB_EXIT=3 zsh -c "source '${MODULE}'; pwattach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_AI_CHROME_READY=1 PW_STUB_EXIT=3 zsh -c "source '${MODULE}'; pwattach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
 assert_contains "${RUN_OUTPUT}" "rc=3" "pwattach should propagate stub exit 3"
 assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwattach should NOT export PLAYWRIGHT_CLI_SESSION on failure"
 
