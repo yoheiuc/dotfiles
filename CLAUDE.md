@@ -20,9 +20,10 @@
 | 公式 CLI + 公式 skill が揃っている | **CLI + skill**（`scripts/post-setup.sh` で install） | `playwright-cli` + `playwright-cli install --skills`、`ntn` + `makenotion/skills` |
 | 公式 CLI なし、公式 remote MCP のみ（OAuth で認証） | **remote HTTP MCP**（`dot_mcp.json` / `config.toml.tmpl` に URL のみ） | Slack、Exa、（過去の）Notion remote |
 | Local stdio MCP に credential を渡す必要がある | **`mcp-with-keychain-secret` wrapper 経由**で Keychain から注入 | Brave Search |
-| agent context との tight integration が本質（symbol 解析・ライブブラウザ観測など） | **MCP**（CLI 化すると価値が消える） | Serena、chrome-devtools、sequential-thinking |
+| agent context との tight integration が本質（symbol 解析、CoT scaffolding など） | **MCP**（CLI 化すると価値が消える） | Serena、sequential-thinking |
 | Claude Code の native tool（`Read` / `Write` / `Edit` / `Grep` / `Glob`）で代替できる | **削除**（追加せず、既存も外す） | filesystem MCP |
 | text diff フレンドリーな代替がある | **代替に移行**（バイナリ依存の MCP は外す） | drawio MCP → Mermaid `.md` 直埋め + `mermaid-cli` |
+| 公式 CLI が既存 process への attach を持っている（ライブブラウザ等） | **CLI の attach 機能**（MCP が throwaway プロセスを立ち上げるなら避ける） | `playwright-cli attach --cdp=chrome`（`pwattach` helper）で実 Chrome 操作。旧 `chrome-devtools` MCP は 2026-04 に retire |
 
 判断の根拠：
 - **CLI + skill が remote MCP に勝る場面**：token 効率（CLI 出力は pipe / file へ流せる、MCP tool schema は毎ターン context を食う）、scripted 用途（cron / CI / Claude Code を起動していない場面でも使える）、長時間セッション（CLI なら state をディスクに持てる）

@@ -40,7 +40,7 @@ exit "\${PW_STUB_EXIT:-0}"
 EOF
 chmod +x "${tmpdir}/playwright-cli"
 
-for fn in pwsession pwlogin pwlist pwshow pwkill pwkillall; do
+for fn in pwsession pwattach pwdetach pwlogin pwlist pwshow pwkill pwkillall; do
   run_capture zsh -c "PATH='${tmpdir}:${PATH}' source '${MODULE}'; typeset -f ${fn} >/dev/null && echo ok"
   assert_eq "0" "${RUN_STATUS}" "${fn} lookup should not error"
   assert_contains "${RUN_OUTPUT}" "ok" "${fn} should be defined when playwright-cli is present"
@@ -97,5 +97,39 @@ stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
 assert_contains "${stub_invocation}" "list" "pwlist should call list"
 assert_contains "${stub_invocation}" "show" "pwshow should call show"
 assert_contains "${stub_invocation}" "kill-all" "pwkillall should call kill-all"
+
+# 10. pwattach must call `playwright-cli --session=chrome attach --cdp=chrome`
+#     and export PLAYWRIGHT_CLI_SESSION=chrome on success.
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; pwattach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "pwattach should propagate stub exit 0"
+assert_contains "${RUN_OUTPUT}" "session=chrome" "pwattach should export PLAYWRIGHT_CLI_SESSION=chrome on success"
+stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
+assert_contains "${stub_invocation}" "--session=chrome" "pwattach should use --session=chrome form"
+assert_contains "${stub_invocation}" "attach" "pwattach should invoke the attach subcommand"
+assert_contains "${stub_invocation}" "--cdp=chrome" "pwattach should pass --cdp=chrome"
+
+# 11. pwattach must NOT export PLAYWRIGHT_CLI_SESSION if playwright-cli fails.
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" PW_STUB_EXIT=3 zsh -c "source '${MODULE}'; pwattach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+assert_contains "${RUN_OUTPUT}" "rc=3" "pwattach should propagate stub exit 3"
+assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwattach should NOT export PLAYWRIGHT_CLI_SESSION on failure"
+
+# 12. pwdetach must call `playwright-cli --session=chrome close` and unset
+#     PLAYWRIGHT_CLI_SESSION. It should succeed even if close reports an error
+#     (e.g. nothing was attached).
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; export PLAYWRIGHT_CLI_SESSION=chrome; pwdetach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "pwdetach should exit 0"
+assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwdetach should unset PLAYWRIGHT_CLI_SESSION"
+stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
+assert_contains "${stub_invocation}" "--session=chrome" "pwdetach should target --session=chrome"
+assert_contains "${stub_invocation}" "close" "pwdetach should call close"
+
+# 13. pwdetach should still unset PLAYWRIGHT_CLI_SESSION even if close fails.
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" PW_STUB_EXIT=1 zsh -c "source '${MODULE}'; export PLAYWRIGHT_CLI_SESSION=chrome; pwdetach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "pwdetach should swallow close errors"
+assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwdetach should unset PLAYWRIGHT_CLI_SESSION even on close error"
 
 pass_test "tests/playwright-zsh.sh"

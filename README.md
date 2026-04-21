@@ -222,17 +222,16 @@ ghq get git@github.com:owner/repo.git
 - `brave-search`
 - `slack`（remote HTTP + OAuth、`https://mcp.slack.com/mcp`）
 - `serena`
-- `chrome-devtools`
 - `vision`（Apple Vision framework 経由の画像 OCR、`ja` / `en-US` / `zh-Hans` 等に対応、`npx -y @tuannvm/vision-mcp-server`。`mcp__vision__ocr_extract_text` で呼び出し。macOS 13+ / Node.js 18+ が前提。MCP connect に失敗したら `npx -y @tuannvm/vision-mcp-server --help` で直接確認。旧 `owlocr` MCP は upstream repo retirement に伴い 2026-04 に置換。）
 - `sequential-thinking`（`post-setup.sh` で Claude Code に登録）
 
 Notion は MCP ではなく公式 CLI (`ntn`) + skill の組み合わせを採用しています（下の「Notion CLI (ntn)」節参照）。token 効率と scripted 用途の両立を優先しました。
 
-ブラウザ自動化は `@playwright/cli` + skill 方式に寄せているので、`@playwright/mcp` は含めていません（下の「Playwright CLI」節参照）。ファイル操作は Claude Code の native `Read` / `Write` / `Edit` / `Grep` / `Glob` で代替できるため、`filesystem` MCP も外しました。図は Mermaid（`.md` 直埋め）か `mermaid-cli` の `mmdc` で text diff フレンドリーに扱えるため、`@drawio/mcp` も外しています。
+ブラウザ自動化は `@playwright/cli` + skill 方式に寄せているので、`@playwright/mcp` は含めていません（下の「Playwright CLI」節参照）。`chrome-devtools` MCP も 2026-04 に外しました：自分の Chrome を AI に触らせたいケースで MCP が毎回 throwaway Chromium を spawn してしまい、`@playwright/cli` v0.1.8 の `attach --cdp=chrome`（`pwattach` helper）で実 Chrome に接続する運用に一本化したほうが素直なためです。ファイル操作は Claude Code の native `Read` / `Write` / `Edit` / `Grep` / `Glob` で代替できるため、`filesystem` MCP も外しました。図は Mermaid（`.md` 直埋め）か `mermaid-cli` の `mmdc` で text diff フレンドリーに扱えるため、`@drawio/mcp` も外しています。
 
 検索系は `Exa MCP`（`https://mcp.exa.ai/mcp`、API key 不要）と `brave-search`（`@modelcontextprotocol/server-brave-search`、`BRAVE_API_KEY` を `mcp-with-keychain-secret` wrapper 経由で macOS Keychain から注入）の両方を入れています。
 
-同じ baseline は `make ai-repair` 実行時に Claude Code の `~/.claude.json` と Codex の `~/.codex/config.toml` に再生成されます。`make ai-audit` は MCP 登録が壊れている場合に warning を出します。旧 dotfiles の `playwright` / `filesystem` / `drawio` / `notion` / `github` / `owlocr` MCP 登録が残っている場合も `make ai-repair` で自動的に削除されます。
+同じ baseline は `make ai-repair` 実行時に Claude Code の `~/.claude.json` と Codex の `~/.codex/config.toml` に再生成されます。`make ai-audit` は MCP 登録が壊れている場合に warning を出します。旧 dotfiles の `playwright` / `filesystem` / `drawio` / `notion` / `github` / `owlocr` / `chrome-devtools` MCP 登録が残っている場合も `make ai-repair` で自動的に削除されます。
 
 ```bash
 ai-secrets
@@ -331,11 +330,13 @@ playwright-cli install --skills       # Claude Code / Codex skill
 
 ### zsh ヘルパー
 
-`home/dot_config/zsh/playwright.zsh` で 6 関数を提供しています。
+`home/dot_config/zsh/playwright.zsh` で 8 関数を提供しています。
 
 | コマンド | 用途 |
 |---|---|
 | `pwsession <name>` | セッション名を `PLAYWRIGHT_CLI_SESSION` に export |
+| `pwattach` | 起動中の実 Chrome に CDP attach し、`PLAYWRIGHT_CLI_SESSION=chrome` を export |
+| `pwdetach` | 実 Chrome との attach を切り `PLAYWRIGHT_CLI_SESSION` を unset（Chrome 本体は殺さない） |
 | `pwlogin <name> <url>` | `--headed --persistent` で起動し、手動ログイン用に可視ブラウザを開く |
 | `pwlist` | `playwright-cli list`：永続セッション一覧 |
 | `pwshow` | `playwright-cli show`：ダッシュボードを起動して実行中セッションを監視 |
@@ -343,6 +344,31 @@ playwright-cli install --skills       # Claude Code / Codex skill
 | `pwkillall` | 全 playwright-cli プロセスを強制終了 |
 
 プロジェクト単位で `.envrc` に `export PLAYWRIGHT_CLI_SESSION=<name>` を置けば、`cd` だけで切り替わります。テンプレは `docs/examples/envrc.playwright.example` にあります。
+
+### 自分のログイン済み Chrome を AI に触らせる（`pwattach`）
+
+`@playwright/cli` v0.1.8+ の `attach --cdp=chrome` を使うと、サンドボックス Chromium を起動せず、**いま動いている自分の Chrome に CDP 接続**できます。ログイン状態・拡張機能・開いているタブをそのまま AI が操作するモードです。
+
+1. **Chrome 側で remote debugging を ON**（初回のみ）：Chrome 144 以上で `chrome://inspect/#remote-debugging` → "Allow remote debugging for this browser instance" を ON
+2. `pwattach` を実行 → `PLAYWRIGHT_CLI_SESSION=chrome` が export される
+3. そのまま Claude Code / Codex を起動して作業を依頼。agent 側 routing は `PLAYWRIGHT_CLI_SESSION=chrome` を見て「実 Chrome を操作する」モードで動く
+4. 終わったら `pwdetach`（Chrome 本体は生きたまま、CDP セッションだけ閉じる）
+
+**AI への指示例**：
+
+- 環境変数方式：`pwattach` してから Claude Code を起動。routing の時点で実 Chrome が選ばれる
+- 明示方式：「自分の Chrome でログイン状態のまま見て」「今開いてるタブで作業して」と伝えると、agent は `pwattach` 前提のフローに切り替える。未 attach なら先に `chrome://inspect` の toggle 確認を案内する
+
+**`pwlogin` との使い分け**：
+
+| 観点 | `pwattach`（実 Chrome） | `pwlogin`（persistent profile） |
+|---|---|---|
+| Cookie / 拡張 / 履歴 | ユーザーの主ブラウザそのまま | 別プロファイル（isolation あり） |
+| ログイン | ユーザーが普段通りにログイン済み | 初回に可視ブラウザで手動ログイン（2FA 含む） |
+| 残り方 | Chrome を閉じるまで残る | `pwkill <name>` するまでディスクに残る |
+| 向く用途 | 「今見てる画面のこれ、AI にやらせたい」 | 長期運用・権限を絞った読み取り専用アカウント |
+
+**注意**：`pwattach` 中は AI がユーザーの全ログインセッションに触れます。blast radius は非常に広いので、管理者権限アカウントでログインしている Chrome で走らせないこと。`pwdetach` は Chrome を閉じないので、席を立つ前に明示的に切ること。
 
 ### セッション運用ルール
 
@@ -595,7 +621,7 @@ baseline として保証されるのは以下:
 - `approval_policy = "on-request"` + `sandbox_mode = "workspace-write"`（`--full-auto` 相当）
 - `[features]`: `multi_agent = true`、`codex_hooks = true`
 - `[plugins]`: Google Calendar, GitHub, Gmail, Google Drive, build-macos-apps, build-ios-apps（Notion は `ntn` CLI + `makenotion/skills` に移行済み、curated plugin も無効化）
-- MCP サーバー: Serena, chrome-devtools, vision, exa, brave-search, slack, OpenAI Developer Docs
+- MCP サーバー: Serena, vision, exa, brave-search, slack, OpenAI Developer Docs
 - マシン固有のパスは `{{ .chezmoi.homeDir }}` で展開
 
 `~/.codex/hooks.json` も chezmoi 管理にしています。Stop フックで `codex-auto-save-memory` skill を実行し、セッション終了時にメモリを自動保存します。
@@ -641,12 +667,12 @@ make ai-audit
 - Enter で現状維持、`-` で削除
 - 保存後に `scripts/ai-repair.sh` を自動実行する
 
-`chrome-devtools` は `chrome-devtools-mcp@latest` を標準の起動形で入れます。live Chrome を DevTools 経由で見に行けるので便利ですが、ブラウザ上の内容を agent に渡す前提になる点だけは意識してください。
+実 Chrome を agent に触らせたい場合は、MCP ではなく `@playwright/cli` v0.1.8 の `attach --cdp=chrome`（`pwattach` helper）を使います。詳細は「Playwright CLI」節の「自分のログイン済み Chrome を AI に触らせる」を参照。
 
 `make ai-audit` は次の観点をまとめて確認します。
 
 - `~/.claude.json` / `~/.codex/config.toml` の baseline（model, sandbox, approval, features, hooks）
-- Serena wrapper / OpenAI Docs MCP / exa/slack/brave-search/chrome-devtools/vision の登録有無（レガシーな `playwright` / `filesystem` / `drawio` / `notion` / `github` / `owlocr` MCP が残っていれば warning）
+- Serena wrapper / OpenAI Docs MCP / exa/slack/brave-search/vision の登録有無（レガシーな `playwright` / `filesystem` / `drawio` / `notion` / `github` / `owlocr` / `chrome-devtools` MCP が残っていれば warning）
 - Brave API key が Keychain に存在するか
 - Serena config の主要キー（`language_backend`, `web_dashboard`, `project_serena_folder_location`）
 - 古い bridge 設定や危険な approval 設定が残っていないか
@@ -654,7 +680,7 @@ make ai-audit
 
 よくあるトラブルは次の 3 つです。
 
-1. 旧 dotfiles から移行したら `playwright` / `filesystem` / `drawio` / `notion` MCP が残っている  
+1. 旧 dotfiles から移行したら `playwright` / `filesystem` / `drawio` / `notion` / `chrome-devtools` MCP が残っている  
    `make ai-repair` が自動的に削除します。残っていれば `make ai-audit` が warning を出すので、それを目印に repair を走らせてください。
 2. `ai-secrets` が古い wrapper を掴んで失敗する  
    `chezmoi apply ~/.local/bin/ai-secrets` で wrapper を再展開してください。

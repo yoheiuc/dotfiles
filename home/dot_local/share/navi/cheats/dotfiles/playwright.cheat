@@ -3,6 +3,12 @@
 # セッション名を現在の shell に export
 pwsession <name>
 
+# 起動中の実 Chrome に CDP attach（chrome://inspect で remote-debugging ON が前提）
+pwattach
+
+# 実 Chrome との attach を切る（Chrome 本体は殺さない）
+pwdetach
+
 # 可視ブラウザで手動ログイン（2FA 含む）→ 閉じると以降は headless 再利用
 pwlogin <name> <url>
 

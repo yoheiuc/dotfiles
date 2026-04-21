@@ -56,8 +56,8 @@ Systematic debugging methodology. Follow the structured process below to diagnos
 - **git bisect**: find the commit that introduced the bug.
 - **Logging**: strategic `console.log` / `print` / `log.Debug` at decision points.
 - **Debugger**: breakpoints for complex state inspection.
-- **Network inspector**: chrome-devtools MCP for HTTP/WebSocket issues.
-- **Profiler**: chrome-devtools `performance_*` tools for performance bugs.
+- **Network inspector**: `pwattach` → drive the user's real Chrome; inspect via its Network panel. Or `playwright-cli` network APIs for scripted capture.
+- **Profiler**: `pwattach` → Performance panel in attached Chrome, or `playwright-cli tracing-start` / `tracing-stop` → `playwright show-trace`.
 
 ## Anti-patterns
 - Changing code without understanding the root cause.

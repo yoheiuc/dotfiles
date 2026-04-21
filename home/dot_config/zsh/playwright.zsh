@@ -16,6 +16,33 @@ pwsession() {
   echo "PLAYWRIGHT_CLI_SESSION=${PLAYWRIGHT_CLI_SESSION}"
 }
 
+# pwattach — 起動中の実 Chrome に CDP attach し、PLAYWRIGHT_CLI_SESSION=chrome
+# を export する。以降このシェルから起動した Claude Code / Codex の
+# playwright-cli 呼び出しは、サンドボックス Chromium ではなくユーザーが
+# ログイン済みの Chrome を操作する。
+# 前提：Chrome 144+ で chrome://inspect/#remote-debugging の
+#       "Allow remote debugging for this browser instance" を ON にしてある。
+# 失敗時は PLAYWRIGHT_CLI_SESSION を汚染しない（成功後にだけ export する）。
+pwattach() {
+  if playwright-cli --session=chrome attach --cdp=chrome; then
+    export PLAYWRIGHT_CLI_SESSION=chrome
+    echo "PLAYWRIGHT_CLI_SESSION=chrome (attached to real Chrome)"
+  else
+    local rc=$?
+    echo "pwattach: playwright-cli exited ${rc}; PLAYWRIGHT_CLI_SESSION left unchanged" >&2
+    echo "  check: Chrome 144+ and chrome://inspect/#remote-debugging toggle is ON" >&2
+    return "${rc}"
+  fi
+}
+
+# pwdetach — 実 Chrome との attach を切り、PLAYWRIGHT_CLI_SESSION を unset。
+# Chrome 本体は殺さない（CDP セッションを閉じるだけ）。
+pwdetach() {
+  playwright-cli --session=chrome close >/dev/null 2>&1 || true
+  unset PLAYWRIGHT_CLI_SESSION
+  echo "detached from real Chrome; PLAYWRIGHT_CLI_SESSION unset"
+}
+
 # pwlogin <name> <url> — 手動ログイン用に可視ブラウザを --persistent で開く。
 # 2FA 含め人間が一度ログインし終えたら閉じる。以降は headless で再利用される。
 # 失敗時は PLAYWRIGHT_CLI_SESSION を汚染しない（成功後にだけ export する）。

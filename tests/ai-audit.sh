@@ -102,10 +102,6 @@ url = "https://mcp.slack.com/mcp"
 command = "${HOME}/.local/bin/mcp-with-keychain-secret"
 args = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
 
-[mcp_servers.chrome-devtools]
-command = "npx"
-args = ["-y", "chrome-devtools-mcp@latest"]
-
 [mcp_servers.vision]
 command = "npx"
 args = ["-y", "@tuannvm/vision-mcp-server"]
@@ -139,11 +135,6 @@ cat > "${HOME}/.claude.json" <<EOF
       "type": "http",
       "url": "https://mcp.slack.com/mcp",
       "oauth": {"clientId": "1601185624273.8899143856786", "callbackPort": 3118}
-    },
-    "chrome-devtools": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "chrome-devtools-mcp@latest"]
     },
     "vision": {
       "type": "stdio",
@@ -184,7 +175,6 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env is set" "ai-audit should validate ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/lsp-hint.sh)" "ai-audit should validate lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/auto-save.sh)" "ai-audit should validate auto-save hook"
-assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: registered" "ai-audit should validate Claude chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: registered" "ai-audit should validate Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should validate Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
@@ -194,7 +184,6 @@ assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: registered" "ai-audit sh
 assert_contains "${RUN_OUTPUT}" "Codex exa MCP: registered" "ai-audit should validate Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Codex slack MCP: registered" "ai-audit should validate Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: registered" "ai-audit should validate Brave Search MCP"
-assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: registered" "ai-audit should validate chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Codex vision MCP: registered" "ai-audit should validate Codex vision MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: web_dashboard enabled" "ai-audit should validate Serena config"
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should report Claude MCP registration"
@@ -249,7 +238,6 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be late
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5" "ai-audit should detect missing ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/lsp-hint.sh)" "ai-audit should detect missing lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/auto-save.sh)" "ai-audit should detect missing auto-save hook"
-assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: missing or drifted" "ai-audit should detect missing Claude chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: missing or drifted" "ai-audit should detect missing Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: missing or drifted" "ai-audit should detect missing Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: missing or drifted" "ai-audit should detect missing Claude Exa MCP"
@@ -261,7 +249,6 @@ assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: missing" "ai-audit shoul
 assert_contains "${RUN_OUTPUT}" "Codex exa MCP: missing" "ai-audit should detect missing Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Codex slack MCP: missing" "ai-audit should detect missing Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: missing" "ai-audit should detect missing Brave Search MCP"
-assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: missing" "ai-audit should detect missing chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Codex vision MCP: missing" "ai-audit should detect missing Codex vision MCP"
 assert_contains "${RUN_OUTPUT}" "Codex config backups: found backup files to review or delete" "ai-audit should report backup files"
 assert_contains "${RUN_OUTPUT}" "AI config audit needs attention:" "ai-audit should summarize warnings"
@@ -370,5 +357,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code github MCP: legacy entry present" "
 assert_contains "${RUN_OUTPUT}" "Codex github MCP: legacy entry present" "ai-audit should flag legacy Codex github MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code owlocr MCP: legacy entry present" "ai-audit should flag legacy Claude Code owlocr MCP"
 assert_contains "${RUN_OUTPUT}" "Codex owlocr MCP: legacy entry present" "ai-audit should flag legacy Codex owlocr MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: legacy entry present" "ai-audit should flag legacy Claude Code chrome-devtools MCP"
+assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: legacy entry present" "ai-audit should flag legacy Codex chrome-devtools MCP"
 
 pass_test "tests/ai-audit.sh"

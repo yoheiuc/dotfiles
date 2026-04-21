@@ -197,6 +197,10 @@ fi
 section "playwright-cli (optional)"
 if command -v playwright-cli &>/dev/null; then
   ok "$(playwright-cli --version 2>&1 | head -1)"
+  # Attach to user's logged-in Chrome (playwright-cli v0.1.8+) requires
+  # Chrome 144+ and remote debugging toggled on via chrome://inspect. These
+  # can't be introspected from a shell; just surface the checklist.
+  info "real-Chrome attach (pwattach): Chrome 144+ + chrome://inspect/#remote-debugging ON"
 else
   warn "playwright-cli not found — run: ./scripts/post-setup.sh"
 fi

@@ -4,7 +4,7 @@ Automate browser interactions using the `playwright-cli` command. For navigation
 
 - CLI: `playwright-cli` (installed globally via `@playwright/cli`)
 - Skill: `~/.claude/skills/playwright/` (managed by `playwright-cli install --skills`)
-- zsh helpers: `pwsession` / `pwlogin` / `pwlist` / `pwshow` / `pwkill` / `pwkillall`
+- zsh helpers: `pwsession` / `pwattach` / `pwdetach` / `pwlogin` / `pwlist` / `pwshow` / `pwkill` / `pwkillall`
 - Session env var: `PLAYWRIGHT_CLI_SESSION`
 
 Treat this as CLI-first automation. Do NOT pivot to `@playwright/test` unless the user explicitly asks for test files.
@@ -23,7 +23,12 @@ If `PLAYWRIGHT_CLI_SESSION` is set in the shell (commonly via `.envrc` + direnv)
 echo "${PLAYWRIGHT_CLI_SESSION:-<none>}"
 ```
 
-If unset and the task needs an authenticated SaaS, ask the user to run `pwlogin <name> <url>` first (visible browser + manual 2FA), then retry.
+**`PLAYWRIGHT_CLI_SESSION=chrome` is special**: it means the user has already attached to their real running Chrome via `pwattach` (CDP connection, `@playwright/cli` v0.1.8+). Treat that session as an already-logged-in, full-extension Chrome — do NOT `close` / `pwdetach` / `pwkill` it at task end, and do NOT run `pwlogin` on top of it (that would spawn a throwaway persistent profile and defeat the attach).
+
+If unset and the task needs an authenticated SaaS, there are two flows:
+
+- **Use the user's real Chrome** (preferred when cookies / extensions / full browser state matter): ask the user to run `pwattach` first. Requires Chrome 144+ with `chrome://inspect/#remote-debugging` → "Allow remote debugging for this browser instance" toggled ON.
+- **Use a throwaway persistent profile** (when you need isolation from the user's main browser): ask the user to run `pwlogin <name> <url>` first (visible browser + manual 2FA), then retry.
 
 ## Core workflow
 
@@ -90,9 +95,10 @@ playwright-cli tracing-stop
 
 - **Task / SaaS per session**: never mix `freshservice` browsing into an `intune-admin` session. Scope creep leaks cookies across blast radii.
 - **Never sign in as an admin account** for an AI-used session. Use a read-only / viewer login.
-- **First login**: `pwlogin <name> <url>` pops a visible browser. Human completes 2FA, closes the window. Subsequent headless runs reuse the cookies.
-- **Session expired**: re-run `pwlogin <name> <url>` with the same name — it overwrites in place.
-- **Cleanup**: `pwkill <name>` to delete one profile, `pwkillall` to purge all running CLI processes.
+- **First login (persistent profile)**: `pwlogin <name> <url>` pops a visible browser. Human completes 2FA, closes the window. Subsequent headless runs reuse the cookies.
+- **Attach to real Chrome**: user runs `pwattach` after toggling `chrome://inspect/#remote-debugging`; session name is `chrome`. Do not `pwlogin` into this — the real Chrome is already logged in.
+- **Session expired**: re-run `pwlogin <name> <url>` with the same name — it overwrites in place. For the real-Chrome `chrome` session, user re-logs in via their actual browser.
+- **Cleanup**: `pwkill <name>` to delete one persistent profile. `pwdetach` to release the real-Chrome attach without killing Chrome itself. `pwkillall` to purge all running CLI processes (does not close Chrome).
 - **Monitor**: `pwshow` opens the dashboard; keep it visible while Claude drives the browser.
 
 ## Guardrails
