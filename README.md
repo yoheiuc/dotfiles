@@ -89,9 +89,9 @@ make help
 | `make update` | pull → `chezmoi apply` → brew install 現在のプロファイル | ✓ |
 | `make update-home` | pull → `chezmoi apply` → brew install home | ✓ |
 | `make sync-all` | pull → `chezmoi apply` → brew install → `post-setup` → `doctor`（フル同期：新マシン導入後の drift 全部まとめて直す） | ✓ |
-| `make sync` | `chezmoi apply` → brew sync 現在のプロファイル (cleanup あり) | ✓ |
-| `make sync-core` | `chezmoi apply` → brew sync core (cleanup あり) | ✓ |
-| `make sync-home` | `chezmoi apply` → brew sync home (cleanup あり) | ✓ |
+| `make sync` | `chezmoi apply` → brew sync 現在のプロファイル (cleanup あり) → `post-setup` | ✓ |
+| `make sync-core` | `chezmoi apply` → brew sync core (cleanup あり) → `post-setup` | ✓ |
+| `make sync-home` | `chezmoi apply` → brew sync home (cleanup あり) → `post-setup` | ✓ |
 | `make brew-diff` | 現在のプロファイルとローカル Brew 実体の差分確認 | ✓ |
 | `make brew-diff-core` | core とローカル Brew 実体の差分確認 | ✓ |
 | `make brew-diff-home` | home とローカル Brew 実体の差分確認 | ✓ |
