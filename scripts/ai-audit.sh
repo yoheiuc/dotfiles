@@ -217,16 +217,14 @@ if [[ -f "${_codex_config}" ]]; then
       ;;
   esac
 
-  for _server in vision; do
-    case "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('${_server}',{}).get('command','')" 2>/dev/null || true)" in
-      "")
-        attention "Codex ${_server} MCP: missing — run make ai-repair"
-        ;;
-      *)
-        ok "Codex ${_server} MCP: registered"
-        ;;
-    esac
-  done
+  case "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)" in
+    "")
+      attention "Codex vision MCP: missing — run make ai-repair"
+      ;;
+    *)
+      ok "Codex vision MCP: registered"
+      ;;
+  esac
 
   if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)" == "https://mcp.exa.ai/mcp" ]]; then
     ok "Codex exa MCP: registered"

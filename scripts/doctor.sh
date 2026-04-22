@@ -492,7 +492,11 @@ if command -v codex &>/dev/null; then
     warn "codex auto-save memory skill missing — run: chezmoi apply"
   fi
 
-  if [[ -f "${HOME}/.codex/skills/find-skills/SKILL.md" ]]; then
+  # `npx skills add` now uses ~/.agents/skills/ as the unified location for
+  # Codex-tagged skills, even when `-a codex` is passed. Check both for
+  # forward/backward compatibility.
+  if [[ -f "${HOME}/.codex/skills/find-skills/SKILL.md" \
+     || -f "${HOME}/.agents/skills/find-skills/SKILL.md" ]]; then
     ok "find-skills skill: present"
   else
     warn "find-skills skill missing — run: ./scripts/post-setup.sh"

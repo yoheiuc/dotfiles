@@ -1,4 +1,5 @@
 # aliases.zsh — shell aliases
+# shellcheck shell=bash
 
 # Modern replacements
 alias ls='eza --icons'

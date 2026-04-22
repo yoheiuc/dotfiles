@@ -208,7 +208,12 @@ log "find-skills skill..."
 if ! command -v npx &>/dev/null; then
   warn "npx not found — find-skills skipped (install node via core Brew profile)"
 else
-  for target in claude-code:"${HOME}/.claude/skills" codex:"${HOME}/.codex/skills"; do
+  # npx skills layout:
+  #   -a claude-code → copies to ~/.claude/skills/ AND ~/.agents/skills/
+  #   -a codex       → copies only to ~/.agents/skills/ (Codex reads the
+  #                    unified location; ~/.codex/skills/ stays reserved
+  #                    for chezmoi-managed skills)
+  for target in claude-code:"${HOME}/.claude/skills" codex:"${HOME}/.agents/skills"; do
     agent="${target%%:*}"
     dir="${target#*:}"
     mkdir -p "${dir}"

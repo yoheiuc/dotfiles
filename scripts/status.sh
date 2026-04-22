@@ -103,7 +103,6 @@ fi
 section "Brew"
 set +e
 brew_check_out="$(bash "${REPO_ROOT}/scripts/brew-bundle.sh" check "${ACTIVE_PROFILE}" 2>&1)"
-brew_check_code=$?
 set -e
 
 if printf '%s\n' "${brew_check_out}" | grep -q "The Brewfile's dependencies are satisfied."; then

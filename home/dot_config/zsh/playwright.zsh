@@ -1,5 +1,6 @@
 # playwright.zsh — Playwright CLI セッション管理ヘルパー
 # playwright-cli 未インストール時は静かに no-op。
+# shellcheck shell=bash
 
 if ! command -v playwright-cli >/dev/null 2>&1; then
   return 0
