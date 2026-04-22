@@ -6,7 +6,7 @@
 - 可能なら調査で止めず修正まで進める
 - 破壊的な操作や外部影響のある操作は確認を取る
 - 会話圧縮の前に、次回も役立つ要点があれば Codex のメモリーへ短く保存してから終える
-- 作業前に **skill を確認する**。`~/.codex/skills/` 配下に合致しそうな skill があればそれを使う。該当が思い当たらなければ `find-skills` skill（`~/.codex/skills/find-skills/`）で英語キーワード検索して新規 skill も候補に入れる。`npx skills find "<keyword>"` / `npx skills list` / `npx skills check` も同じ目的で使える。skill が見つかったら SKILL.md の手順に従う
+- 作業前に **skill を確認する**。`~/.codex/skills/`（dotfiles 管理）と `~/.agents/skills/`（`npx skills add` が配置する unified location）の両方を確認する。該当が思い当たらなければ `find-skills` skill（`~/.agents/skills/find-skills/`）で英語キーワード検索して新規 skill も候補に入れる。`npx skills find "<keyword>"` / `npx skills list` / `npx skills check` も同じ目的で使える。skill が見つかったら SKILL.md の手順に従う
 - ファイル内容を丸ごと繰り返さない。変更箇所は diff か該当行だけ示す
 - 前置き・要約・確認の繰り返しは省く。結論から入る
 - ツール呼び出し結果を全文引用しない。必要な部分だけ抜粋する

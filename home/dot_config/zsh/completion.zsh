@@ -1,4 +1,5 @@
 # completion.zsh — zsh completion system
+# shellcheck shell=bash disable=SC2206,SC2296,SC2154
 
 # XDG-compliant completion cache
 zstyle ':completion:*' cache-path "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompcache"

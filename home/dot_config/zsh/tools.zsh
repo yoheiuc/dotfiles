@@ -1,6 +1,7 @@
 # tools.zsh — third-party tool hooks and wrappers (existence-checked)
 # Each init output is cached via _zsh_cache_eval (defined in env.zsh) to avoid
 # forking the tool's init subprocess on every shell startup.
+# shellcheck shell=bash disable=SC1090
 
 _tool_bin() { command -v "$1" 2>/dev/null; }
 
