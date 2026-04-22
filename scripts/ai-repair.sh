@@ -144,12 +144,14 @@ unset claude_vision_cmd claude_vision_args claude_exa_url claude_slack_url
 # settings.json), but chezmoi does not auto-remove the script file / cache dir
 # once their source is deleted. Clean them up actively so other machines
 # converge on `make ai-repair`.
-for _orphan in "${HOME}/.claude/session-topic.sh"; do
+_orphan_scripts=("${HOME}/.claude/session-topic.sh")
+for _orphan in "${_orphan_scripts[@]}"; do
   if [[ -e "${_orphan}" ]]; then
     rm -f "${_orphan}"
     ok "Claude Code: removed retired hook script ${_orphan/#${HOME}/\~}"
   fi
 done
+unset _orphan_scripts
 if [[ -d "${HOME}/.claude/session-topics" ]]; then
   rm -rf "${HOME}/.claude/session-topics"
   ok "Claude Code: removed retired session-topics cache"

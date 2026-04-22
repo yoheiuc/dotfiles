@@ -1,4 +1,5 @@
 # env.zsh — environment variables and PATH
+# shellcheck shell=bash disable=SC1090
 
 # _zsh_cache_eval — cache `eval "$(cmd ...)"` output to a file and source it,
 # regenerating only when the command binary is newer than the cache. Avoids
