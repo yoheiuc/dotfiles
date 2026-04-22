@@ -88,7 +88,7 @@ make help
 | `make preview-home` | `chezmoi diff` + dry-run + brew preview (home) | ✓ |
 | `make update` | pull → `chezmoi apply` → brew install 現在のプロファイル | ✓ |
 | `make update-home` | pull → `chezmoi apply` → brew install home | ✓ |
-| `make sync-all` | pull → `chezmoi apply` → brew install → `post-setup` → `doctor`（フル同期：新マシン導入後の drift 全部まとめて直す） | ✓ |
+| `make sync-all` | pull → `chezmoi apply` → brew sync (cleanup 付き) → `post-setup` → `doctor`（フル同期：git も brew drift も一発で正しい状態に戻す） | ✓ |
 | `make sync` | `chezmoi apply` → brew sync 現在のプロファイル (cleanup あり) → `post-setup` | ✓ |
 | `make sync-core` | `chezmoi apply` → brew sync core (cleanup あり) → `post-setup` | ✓ |
 | `make sync-home` | `chezmoi apply` → brew sync home (cleanup あり) → `post-setup` | ✓ |

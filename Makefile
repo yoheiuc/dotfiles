@@ -44,11 +44,11 @@ update-home: ## dotfiles を最新にして home プロファイルを適用
 	chezmoi apply
 	bash scripts/brew-bundle.sh install home
 
-sync-all: ## pull + chezmoi apply + brew install + post-setup + doctor (フル同期)
+sync-all: ## pull + chezmoi apply + brew sync (cleanup) + post-setup + doctor (フル同期)
 	PROFILE="$$(bash scripts/profile.sh get)"; \
 	git pull origin main; \
 	chezmoi apply; \
-	bash scripts/brew-bundle.sh install "$$PROFILE"; \
+	bash scripts/brew-bundle.sh sync "$$PROFILE"; \
 	bash scripts/post-setup.sh; \
 	bash scripts/doctor.sh
 
