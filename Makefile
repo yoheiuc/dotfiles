@@ -44,28 +44,31 @@ update-home: ## dotfiles を最新にして home プロファイルを適用
 	chezmoi apply
 	bash scripts/brew-bundle.sh install home
 
-sync-all: ## pull + chezmoi apply + brew install + post-setup + doctor (フル同期)
+sync-all: ## pull + chezmoi apply + brew sync (cleanup) + post-setup + doctor (フル同期)
 	PROFILE="$$(bash scripts/profile.sh get)"; \
 	git pull origin main; \
 	chezmoi apply; \
-	bash scripts/brew-bundle.sh install "$$PROFILE"; \
+	bash scripts/brew-bundle.sh sync "$$PROFILE"; \
 	bash scripts/post-setup.sh; \
 	bash scripts/doctor.sh
 
-sync: ## 現在のプロファイルを cleanup 付きで同期
+sync: ## 現在のプロファイルを cleanup 付きで同期 + post-setup
 	PROFILE="$$(bash scripts/profile.sh get)"; \
 	chezmoi apply; \
-	bash scripts/brew-bundle.sh sync "$$PROFILE"
+	bash scripts/brew-bundle.sh sync "$$PROFILE"; \
+	bash scripts/post-setup.sh
 
-sync-core: ## core プロファイルを cleanup 付きで同期
+sync-core: ## core プロファイルを cleanup 付きで同期 + post-setup
 	bash scripts/profile.sh set core >/dev/null
 	chezmoi apply
 	bash scripts/brew-bundle.sh sync core
+	bash scripts/post-setup.sh
 
-sync-home: ## home プロファイルを cleanup 付きで同期
+sync-home: ## home プロファイルを cleanup 付きで同期 + post-setup
 	bash scripts/profile.sh set home >/dev/null
 	chezmoi apply
 	bash scripts/brew-bundle.sh sync home
+	bash scripts/post-setup.sh
 
 brew-diff: ## 現在のプロファイルとローカル Brew 実体の差分を確認
 	PROFILE="$$(bash scripts/profile.sh get)"; \
@@ -108,6 +111,7 @@ test-scripts: ## shell スクリプトの回帰テストを実行
 	bash tests/ai-config.sh
 	bash tests/lsp-hint.sh
 	bash tests/frontend-design-skill.sh
+	bash tests/find-skills.sh
 
 uninstall: ## dotfiles をアンインストール
 	bash scripts/uninstall.sh

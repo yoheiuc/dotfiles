@@ -397,6 +397,12 @@ if command -v claude &>/dev/null; then
   else
     warn "frontend-design skill missing — run: chezmoi apply"
   fi
+
+  if [[ -f "${HOME}/.claude/skills/find-skills/SKILL.md" ]]; then
+    ok "find-skills skill: present"
+  else
+    warn "find-skills skill missing — run: ./scripts/post-setup.sh"
+  fi
 else
   warn "claude not found — run: ./scripts/post-setup.sh"
 fi
@@ -484,6 +490,12 @@ if command -v codex &>/dev/null; then
     ok "codex auto-save memory skill: present"
   else
     warn "codex auto-save memory skill missing — run: chezmoi apply"
+  fi
+
+  if [[ -f "${HOME}/.codex/skills/find-skills/SKILL.md" ]]; then
+    ok "find-skills skill: present"
+  else
+    warn "find-skills skill missing — run: ./scripts/post-setup.sh"
   fi
 else
   warn "codex not found — install Codex CLI separately"

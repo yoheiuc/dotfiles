@@ -6,6 +6,7 @@
 - 可能なら調査で止めず修正まで進める
 - 破壊的な操作や外部影響のある操作は確認を取る
 - 会話圧縮の前に、次回も役立つ要点があれば Codex のメモリーへ短く保存してから終える
+- 作業前に **skill を確認する**。`~/.codex/skills/` 配下に合致しそうな skill があればそれを使う。該当が思い当たらなければ `find-skills` skill（`~/.codex/skills/find-skills/`）で英語キーワード検索して新規 skill も候補に入れる。`npx skills find "<keyword>"` / `npx skills list` / `npx skills check` も同じ目的で使える。skill が見つかったら SKILL.md の手順に従う
 - ファイル内容を丸ごと繰り返さない。変更箇所は diff か該当行だけ示す
 - 前置き・要約・確認の繰り返しは省く。結論から入る
 - ツール呼び出し結果を全文引用しない。必要な部分だけ抜粋する
@@ -35,6 +36,7 @@
 | `playwright` | `playwright-cli install --skills` で配置。`PLAYWRIGHT_CLI_SESSION` で永続セッションを指定。dotfiles 本体では管理しない |
 | `notion-cli` | `npx skills add makenotion/skills` で配置。`ntn api` / `ntn files` / `ntn workers` の使い方ガイド。dotfiles 本体では管理しない |
 | `gws-*` | `npx skills add googleworkspace/cli` で配置。Google Workspace（Gmail / Drive / Calendar / Docs / Sheets / Chat / Admin）操作。dotfiles 本体では管理しない |
+| `find-skills` | `npx skills add vercel-labs/skills` で配置。自然言語クエリで既存 / 新規 skill を検索。作業開始時に「該当 skill はあるか」を確認するのに使う。英語キーワード推奨。dotfiles 本体では管理しない |
 | `screenshot` | macOS のデスクトップ / ウィンドウキャプチャ |
 | `doc` | Word (.docx) ドキュメント生成 |
 | `pdf` | PDF の読み取り・解析 |

@@ -9,6 +9,7 @@
 - 前置き・要約・確認の繰り返しは省く。結論から入る
 - ツール呼び出し結果を全文引用しない。必要な部分だけ抜粋する
 - 設定キーやオプション名が正しいか自信がないときは、ユーザーに確認を取らず自分で公式ドキュメントやソースを fetch して裏取りしてから回答する
+- 作業前に **skill を確認する**。`~/.claude/skills/` 配下に合致しそうな skill があればそれを使う。該当が思い当たらなければ `find-skills` skill（`~/.claude/skills/find-skills/`）で英語キーワード検索して新規 skill も候補に入れる。`npx skills find "<keyword>"` / `npx skills list` / `npx skills check` も同じ目的で使える。skill が見つかったら SKILL.md の手順に従う
 
 ## MCP ツール選択ルール
 
