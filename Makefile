@@ -108,6 +108,7 @@ test-scripts: ## shell スクリプトの回帰テストを実行
 	bash tests/ai-config.sh
 	bash tests/lsp-hint.sh
 	bash tests/frontend-design-skill.sh
+	bash tests/find-skills.sh
 
 uninstall: ## dotfiles をアンインストール
 	bash scripts/uninstall.sh

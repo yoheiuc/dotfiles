@@ -8,6 +8,7 @@
 #   - Register Serena MCP server into Claude Code and Codex (idempotent)
 #   - Register Sequential Thinking MCP into Claude Code and Codex (idempotent)
 #   - Install Google Workspace CLI (gws) skills under ~/.claude/skills and ~/.codex/skills (idempotent)
+#   - Install find-skills (vercel-labs/skills) so Claude / Codex can discover skills from natural-language queries (idempotent)
 #   - Rely on chezmoi-managed Codex skills bundled in this repository
 #   - Keep brew-autoupdate disabled (manual brew update/upgrade policy)
 #
@@ -188,6 +189,35 @@ else
       log "Installing gws skills for ${agent} into ${dir/#${HOME}/\~} ..."
       if npx -y skills add https://github.com/googleworkspace/cli -a "${agent}" -g -y; then
         ok "gws skills installed (${agent})"
+      else
+        warn "npx skills add failed for ${agent} — re-run or install manually"
+      fi
+    fi
+  done
+  unset target agent dir
+fi
+
+# ---- find-skills (vercel-labs/skills) -------------------------------------
+# find-skills lets Claude Code / Codex search and install further skills from
+# natural-language queries (English keywords work best). Installing it via
+# `npx skills add` places the skill bundle under ~/.claude/skills/find-skills
+# and ~/.codex/skills/find-skills, so both agents can self-discover skills
+# without manual /plugin install steps.
+log "find-skills skill..."
+
+if ! command -v npx &>/dev/null; then
+  warn "npx not found — find-skills skipped (install node via core Brew profile)"
+else
+  for target in claude-code:"${HOME}/.claude/skills" codex:"${HOME}/.codex/skills"; do
+    agent="${target%%:*}"
+    dir="${target#*:}"
+    mkdir -p "${dir}"
+    if [[ -f "${dir}/find-skills/SKILL.md" ]]; then
+      ok "find-skills already present under ${dir/#${HOME}/\~}"
+    else
+      log "Installing find-skills for ${agent} into ${dir/#${HOME}/\~} ..."
+      if npx -y skills add https://github.com/vercel-labs/skills -a "${agent}" -g -y --skill find-skills; then
+        ok "find-skills installed (${agent})"
       else
         warn "npx skills add failed for ${agent} — re-run or install manually"
       fi
