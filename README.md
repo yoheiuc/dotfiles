@@ -4,6 +4,8 @@
 
 現在の運用メモは [docs/notes/current-state.md](docs/notes/current-state.md) に置いています。
 
+> **Note**: これは個人用の設定です。参考にする場合は fork してから自分の用途に合わせて書き換えてください。そのまま `chezmoi apply` すると既存の設定を上書きする可能性があります。ライセンスは [MIT](LICENSE)。
+
 ---
 
 ## 前提条件
