@@ -1,25 +1,25 @@
 # dotfiles
 
-[chezmoi](https://chezmoi.io) で管理している、macOS 向けの個人用 dotfiles です。Claude Code / Codex / Gemini を横断する AI エージェント作業環境と、情シス業務で日常的に触るツール群を 1 つのリポジトリで一貫した形に揃えることを目的にしています。
+macOS 向けの開発マシンを chezmoi で再現可能に管理するための dotfiles。Claude Code / Codex / Gemini を同じ baseline で走らせるための AI 設定、情シス業務で触る SaaS 群の自動化、credential の Keychain 集約、drift の自己修復までを 1 本のリポジトリに閉じ込めている。
 
-現在の運用メモは [docs/notes/current-state.md](docs/notes/current-state.md) に置いています。
+運用中の状態は [docs/notes/current-state.md](docs/notes/current-state.md)。ライセンスは [MIT](LICENSE)。
 
-> **Note**: これは個人用の設定です。参考にする場合は fork してから自分の用途に合わせて書き換えてください。そのまま `chezmoi apply` すると既存の設定を上書きする可能性があります。ライセンスは [MIT](LICENSE)。
+> 個人マシン用の opinionated な設定。`chezmoi apply` は `~/` 以下を上書きしうる。他人が使うなら fork して [fork して使うとき](#fork-して使うとき) の書き換え箇所を潰してから apply すること。
 
 ---
 
 ## 特徴
 
-- **マルチエージェント AI 環境**: Claude Code / Codex / Gemini を同じ baseline（model / sandbox / approval policy / hooks）で揃え、同じ MCP セット（Serena / Exa / Slack / Vision / sequential-thinking）を両方に登録する
-- **ツール採用基準が明文化されている**: MCP / CLI / 削除の判断を 1 枚のマトリクスで管理。迷ったら [ツール採用基準](#ツール採用基準mcp--cli--削除) に戻る
-- **credential は Keychain、dotfiles には入れない**: `mcp-with-keychain-secret` wrapper 経由で stdio MCP に注入。token を repo に平文で置かない
-- **`pwattach`: 自分のログイン済み Chrome を AI に触らせる**: `@playwright/cli` v0.1.8 の CDP attach を helper 化。AI 専用プロファイル強制（`PLAYWRIGHT_AI_CHROME_READY=1` が無いと拒否）で blast radius を抑える
-- **drift を自己修復できる**: `make ai-repair` が MCP 登録 / Serena config / Claude Code channel / Codex baseline をまとめて expected 値に戻す。legacy MCP（`playwright` / `filesystem` / `drawio` / `notion` / `github` / `owlocr` / `chrome-devtools` / `brave-search`）も削除する
-- **観測可能**: `make status`（日常）/ `make ai-audit`（AI 設定）/ `make doctor`（深掘り）で現状を必ず可視化できる
-- **再現性**: chezmoi + 1 つの Brewfile + post-setup の idempotent フロー。state は `~/` 側に置き、dotfiles source は single source of truth
-- **git privacy guard**: `~/.config/git/hooks/pre-commit` が author / committer が global config とズレていたら commit を止める
-- **企業プロキシ対応**: Python 3.13 の `VERIFY_X509_STRICT` を `sitecustomize.py` で無効化し、Netskope / Zscaler などの MITM 証明書があっても gcloud / awscli / aider 等が動く
-- **brew autoupdate は無効化**: 意図しないバージョン差分を避けるため、手動 `brew update` / `brew upgrade` 運用に寄せる
+- **Claude Code / Codex / Gemini の三者同居**: 同じ model / sandbox / approval policy / hooks を `~/.claude/settings.json` と `~/.codex/config.toml` に揃え、MCP baseline（Serena / Exa / Slack / Vision / sequential-thinking）も両方に登録する。`make ai-repair` が期待値に戻す。
+- **MCP / CLI / 削除の判定マトリクス**: 新ツールを足す前に [ツール採用基準](#ツール採用基準mcp--cli--削除) を通す。token 効率、scripted 用途、tight integration の要否で方式が決まる。MCP を選ぶのは symbol 解析や CoT scaffolding など agent context と不可分なものだけ。
+- **credential は Keychain 一択**: stdio MCP に secret を渡す必要がある場合は `mcp-with-keychain-secret` wrapper で `security find-generic-password` 経由で注入し、設定ファイルには参照だけが載る。`.env` / `hosts.yml` / `auth.json` は dotfiles に入れない。
+- **`pwattach` で実 Chrome を agent に露出**: `@playwright/cli` の `attach --cdp=chrome` を zsh helper 化。AI 専用 Chrome プロファイル運用を強制するため `PLAYWRIGHT_AI_CHROME_READY=1` が export されていない場合は起動を拒否する。CDP toggle の永続化・拡張機能経由の Autofill など実 Chrome 特有のリスクは [pwattach のセキュリティ](#pwattach-のセキュリティ実-chrome-アタッチ特有のリスク) で分解してある。
+- **drift は自己修復**: `make ai-repair` が Claude Code の `~/.claude.json`、Codex の `~/.codex/config.toml`、Serena config、Claude channel を baseline に戻す。legacy MCP（`playwright` / `filesystem` / `drawio` / `notion` / `github` / `owlocr` / `chrome-devtools` / `brave-search`）は能動的に削除する。`make ai-audit` は検知のみ。
+- **3 段の可観測性**: `make status` が日常の sanity check、`make ai-audit` が AI 設定専用の監査、`make doctor` が required + optional の深掘り（Xcode CLT / brew / chezmoi / Brewfile / git identity / SSL compat / 各 CLI の存在）。全部 shell スクリプトで中身が追える。
+- **single source of truth**: dotfiles source（`home/`）が正。実体（`~/`）だけ変更しても次の `chezmoi apply` で巻き戻る前提。local state（`hosts.yml`、Codex の `[projects.*]` 信頼キャッシュ等）は dotfiles に混ぜない。
+- **git identity の privacy guard**: `~/.config/git/hooks/pre-commit`（global `core.hooksPath`）が commit 時の author / committer を `git config --global` と照合する。`GIT_AUTHOR_*` 上書きも repo local config も検査対象で、ズレたら commit を止める。
+- **Python 3.13 + 企業 CASB/プロキシ**: Netskope / Zscaler の MITM 証明書は `basicConstraints` の `critical` flag 欠落等で `VERIFY_X509_STRICT` に弾かれる。`~/.local/lib/python-ssl-compat/sitecustomize.py` を `PYTHONPATH` に前置し、Python 3.13+ の全プロセスで 3.12 相当の検証に戻す。原本 CA store は書き換えないのでローテート時は sitecustomize を消すだけで戻る。
+- **brew autoupdate は policy で disable**: launchd job を落とし、`make doctor` が有効状態を warn する。silent upgrade で dev 環境が切れるのを避けるための意図的な運用。
 
 ---
 
@@ -57,52 +57,39 @@
 
 | 項目 | 内容 |
 |---|---|
-| macOS | Apple Silicon / Intel のどちらでも可 |
+| macOS | Apple Silicon / Intel 両対応 |
 | Homebrew | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
 | Git | Xcode CLT (`xcode-select --install`) または `brew install git` |
 
-Git identity (`~/.gitconfig`) も chezmoi 管理です。既存の global git config を引き継ぎ、global `pre-commit` hook で author / committer がその値とずれていないかを確認します。public に clone した人向けには、[docs/examples/chezmoidata.yaml](docs/examples/chezmoidata.yaml) を `.chezmoidata.yaml` にコピーして `gitIdentity.name` / `gitIdentity.email` を上書きする方法も用意しています。
+`~/.gitconfig` は chezmoi template（`home/dot_gitconfig.tmpl`）で生成する。bootstrap 時の `git config --global user.*` を優先的に読み、未設定時は `.chezmoidata.yaml` の `gitIdentity.*` にフォールバックする。global `pre-commit` hook が commit 時の author / committer を `git config --global` と照合して、ズレたら commit を止める。
 
-初回に git identity が未設定なら、先に次のどちらかを行ってください。
+git identity は以下のどちらかで決めておく。
 
 ```bash
+# 既に global config がある場合はそのまま使える
 git config --global user.name "Your Name"
 git config --global user.email "your-github-id@users.noreply.github.com"
-```
 
-または:
-
-```bash
+# もしくは chezmoidata 経由で上書き
 cp docs/examples/chezmoidata.yaml .chezmoidata.yaml
-$EDITOR .chezmoidata.yaml
+$EDITOR .chezmoidata.yaml    # gitIdentity.name / gitIdentity.email
 ```
 
-Homebrew の構成は `home/dot_Brewfile` に 1 本化しています。`bootstrap.sh` が `brew bundle` で全パッケージをインストールします。新しく入れたい package はこのファイルを直接編集してから `make sync` で反映します。
+Brewfile は `home/dot_Brewfile`（実体: `~/.Brewfile`）に 1 本化してある。新規パッケージは source を直接編集し、`make sync` で `brew bundle` + `cleanup` を流して反映する。
 
 ---
 
 ## 初期セットアップ
 
-新しい Mac での基本手順です。
-
 ```bash
-# 1. clone
 git clone https://github.com/<your-username>/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
-# 2. Brew + chezmoi apply + post-setup を一気に
-make install
-
-# 3. 新しいターミナルを開いて zsh を読み直す
-
-# 4. Codex の初回認証
-codex login
-
-# 5. 状態確認
-make doctor
-
-# 6. 変更前の確認
-make preview
+make install         # brew bundle + chezmoi apply + post-setup
+exec zsh             # shell を reload して PATH を反映
+codex login          # Codex の OAuth
+make doctor          # required 項目がすべて pass することを確認
+make preview         # 以降の変更は apply 前に必ず diff を確認
 ```
 
 ### make ターゲット一覧
@@ -218,9 +205,11 @@ ghq get git@github.com:owner/repo.git
 
 ## 設計思想
 
+「MCP を足すか CLI を足すか何もしないか」「既存の実体と source のどちらを正とするか」「credential をどこに置くか」を、後から迷わないようにマトリクスとルールで固定している。個別の判断は積み重ねると必ず矛盾するので、方針を先に凍結して例外を例外として扱うほうが長期的に安い。
+
 ### ツール採用基準（MCP / CLI / 削除）
 
-新しいツールを追加する、または既存のものを置換するときは、まず以下のマトリクスで方式を決めます。
+新ツールの追加・置換は以下のマトリクスで方式を決める。迷ったら削除が既定。
 
 | 状況 | 採用方式 | 例 |
 |---|---|---|
@@ -232,26 +221,25 @@ ghq get git@github.com:owner/repo.git
 | text diff フレンドリーな代替がある | **代替に移行**（バイナリ依存の MCP は外す） | drawio MCP → Mermaid `.md` 直埋め + `mermaid-cli` |
 | 公式 CLI が既存 process への attach を持っている（ライブブラウザ等） | **CLI の attach 機能**（MCP が throwaway プロセスを立ち上げるなら避ける） | `playwright-cli attach --cdp=chrome`（`pwattach` helper）で実 Chrome 操作 |
 
-判断の根拠：
+判断の根拠:
 
-- **CLI + skill が remote MCP に勝る場面**: token 効率（CLI 出力は pipe / file へ流せる、MCP tool schema は毎ターン context を食う）、scripted 用途（cron / CI / Claude Code を起動していない場面でも使える）、長時間セッション（CLI なら state をディスクに持てる）
-- **remote MCP が CLI に勝る場面**: 公式 CLI が無い or 用途違い、OAuth token 管理を agent 側に寄せられる、subprocess を起こさない
-- **MCP を残すべき場面**: CLI 化で `mcp__*__*` の tool 単位 schema 配信が失われると価値が消える tight integration（symbol 解析、ライブ DOM 観測、CoT scaffolding 等）
-- **削除すべき場面**: 機能が既に native に吸収されている、または text diff フレンドリーな text-based 代替がある
+- **CLI + skill が remote MCP に勝る場面**: token 効率（CLI 出力は pipe / file にリダイレクトできるが、MCP tool schema は毎ターン context を消費する）、scripted 用途（cron / CI / agent を起動していない場面でも呼べる）、長時間セッション（state をディスクに持てる）。
+- **remote MCP が CLI に勝る場面**: 公式 CLI が存在しない、あるいは用途が違う（Slack の `slack-cli` はアプリ開発向けで IT ops 用途に合わない）。OAuth token を agent 側の credential store に寄せられる。subprocess を立てない。
+- **MCP を残す条件**: CLI 化すると `mcp__*__*` の tool 単位 schema 配信が失われ、agent の function calling 精度が落ちる種類の integration（symbol 解析、ライブ DOM 観測、CoT scaffolding）。
+- **削除する条件**: 機能が Claude Code の native tool に吸収されている、または text-based で diff フレンドリーな代替がある。
 
 ### 整合性のルール
 
-設定・スクリプト・テスト・ドキュメントに同じ情報が散在するため、片方だけ変えると不整合が残ります。以下を守るのが基本方針です。
+同じ情報が設定 / スクリプト / テスト / ドキュメントに散るので、片側だけ更新すると必ず矛盾する。以下を前提に編集する。
 
-- dotfiles ソース（`home/` 以下）と実体（`~/` 以下）の**両方**を更新する。片方だけ変えると `chezmoi apply` で巻き戻る
-- dotfiles ソースが正（single source of truth）。実体だけ変えて終わりにしない
-- chezmoi のファイル名規則に従う（`dot_` プレフィックス、`executable_` プレフィックス、`.tmpl` サフィックス等）
-- 認証情報・トークンを含むファイル（`hosts.yml`, `auth.json`, `oauth_creds.json` 等）は dotfiles に入れない
-- MCP サーバーの追加・削除は影響範囲が広い：`dot_mcp.json` / `config.toml.tmpl` / `ai-repair.sh` / `ai-audit.sh` / `ai-secrets.sh`（credential が必要な場合）/ `README.md` / `CLAUDE.md` / `tests/` / routing table（`home/dot_claude/CLAUDE.md`、`home/AGENTS.md`）/ 関連 commands をすべて更新する
-- MCP を廃止するときは `ai-repair.sh` 側で能動的に削除し、`ai-audit.sh` にも legacy 警告を追加する。こうしないと既存マシンが収束しない
-- CLI 系ツールを追加するときは、`post-setup.sh` / `doctor.sh` / `zsh/` の対応モジュール / navi cheat / 該当する Claude command / README / tests を同時に更新する
+- `home/` 以下（dotfiles source）と `~/` 以下（実体）を両方更新する。片方だけ変えると次回の `chezmoi apply` で巻き戻る。source が正。
+- chezmoi の命名規則を守る: `dot_`、`executable_`、`.tmpl`、`private_` 等。
+- credential / token を含むファイル（`hosts.yml`、`auth.json`、`oauth_creds.json`、`.netrc`）は dotfiles に入れない。Keychain に置く。
+- MCP の追加・削除は全部更新する: `dot_mcp.json`、`config.toml.tmpl`、`ai-repair.sh`、`ai-audit.sh`、`ai-secrets.sh`（credential が要る場合）、`README.md`、`CLAUDE.md`、`tests/`、routing table（`home/dot_claude/CLAUDE.md`、`home/AGENTS.md`）、関連する `home/dot_claude/commands/*.md`。
+- MCP を廃止するときは `ai-repair.sh` で能動的に削除し（`ai_config_json_remove_mcp` / `ai_config_toml_remove_mcp_section`）、`ai-audit.sh` にも legacy warning を追加する。これをやらないと既存マシンが収束しない。
+- CLI 系ツール（npm global / brew など）を追加するときは、`post-setup.sh`、`doctor.sh`、`zsh/` の該当モジュール、`navi/cheats/dotfiles/` の cheat、該当する Claude command、README、`tests/` を同時に更新する。
 
-詳細は [CLAUDE.md](CLAUDE.md) にまとまっています。
+詳細は [CLAUDE.md](CLAUDE.md)。
 
 ### セキュリティモデル
 
@@ -972,66 +960,37 @@ make ai-repair
 
 ## fork して使うとき
 
-他人の dotfiles をそのまま apply するのは危険なので、fork してから自分用に書き換える想定です。変更が必要になる代表的なポイントを挙げます。
+fork して自分のマシンに合わせる想定。apply 前に以下の決定を自分で下す。
 
-1. **git identity の上書き**
+1. **git identity**: `cp docs/examples/chezmoidata.yaml .chezmoidata.yaml` して `gitIdentity.name` / `gitIdentity.email` を差し替える。pre-commit guard が `git config --global` と照合するので、global 設定もこの値と一致させる。
+2. **Brewfile**: `home/dot_Brewfile` は IT 業務 + AI agent 運用前提で組んである。そのまま使うと IME（`google-japanese-ime`）、password manager（`bitwarden`）、clipboard manager（`maccy`）、2FA（`ente-auth`）、browser（`google-chrome`）、文書変換（`basictex` / `pandoc` / `mermaid-cli`）が全部入る。不要なものは cask ごと削除する。
+3. **AI agent の取捨**: Claude Code / Codex / Gemini のどれかを使わないなら、該当の brew cask、`home/dot_claude/` or `home/dot_codex/` or `home/dot_gemini/`、`scripts/ai-repair.sh` / `ai-audit.sh` / `post-setup.sh` の対応ブロックを落とす。`make test` が失敗しなければ consistent。
+4. **MCP セット**: 使わない MCP は `dot_mcp.json` と `config.toml.tmpl` から消し、`ai-repair.sh` の baseline と `ai-audit.sh` の legacy 削除対象を対応させる。新規追加は [ツール採用基準](#ツール採用基準mcp--cli--削除) を先に通す。
+5. **terminal / multiplexer / shell**: `home/dot_config/ghostty/`、`home/dot_config/zellij/`、`home/dot_config/zsh/` は嗜好が強い領域。fork 先で丸ごと書き換える前提で読むこと。
+6. **routing table**: `home/dot_claude/CLAUDE.md` と `home/AGENTS.md` は agent が毎回読む指示書。この repo の内容をそのまま採用する技術的理由はない。自分の運用に合わせて書き換える。
+7. **CI**: public 化時点で `.github/workflows/` は外した。`make test` が自前で全テスト走らせるので、fork 先でそれを GHA から叩く 1 行の workflow を追加すれば済む。
 
-   ```bash
-   cp docs/examples/chezmoidata.yaml .chezmoidata.yaml
-   $EDITOR .chezmoidata.yaml    # gitIdentity.name / gitIdentity.email を自分のものに
-   ```
-
-2. **Brewfile の取捨選択**
-
-   `home/dot_Brewfile` を自分用に書き換えます。特に以下は好みが分かれるので要確認。
-   - `cask "bitwarden"` / `cask "maccy"` / `cask "google-chrome"`: 使っていなければ削除
-   - `cask "google-japanese-ime"`: IME 依存は環境による
-   - `cask "basictex"` / `brew "pandoc"` / `brew "mermaid-cli"`: ドキュメント変換を使わないなら削除
-
-3. **AI ツールの取捨選択**
-
-   Claude Code / Codex / Gemini を全部使わない場合、以下を整理:
-   - 使わない CLI のキャスクを `home/dot_Brewfile` から削除
-   - 使わない agent の `home/dot_claude/` / `home/dot_codex/` / `home/dot_gemini/` を削除
-   - `scripts/ai-repair.sh` / `scripts/ai-audit.sh` / `scripts/post-setup.sh` の該当セクションを削除
-
-4. **MCP セットの調整**
-
-   使わない MCP は `home/dot_claude/dot_mcp.json` / `home/dot_codex/config.toml.tmpl` から削除し、`scripts/ai-repair.sh` の baseline も同じく減らします。追加したい MCP は [ツール採用基準](#ツール採用基準mcp--cli--削除) のマトリクスを先に通してから入れてください。
-
-5. **Ghostty / Zellij / zsh**
-
-   ターミナル / multiplexer / shell は好みが強いので、`home/dot_config/ghostty/`、`home/dot_config/zellij/`、`home/dot_config/zsh/` はほぼ書き換えになると思います。
-
-6. **CLAUDE.md / AGENTS.md の routing**
-
-   `home/dot_claude/CLAUDE.md` と `home/AGENTS.md` は agent が参照する routing table です。自分の好みで書き換えてください。このリポジトリの routing 方針をそのまま使う理由はありません。
-
-7. **CI / workflows**
-
-   このリポジトリは public 化にあたって `.github/workflows/` を外しました。fork 先で CI を動かしたい場合は自分で追加してください。`make test` がローカルで回せるようになっているので、それを GHA workflow から呼ぶだけで足ります。
-
-Fork 後の apply は必ず dry-run から始めてください。
+apply は必ず dry-run から。
 
 ```bash
-make preview         # 反映前の差分確認
-chezmoi apply -n -v  # chezmoi 単体で dry-run
+make preview          # chezmoi diff + brew bundle check + cleanup preview
+chezmoi apply -n -v   # chezmoi 単体で dry-run
 ```
 
 ---
 
 ## 今後の予定
 
-- **APM (Agent Package Manager) によるチーム共有**: `microsoft/apm` は Brewfile に導入済み。今後、Claude Code commands や Codex skills のうちチームで共有したいものを別リポジトリの APM パッケージとして切り出す予定。dotfiles はマシン単位の設定管理（chezmoi）、APM パッケージはプロジェクト単位のエージェント設定共有（`apm install`）という棲み分けで運用する
+- **APM (Agent Package Manager) によるチーム共有**: `microsoft/apm` は Brewfile に入れてある。Claude Code commands / Codex skills のうちチーム共有したいものは別リポジトリに APM パッケージとして切り出す予定。dotfiles はマシン単位（chezmoi）、APM はプロジェクト単位（`apm install`）という分担。
 
 ---
 
 ## 貢献 / フィードバック
 
-個人用の dotfiles なので feature request は基本的に受け付けませんが、次は歓迎します。
+個人の opinionated な設定なので feature request には応えない。scope 外。以下は歓迎する。
 
-- **typo / ドキュメントの誤り**: Issue / Pull Request で
-- **セキュリティ上の問題**（credential 漏洩、不適切な permission 設定など）: Issue で連絡
-- **設計判断への疑問 / 代替案の提案**: Issue または Discussion で歓迎。[ツール採用基準](#ツール採用基準mcp--cli--削除) に沿った提案だとマージまで速いです
+- **typo / ドキュメントの事実誤認 / 壊れたリンク**: PR。
+- **セキュリティ問題**（credential 漏洩、過剰な permission、sandbox 逸脱、reachable な MITM 等）: Issue。repro 手順つきで。
+- **設計判断に対する反論**: [ツール採用基準](#ツール採用基準mcp--cli--削除) の枠組みで書かれた反論は読む。「好み」ベースは読まない。
 
-ライセンスは [MIT](LICENSE) です。
+ライセンスは [MIT](LICENSE)。
