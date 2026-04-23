@@ -24,3 +24,20 @@ __pycache__/
 
 # Ghostty local overrides (machine-specific)
 home/dot_config/ghostty/local.ghostty
+
+# Editor swap / project metadata
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# direnv cache (if used per-dir)
+.direnv/
+
+# Dotenv files (should never be committed; defense in depth)
+.env
+.env.*
+!.env.example
+
+# Node artifacts (not expected in this repo, but defensive)
+node_modules/

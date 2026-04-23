@@ -43,6 +43,8 @@ if command -v claude &>/dev/null; then
   ok "Claude Code available: $(claude --version 2>/dev/null | head -1 || true)"
 else
   log "Installing Claude Code native latest..."
+  # Official Anthropic installer: https://claude.ai/install.sh (vendor-signed, pinned to latest channel).
+  # curl | bash is the documented install path; see https://docs.anthropic.com/claude-code
   curl -fsSL https://claude.ai/install.sh | bash
   hash -r
   ok "Claude Code installed: $(claude --version 2>/dev/null | head -1 || true)"
@@ -238,7 +240,8 @@ if command -v ntn &>/dev/null; then
   ok "ntn already installed: $(ntn --version 2>/dev/null | head -1 || true)"
 else
   log "Installing Notion CLI via official installer..."
-  # Official installer from Notion: https://ntn.dev
+  # Official Notion installer: https://ntn.dev (distributed by Notion Labs, documented install path).
+  # curl | bash is accepted here because the install target is $HOME/.ntn (non-privileged, user-local).
   if curl -fsSL https://ntn.dev | bash; then
     hash -r
     if command -v ntn &>/dev/null; then

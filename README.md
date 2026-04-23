@@ -878,14 +878,20 @@ dotfiles/
 │       └── brew-autoupdate.sh      # brew-autoupdate の管理ヘルパー
 ├── tests/                          # シェルベースの回帰テスト
 │   ├── lib/testlib.sh
-│   ├── status.sh
-│   ├── serena-wrapper.sh
-│   ├── dothelp.sh
 │   ├── ai-audit.sh
+│   ├── ai-config.sh
+│   ├── ai-repair.sh
 │   ├── ai-secrets.sh
 │   ├── ai-secrets-wrapper.sh
-│   ├── ai-repair.sh
-│   └── doctor.sh
+│   ├── doctor.sh
+│   ├── dothelp.sh
+│   ├── find-skills.sh
+│   ├── frontend-design-skill.sh
+│   ├── lsp-hint.sh
+│   ├── notion-cli.sh
+│   ├── playwright-zsh.sh
+│   ├── serena-wrapper.sh
+│   └── status.sh
 └── docs/
     ├── notes/current-state.md      # 運用メモ
     └── examples/chezmoidata.yaml   # chezmoi data のサンプル
