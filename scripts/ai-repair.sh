@@ -6,11 +6,10 @@
 set -euo pipefail
 
 REPO_ROOT="${DOTFILES_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+source "${REPO_ROOT}/scripts/lib/ui.sh"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
 
-log()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
-ok()   { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
-warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
+log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 
 # Serialize concurrent runs via atomic mkdir lock. Guards against two shells
 # invoking `make ai-repair` simultaneously and fighting over ~/.claude.json /

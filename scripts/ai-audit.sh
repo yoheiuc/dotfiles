@@ -6,14 +6,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/ui.sh"
 source "${SCRIPT_DIR}/lib/ai-config.sh"
 
 ATTENTION_COUNT=0
 
-section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
-ok() { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
-warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
-info() { printf '  - %s\n' "$*"; }
 attention() {
   warn "$*"
   ATTENTION_COUNT=$((ATTENTION_COUNT + 1))

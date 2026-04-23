@@ -6,6 +6,7 @@
 set -euo pipefail
 
 REPO_ROOT="${DOTFILES_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+source "${REPO_ROOT}/scripts/lib/ui.sh"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
 
 SECURITY_BIN="${SECURITY_BIN:-security}"
@@ -15,8 +16,6 @@ KEYCHAIN_SERVICE="dotfiles.ai.mcp"
 BRAVE_KEYCHAIN_ACCOUNT="brave-api-key"
 
 log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
-ok() { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
-warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 die() { printf '  \033[1;31m✗\033[0m  %s\n' "$*" >&2; exit 1; }
 
 read_legacy_env_secret() { ai_config_read_legacy_env_secret "$@"; }
