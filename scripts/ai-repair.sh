@@ -14,8 +14,10 @@ warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 
 # Serialize concurrent runs via atomic mkdir lock. Guards against two shells
 # invoking `make ai-repair` simultaneously and fighting over ~/.claude.json /
-# ~/.codex/config.toml mid-write.
-LOCK_DIR="${TMPDIR:-/tmp}/dotfiles-ai-repair.lock"
+# ~/.codex/config.toml mid-write. The $(id -u) suffix prevents a local user
+# from squatting another user's lock directory on shared /tmp (macOS $TMPDIR
+# is already per-user, but we add the uid for Linux/CI correctness).
+LOCK_DIR="${TMPDIR:-/tmp}/dotfiles-ai-repair-$(id -u).lock"
 if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
   printf 'ERROR: another ai-repair run is in progress (lock: %s)\n' "${LOCK_DIR}" >&2
   printf '  If stale, remove with: rmdir %s\n' "${LOCK_DIR}" >&2

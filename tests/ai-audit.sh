@@ -216,7 +216,7 @@ cat > "${HOME}/.claude.json" <<EOF
   }
 }
 EOF
-> "${FAKE_SECURITY_DB}"
+: > "${FAKE_SECURITY_DB}"
 
 run_capture bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational with warnings"

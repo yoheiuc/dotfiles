@@ -20,7 +20,6 @@ chmod +x "${fake_uvx}"
 repo="${tmpdir}/repo"
 mkdir -p "${repo}/subdir"
 git init -q "${repo}"
-repo_real="$(cd "${repo}" && pwd -P)"
 
 run_capture env \
   HOME="${tmpdir}/home" \
