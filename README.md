@@ -1,10 +1,55 @@
 # dotfiles
 
-[chezmoi](https://chezmoi.io) で管理している、macOS 向けの個人用 dotfiles です。
+[chezmoi](https://chezmoi.io) で管理している、macOS 向けの個人用 dotfiles です。Claude Code / Codex / Gemini を横断する AI エージェント作業環境と、情シス業務で日常的に触るツール群を 1 つのリポジトリで一貫した形に揃えることを目的にしています。
 
 現在の運用メモは [docs/notes/current-state.md](docs/notes/current-state.md) に置いています。
 
 > **Note**: これは個人用の設定です。参考にする場合は fork してから自分の用途に合わせて書き換えてください。そのまま `chezmoi apply` すると既存の設定を上書きする可能性があります。ライセンスは [MIT](LICENSE)。
+
+---
+
+## 特徴
+
+- **マルチエージェント AI 環境**: Claude Code / Codex / Gemini を同じ baseline（model / sandbox / approval policy / hooks）で揃え、同じ MCP セット（Serena / Exa / Slack / Vision / sequential-thinking）を両方に登録する
+- **ツール採用基準が明文化されている**: MCP / CLI / 削除の判断を 1 枚のマトリクスで管理。迷ったら [ツール採用基準](#ツール採用基準mcp--cli--削除) に戻る
+- **credential は Keychain、dotfiles には入れない**: `mcp-with-keychain-secret` wrapper 経由で stdio MCP に注入。token を repo に平文で置かない
+- **`pwattach`: 自分のログイン済み Chrome を AI に触らせる**: `@playwright/cli` v0.1.8 の CDP attach を helper 化。AI 専用プロファイル強制（`PLAYWRIGHT_AI_CHROME_READY=1` が無いと拒否）で blast radius を抑える
+- **drift を自己修復できる**: `make ai-repair` が MCP 登録 / Serena config / Claude Code channel / Codex baseline をまとめて expected 値に戻す。legacy MCP（`playwright` / `filesystem` / `drawio` / `notion` / `github` / `owlocr` / `chrome-devtools` / `brave-search`）も削除する
+- **観測可能**: `make status`（日常）/ `make ai-audit`（AI 設定）/ `make doctor`（深掘り）で現状を必ず可視化できる
+- **再現性**: chezmoi + 1 つの Brewfile + post-setup の idempotent フロー。state は `~/` 側に置き、dotfiles source は single source of truth
+- **git privacy guard**: `~/.config/git/hooks/pre-commit` が author / committer が global config とズレていたら commit を止める
+- **企業プロキシ対応**: Python 3.13 の `VERIFY_X509_STRICT` を `sitecustomize.py` で無効化し、Netskope / Zscaler などの MITM 証明書があっても gcloud / awscli / aider 等が動く
+- **brew autoupdate は無効化**: 意図しないバージョン差分を避けるため、手動 `brew update` / `brew upgrade` 運用に寄せる
+
+---
+
+## 目次
+
+- [前提条件](#前提条件)
+- [初期セットアップ](#初期セットアップ)
+- [日常の更新](#日常の更新)
+- [ヘルスチェック](#ヘルスチェック)
+- [設計思想](#設計思想)
+  - [ツール採用基準（MCP / CLI / 削除）](#ツール採用基準mcp--cli--削除)
+  - [整合性のルール](#整合性のルール)
+  - [セキュリティモデル](#セキュリティモデル)
+- [MCP の基本セット（2026）](#mcp-の基本セット2026)
+- [Notion CLI (`ntn`)](#notion-cli-ntn)
+- [Slack MCP（remote + OAuth）](#slack-mcpremote--oauth)
+- [Playwright CLI（ブラウザ自動化）](#playwright-cliブラウザ自動化)
+- [AI セッション](#ai-セッション)
+- [chezmoi の基本運用](#chezmoi-の基本運用)
+- [巻き戻し](#巻き戻し)
+- [Git の privacy guard](#git-の-privacy-guard)
+- [Brewfile](#brewfile)
+- [gcloud と企業プロキシ（Python 3.13 問題）](#gcloud-と企業プロキシpython-313-問題)
+- [Ghostty 設定](#ghostty-設定)
+- [Claude Code / Codex / MCP](#claude-code--codex--mcp)
+- [ディレクトリ構成](#ディレクトリ構成)
+- [トラブルシューティング](#トラブルシューティング)
+- [fork して使うとき](#fork-して使うとき)
+- [今後の予定](#今後の予定)
+- [貢献 / フィードバック](#貢献--フィードバック)
 
 ---
 
@@ -168,6 +213,53 @@ qcd
 # ghq 経由で clone
 ghq get git@github.com:owner/repo.git
 ```
+
+---
+
+## 設計思想
+
+### ツール採用基準（MCP / CLI / 削除）
+
+新しいツールを追加する、または既存のものを置換するときは、まず以下のマトリクスで方式を決めます。
+
+| 状況 | 採用方式 | 例 |
+|---|---|---|
+| 公式 CLI + 公式 skill が揃っている | **CLI + skill**（`scripts/post-setup.sh` で install） | `playwright-cli` + `playwright-cli install --skills`、`ntn` + `makenotion/skills` |
+| 公式 CLI なし、公式 remote MCP のみ（OAuth で認証） | **remote HTTP MCP**（`dot_mcp.json` / `config.toml.tmpl` に URL のみ） | Slack、Exa、（過去の）Notion remote |
+| Local stdio MCP に credential を渡す必要がある | **`mcp-with-keychain-secret` wrapper 経由**で Keychain から注入 | （現状デフォルトの consumer なし、framework として残置） |
+| agent context との tight integration が本質（symbol 解析、CoT scaffolding など） | **MCP**（CLI 化すると価値が消える） | Serena、sequential-thinking |
+| Claude Code の native tool（`Read` / `Write` / `Edit` / `Grep` / `Glob`）で代替できる | **削除**（追加せず、既存も外す） | filesystem MCP |
+| text diff フレンドリーな代替がある | **代替に移行**（バイナリ依存の MCP は外す） | drawio MCP → Mermaid `.md` 直埋め + `mermaid-cli` |
+| 公式 CLI が既存 process への attach を持っている（ライブブラウザ等） | **CLI の attach 機能**（MCP が throwaway プロセスを立ち上げるなら避ける） | `playwright-cli attach --cdp=chrome`（`pwattach` helper）で実 Chrome 操作 |
+
+判断の根拠：
+
+- **CLI + skill が remote MCP に勝る場面**: token 効率（CLI 出力は pipe / file へ流せる、MCP tool schema は毎ターン context を食う）、scripted 用途（cron / CI / Claude Code を起動していない場面でも使える）、長時間セッション（CLI なら state をディスクに持てる）
+- **remote MCP が CLI に勝る場面**: 公式 CLI が無い or 用途違い、OAuth token 管理を agent 側に寄せられる、subprocess を起こさない
+- **MCP を残すべき場面**: CLI 化で `mcp__*__*` の tool 単位 schema 配信が失われると価値が消える tight integration（symbol 解析、ライブ DOM 観測、CoT scaffolding 等）
+- **削除すべき場面**: 機能が既に native に吸収されている、または text diff フレンドリーな text-based 代替がある
+
+### 整合性のルール
+
+設定・スクリプト・テスト・ドキュメントに同じ情報が散在するため、片方だけ変えると不整合が残ります。以下を守るのが基本方針です。
+
+- dotfiles ソース（`home/` 以下）と実体（`~/` 以下）の**両方**を更新する。片方だけ変えると `chezmoi apply` で巻き戻る
+- dotfiles ソースが正（single source of truth）。実体だけ変えて終わりにしない
+- chezmoi のファイル名規則に従う（`dot_` プレフィックス、`executable_` プレフィックス、`.tmpl` サフィックス等）
+- 認証情報・トークンを含むファイル（`hosts.yml`, `auth.json`, `oauth_creds.json` 等）は dotfiles に入れない
+- MCP サーバーの追加・削除は影響範囲が広い：`dot_mcp.json` / `config.toml.tmpl` / `ai-repair.sh` / `ai-audit.sh` / `ai-secrets.sh`（credential が必要な場合）/ `README.md` / `CLAUDE.md` / `tests/` / routing table（`home/dot_claude/CLAUDE.md`、`home/AGENTS.md`）/ 関連 commands をすべて更新する
+- MCP を廃止するときは `ai-repair.sh` 側で能動的に削除し、`ai-audit.sh` にも legacy 警告を追加する。こうしないと既存マシンが収束しない
+- CLI 系ツールを追加するときは、`post-setup.sh` / `doctor.sh` / `zsh/` の対応モジュール / navi cheat / 該当する Claude command / README / tests を同時に更新する
+
+詳細は [CLAUDE.md](CLAUDE.md) にまとまっています。
+
+### セキュリティモデル
+
+- **credential は Keychain にだけ置く**: stdio MCP に credential が必要な場合は `mcp-with-keychain-secret` wrapper 経由で注入し、設定ファイルには Keychain 参照だけが載る
+- **AI に見せるアカウント / プロファイルは最小権限**: Playwright CLI の `pwattach` は **AI 専用 Chrome プロファイル強制**（`PLAYWRIGHT_AI_CHROME_READY=1` が無いと起動を拒否）。Notion / Slack / Google Workspace も管理者アカウントは AI セッションに使わない
+- **OAuth token 管理は agent に寄せる**: Slack / Notion remote は Claude Code の OAuth フローに載せ、ローカルに stdio プロセスも token も持たない
+- **git identity をハードコードしない**: `~/.config/git/hooks/pre-commit` が global config と author / committer を照合して commit を止める。`GIT_AUTHOR_*` 上書きや repo local config も検査対象
+- **企業 CA 証明書の扱い**: `VERIFY_X509_STRICT` 回避は `sitecustomize.py` による最小限の patch で、原本 CA store は書き換えない。ローテーション時は `sitecustomize.py` を削除するだけで戻る
 
 ---
 
@@ -807,11 +899,123 @@ dotfiles/
 │   ├── ai-secrets-wrapper.sh
 │   ├── ai-repair.sh
 │   └── doctor.sh
-├── docs/
-│   ├── notes/current-state.md      # 運用メモ
-│   └── examples/chezmoidata.yaml   # chezmoi data のサンプル
-└── .github/workflows/
-    └── ci.yml                      # shellcheck + bundle validation + 回帰テスト
+└── docs/
+    ├── notes/current-state.md      # 運用メモ
+    └── examples/chezmoidata.yaml   # chezmoi data のサンプル
+```
+
+---
+
+## トラブルシューティング
+
+### `chezmoi apply` が source を見つけられない
+
+```
+chezmoi: no config file, and no source directory
+```
+
+`bootstrap.sh` は `~/.local/share/chezmoi` をこの repo への symlink にします。手動で clone した場合は symlink を自分で作るか、`chezmoi init --source=<path>` を実行してください。
+
+```bash
+ln -s ~/dotfiles ~/.local/share/chezmoi
+```
+
+### `make install` 後に `codex` / `playwright-cli` / `ntn` が見つからない
+
+`post-setup.sh` は npm global へインストールしますが、新しいシェルを開くまで `PATH` に反映されません。新しいターミナルを開き直すか、次を実行します。
+
+```bash
+hash -r
+exec zsh
+```
+
+### `pwattach` が "PLAYWRIGHT_AI_CHROME_READY=1 が必要" で止まる
+
+これは意図的な安全策です。`pwattach` は AI 専用 Chrome プロファイルの運用を強制しており、ユーザーが明示的に環境変数を設定することで「セットアップ完了済み」を宣言する設計です。初回セットアップ手順は [自分のログイン済み Chrome を AI に触らせる](#自分のログイン済み-chrome-を-ai-に触らせるpwattach) を参照してください。
+
+### `gcloud` が SSL エラーで動かない（`CERTIFICATE_VERIFY_FAILED`）
+
+企業 CASB/プロキシの MITM 証明書が Python 3.13 の `VERIFY_X509_STRICT` で拒否されています。`make install` で `sitecustomize.py` が配置されているはずなので、次で確認します。
+
+```bash
+make doctor                     # "VERIFY_X509_STRICT bypass: active" を確認
+ls ~/.local/lib/python-ssl-compat/sitecustomize.py
+echo $PYTHONPATH                # python-ssl-compat が含まれていること
+```
+
+詳細と対策は [gcloud と企業プロキシ（Python 3.13 問題）](#gcloud-と企業プロキシpython-313-問題) を参照。
+
+### `make ai-audit` が legacy MCP を警告する
+
+旧 dotfiles から移行した場合、古い MCP 登録（`playwright` / `filesystem` / `drawio` / `notion` / `github` / `owlocr` / `chrome-devtools` / `brave-search`）が残っていることがあります。`make ai-repair` が自動で削除します。
+
+```bash
+make ai-repair
+make ai-audit     # clean になるはず
+```
+
+### Claude Code / Codex で MCP が繋がらない
+
+`make ai-audit` で `missing` / `wrong-url` が出る場合は `make ai-repair` で再登録できます。それでも直らない場合は Claude Code / Codex を再起動してください。
+
+```bash
+make ai-audit
+make ai-repair
+# Claude Code / Codex を終了して再起動
+```
+
+### Brewfile に入れてない package が `brew leaves` に出る
+
+`make sync` が `brew bundle cleanup --force` で Brewfile 外の package を削除します。意図的に残したいものは Brewfile に追記してください。
+
+---
+
+## fork して使うとき
+
+他人の dotfiles をそのまま apply するのは危険なので、fork してから自分用に書き換える想定です。変更が必要になる代表的なポイントを挙げます。
+
+1. **git identity の上書き**
+
+   ```bash
+   cp docs/examples/chezmoidata.yaml .chezmoidata.yaml
+   $EDITOR .chezmoidata.yaml    # gitIdentity.name / gitIdentity.email を自分のものに
+   ```
+
+2. **Brewfile の取捨選択**
+
+   `home/dot_Brewfile` を自分用に書き換えます。特に以下は好みが分かれるので要確認。
+   - `cask "bitwarden"` / `cask "maccy"` / `cask "google-chrome"`: 使っていなければ削除
+   - `cask "google-japanese-ime"`: IME 依存は環境による
+   - `cask "basictex"` / `brew "pandoc"` / `brew "mermaid-cli"`: ドキュメント変換を使わないなら削除
+
+3. **AI ツールの取捨選択**
+
+   Claude Code / Codex / Gemini を全部使わない場合、以下を整理:
+   - 使わない CLI のキャスクを `home/dot_Brewfile` から削除
+   - 使わない agent の `home/dot_claude/` / `home/dot_codex/` / `home/dot_gemini/` を削除
+   - `scripts/ai-repair.sh` / `scripts/ai-audit.sh` / `scripts/post-setup.sh` の該当セクションを削除
+
+4. **MCP セットの調整**
+
+   使わない MCP は `home/dot_claude/dot_mcp.json` / `home/dot_codex/config.toml.tmpl` から削除し、`scripts/ai-repair.sh` の baseline も同じく減らします。追加したい MCP は [ツール採用基準](#ツール採用基準mcp--cli--削除) のマトリクスを先に通してから入れてください。
+
+5. **Ghostty / Zellij / zsh**
+
+   ターミナル / multiplexer / shell は好みが強いので、`home/dot_config/ghostty/`、`home/dot_config/zellij/`、`home/dot_config/zsh/` はほぼ書き換えになると思います。
+
+6. **CLAUDE.md / AGENTS.md の routing**
+
+   `home/dot_claude/CLAUDE.md` と `home/AGENTS.md` は agent が参照する routing table です。自分の好みで書き換えてください。このリポジトリの routing 方針をそのまま使う理由はありません。
+
+7. **CI / workflows**
+
+   このリポジトリは public 化にあたって `.github/workflows/` を外しました。fork 先で CI を動かしたい場合は自分で追加してください。`make test` がローカルで回せるようになっているので、それを GHA workflow から呼ぶだけで足ります。
+
+Fork 後の apply は必ず dry-run から始めてください。
+
+```bash
+make preview         # 反映前の差分確認
+chezmoi apply -n -v  # chezmoi 単体で dry-run
 ```
 
 ---
@@ -819,3 +1023,15 @@ dotfiles/
 ## 今後の予定
 
 - **APM (Agent Package Manager) によるチーム共有**: `microsoft/apm` は Brewfile に導入済み。今後、Claude Code commands や Codex skills のうちチームで共有したいものを別リポジトリの APM パッケージとして切り出す予定。dotfiles はマシン単位の設定管理（chezmoi）、APM パッケージはプロジェクト単位のエージェント設定共有（`apm install`）という棲み分けで運用する
+
+---
+
+## 貢献 / フィードバック
+
+個人用の dotfiles なので feature request は基本的に受け付けませんが、次は歓迎します。
+
+- **typo / ドキュメントの誤り**: Issue / Pull Request で
+- **セキュリティ上の問題**（credential 漏洩、不適切な permission 設定など）: Issue で連絡
+- **設計判断への疑問 / 代替案の提案**: Issue または Discussion で歓迎。[ツール採用基準](#ツール採用基準mcp--cli--削除) に沿った提案だとマージまで速いです
+
+ライセンスは [MIT](LICENSE) です。
