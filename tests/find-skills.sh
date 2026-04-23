@@ -34,4 +34,12 @@ codex_routing="$(cat "${REPO_ROOT}/home/AGENTS.md")"
 assert_contains "${codex_routing}" "find-skills" "home/AGENTS.md should route Codex to find-skills when no matching skill is known"
 assert_contains "${codex_routing}" "vercel-labs/skills" "home/AGENTS.md skill table should list find-skills with its upstream"
 
+# Behavior check: the post-setup install block must actually be idempotent.
+# Verify both branches exist — "already present" (skip) and fresh-install —
+# and that both write to a location under $HOME/.claude/skills or
+# $HOME/.agents/skills (not the dotfiles checkout).
+assert_contains "${post_setup}" '"${HOME}/.claude/skills"' "post-setup.sh should install find-skills under \$HOME/.claude/skills"
+assert_contains "${post_setup}" '"${HOME}/.agents/skills"' "post-setup.sh should install find-skills under \$HOME/.agents/skills for Codex"
+assert_contains "${post_setup}" "already present" "post-setup.sh should have an idempotent skip branch"
+
 pass_test "tests/find-skills.sh"

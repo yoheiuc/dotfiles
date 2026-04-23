@@ -42,4 +42,20 @@ codex_routing="$(cat "${REPO_ROOT}/home/AGENTS.md")"
 assert_contains "${codex_routing}" "ntn" "home/AGENTS.md routing table should mention ntn"
 assert_contains "${codex_routing}" "notion-cli" "home/AGENTS.md skill table should list notion-cli"
 
+# Behavior check: the notion-cli install block in post-setup must have an
+# idempotent skip branch. Without it, `make install` on an already-configured
+# machine would re-run `npx skills add` and trip the network.
+assert_contains "${post_setup}" "notion-cli/SKILL.md" "post-setup.sh should check for an existing notion-cli skill before re-installing"
+assert_contains "${post_setup}" "notion-cli skill already present" "post-setup.sh should have an idempotent skip branch for notion-cli"
+
+# The navi cheat file must have valid navi structure: a `%` tag header and at
+# least a handful of real command lines. Catches accidental truncation to a
+# blank stub.
+pct_lines=$(grep -c '^%' "${cheat}" || true)
+# Count lines that are not blank, not a comment (#), and not a tag (%).
+cmd_lines=$(grep -cEv '^[[:space:]]*(#|%|$)' "${cheat}" || true)
+if (( pct_lines < 1 )) || (( cmd_lines < 5 )); then
+  fail_test "notion.cheat must have >=1 tag line and >=5 command lines (got tags: ${pct_lines}, cmds: ${cmd_lines})"
+fi
+
 pass_test "tests/notion-cli.sh"

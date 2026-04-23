@@ -22,6 +22,33 @@ assert_contains "${skill_content}" "name: frontend-design" "SKILL.md frontmatter
 assert_contains "${skill_content}" "description:" "SKILL.md frontmatter should declare description"
 assert_contains "${skill_content}" "Design Thinking" "SKILL.md should retain upstream content"
 
+# Behavior check: the file must parse as valid YAML front-matter + Markdown.
+# Claude Code loads skills by parsing the first --- ... --- block as YAML; a
+# malformed vendored copy breaks skill discovery at runtime with no useful
+# error. Validate structure here so the regression surfaces at test time.
+python3 - "${SKILL_FILE}" <<'PY' || fail_test "SKILL.md front-matter does not parse"
+import re
+import sys
+
+content = open(sys.argv[1]).read()
+m = re.match(r'---\s*\n(.*?)\n---\s*\n', content, re.DOTALL)
+if not m:
+    sys.exit("SKILL.md does not start with a YAML front-matter fence")
+fm = m.group(1)
+# Minimal YAML-ish validation without pulling PyYAML: every non-blank line
+# before the closing fence must look like `key: value` or a list continuation.
+for line in fm.splitlines():
+    stripped = line.strip()
+    if not stripped or stripped.startswith('#'):
+        continue
+    if stripped.startswith('- '):
+        continue
+    if ':' not in stripped:
+        sys.exit(f"front-matter line without colon: {stripped!r}")
+if 'name:' not in fm or 'description:' not in fm:
+    sys.exit("front-matter missing required 'name:' / 'description:' keys")
+PY
+
 license_content="$(cat "${LICENSE_FILE}")"
 assert_contains "${license_content}" "Apache License" "LICENSE.txt should be Apache 2.0"
 

@@ -75,7 +75,9 @@ chmod +x "${tmpdir}/security"
 export SECURITY_BIN="${tmpdir}/security"
 
 cp "${REPO_ROOT}/scripts/ai-audit.sh" "${tmpdir}/scripts/ai-audit.sh"
+cp "${REPO_ROOT}/scripts/lib/ui.sh" "${tmpdir}/scripts/lib/ui.sh"
 cp "${REPO_ROOT}/scripts/lib/ai-config.sh" "${tmpdir}/scripts/lib/ai-config.sh"
+cp "${REPO_ROOT}/scripts/lib/ai_config.py" "${tmpdir}/scripts/lib/ai_config.py"
 chmod +x "${tmpdir}/scripts/ai-audit.sh" "${tmpdir}/scripts/lib/ai-config.sh"
 
 # ---- Scenario 1: clean case ----

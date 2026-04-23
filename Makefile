@@ -56,6 +56,9 @@ test: ## 回帰テストを実行
 	bash tests/lsp-hint.sh
 	bash tests/frontend-design-skill.sh
 	bash tests/find-skills.sh
+	bash tests/post-setup.sh
+	bash tests/uninstall.sh
+	bash tests/commands.sh
 
 uninstall: ## dotfiles をアンインストール
 	bash scripts/uninstall.sh

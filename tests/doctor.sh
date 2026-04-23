@@ -242,7 +242,9 @@ run_doctor() {
   : > "${home_dir}/.config/git/hooks/pre-commit"
   chmod +x "${home_dir}/.config/git/hooks/pre-commit"
   mkdir -p "${home_dir}/dotfiles/scripts/lib" "${home_dir}/.serena" "${home_dir}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_dir}/Library/LaunchAgents"
+  cp "${REPO_ROOT}/scripts/lib/ui.sh" "${home_dir}/dotfiles/scripts/lib/ui.sh"
   cp "${REPO_ROOT}/scripts/lib/ai-config.sh" "${home_dir}/dotfiles/scripts/lib/ai-config.sh"
+  cp "${REPO_ROOT}/scripts/lib/ai_config.py" "${home_dir}/dotfiles/scripts/lib/ai_config.py"
   cp "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh" "${home_dir}/dotfiles/scripts/lib/brew-autoupdate.sh"
 
   local runtime_path="${DOCTOR_TEST_PATH_OVERRIDE:-${STUB_BIN}:${ORIGINAL_PATH}}"
