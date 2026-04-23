@@ -133,10 +133,10 @@ fi
 
 case "${*: -1}" in
   user.name)
-    printf 'yoheiuc\n'
+    printf 'test-user\n'
     ;;
   user.email)
-    printf '16657439+yoheiuc@users.noreply.github.com\n'
+    printf 'test-user@users.noreply.github.com\n'
     ;;
   core.hooksPath)
     printf '%s/.config/git/hooks\n' "${HOME}"
