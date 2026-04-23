@@ -6,7 +6,8 @@ shell-integration-features = cursor,sudo,title
 # Use the login shell detected from /etc/passwd
 command = /bin/zsh --login
 
-# Keep reasonable scrollback without eating memory
-scrollback-limit = 10000
+# Scrollback buffer size in bytes (~100MB).
+# Ghostty's default is 10MB; bump it so long `cat` / log dumps stay in history.
+scrollback-limit = 100000000
 
 quit-after-last-window-closed = true
