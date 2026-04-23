@@ -29,6 +29,13 @@ if ! xcode-select -p &>/dev/null; then
   fi
 fi
 
+# Verify Swift actually executes — a present-but-broken CLT (partial install,
+# macOS upgrade leftovers) will fail opaque downstream (brew postflight, chezmoi
+# run_once scripts). doctor.sh has the same check.
+if ! swift -e "print(0)" &>/dev/null; then
+  die "CLT is installed at $(xcode-select -p) but Swift execution failed. Reset with: sudo rm -rf $(xcode-select -p) && xcode-select --install"
+fi
+
 # ---- 1. Homebrew -----------------------------------------------------------
 command -v brew &>/dev/null \
   || die "Homebrew not found. Install: https://brew.sh"

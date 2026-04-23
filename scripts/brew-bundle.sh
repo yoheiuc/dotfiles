@@ -23,6 +23,7 @@ die() { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 
 [[ -f "${BREWFILE}" ]] || die "Missing Brewfile: ${BREWFILE}"
+command -v brew >/dev/null 2>&1 || die "brew not found in PATH — install from https://brew.sh"
 
 case "${MODE}" in
   sync|install|check|preview) ;;

@@ -13,7 +13,7 @@ source "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh"
 
 ok()      { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn()    { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
-fail()    { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=1; }
+fail()    { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=$((REQUIRED_FAILED + 1)); }
 info()    { printf '  - %s\n' "$*"; }
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
 
