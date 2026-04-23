@@ -1,3 +1,8 @@
+SHELL := /bin/bash
+.SHELLFLAGS := -eu -o pipefail -c
+.DELETE_ON_ERROR:
+.DEFAULT_GOAL := help
+
 .PHONY: help tips status ai-audit ai-repair ai-secrets install preview sync doctor test uninstall
 
 PULL ?= 0

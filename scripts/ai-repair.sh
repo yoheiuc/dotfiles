@@ -12,6 +12,17 @@ log()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 
+# Serialize concurrent runs via atomic mkdir lock. Guards against two shells
+# invoking `make ai-repair` simultaneously and fighting over ~/.claude.json /
+# ~/.codex/config.toml mid-write.
+LOCK_DIR="${TMPDIR:-/tmp}/dotfiles-ai-repair.lock"
+if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
+  printf 'ERROR: another ai-repair run is in progress (lock: %s)\n' "${LOCK_DIR}" >&2
+  printf '  If stale, remove with: rmdir %s\n' "${LOCK_DIR}" >&2
+  exit 1
+fi
+trap 'rmdir "${LOCK_DIR}" 2>/dev/null || true' EXIT
+
 SERENA_WRAPPER="${HOME}/.local/bin/serena-mcp"
 SERENA_CONFIG_DIR="${HOME}/.serena"
 SERENA_CONFIG_PATH="${SERENA_CONFIG_DIR}/serena_config.yml"

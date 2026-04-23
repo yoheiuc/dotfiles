@@ -12,7 +12,6 @@ brew "gh"                 # GitHub CLI
 brew "ghq"                # Manage local clones
 brew "lazygit"            # TUI git client
 brew "aider"              # AI pair programming in terminal
-brew "microsoft/apm/apm"  # Agent Package Manager (AI agent dependency management)
 brew "gemini-cli"         # Gemini CLI
 brew "googleworkspace-cli" # Google Workspace CLI (gws): Drive/Gmail/Calendar/Docs/Sheets/Chat/Admin
 brew "jq"                 # JSON processor
