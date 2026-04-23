@@ -12,7 +12,7 @@
 - Gemini CLI は `~/.gemini/settings.json` をローカル管理にし、認証・履歴・state も管理しない。
 - Codex は `~/AGENTS.md` と skill/alias を管理し、`~/.codex/config.toml` はローカル管理にする。auth や sessions も管理しない。
 - Codex の `model_reasoning_effort` デフォルトは `medium`。プロファイルは廃止済み。
-- マシン role は `core` / `home` の 2 層に整理し、`~/.config/dotfiles/profile` に保存する。`make preview` / `make update` / `make doctor` はその値を既定で使う。
+- dotfiles のマシン profile 抽象も廃止済み。Brewfile は `home/dot_Brewfile` 1 本で、`make sync` が単一フローで同期する。
 - `make status` は日常確認用、`make ai-audit` はローカル管理の AI 設定確認用に使い分ける。
 - `make doctor` は深い確認用として残し、日常確認は `status` / `ai-audit` を先に使う。
 - README は全面的に日本語化済みで、今の運用方針に合わせて更新済み。

@@ -238,11 +238,10 @@ run_doctor() {
   local home_dir="$1"
   shift
 
-  mkdir -p "${home_dir}/.config/git/hooks" "${home_dir}/.config/dotfiles" "${home_dir}/.codex"
+  mkdir -p "${home_dir}/.config/git/hooks" "${home_dir}/.codex"
   : > "${home_dir}/.config/git/hooks/pre-commit"
   chmod +x "${home_dir}/.config/git/hooks/pre-commit"
   mkdir -p "${home_dir}/dotfiles/scripts/lib" "${home_dir}/.serena" "${home_dir}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_dir}/Library/LaunchAgents"
-  cp "${REPO_ROOT}/scripts/lib/brew-profile.sh" "${home_dir}/dotfiles/scripts/lib/brew-profile.sh"
   cp "${REPO_ROOT}/scripts/lib/ai-config.sh" "${home_dir}/dotfiles/scripts/lib/ai-config.sh"
   cp "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh" "${home_dir}/dotfiles/scripts/lib/brew-autoupdate.sh"
 
@@ -251,11 +250,10 @@ run_doctor() {
     bash "${REPO_ROOT}/scripts/doctor.sh"
 }
 
-# ---- Scenario 1: healthy home profile ----
+# ---- Scenario 1: healthy ----
 home_ok="${tmpdir}/home-ok"
-mkdir -p "${home_ok}/.config/dotfiles" "${home_ok}/.codex" "${home_ok}/.serena" "${home_ok}/.local/bin" "${home_ok}/.local/lib/python-ssl-compat" "${home_ok}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_ok}/Library/LaunchAgents"
+mkdir -p "${home_ok}/.codex" "${home_ok}/.serena" "${home_ok}/.local/bin" "${home_ok}/.local/lib/python-ssl-compat" "${home_ok}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_ok}/Library/LaunchAgents"
 cp "${REPO_ROOT}/home/dot_local/lib/python-ssl-compat/sitecustomize.py" "${home_ok}/.local/lib/python-ssl-compat/sitecustomize.py"
-printf 'home\n' > "${home_ok}/.config/dotfiles/profile"
 cat > "${home_ok}/.claude.json" <<EOF
 {
   "mcpServers": {
@@ -310,9 +308,9 @@ run_capture run_doctor "${home_ok}" \
   LAUNCHCTL_AUTUPDATE_LOADED=0 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
   BREW_CASKS=$'ghostty\n'
-assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy home profile case"
+assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy case"
 assert_contains "${RUN_OUTPUT}" "Daily checks live in: make status / make ai-audit" "doctor should point to the lighter commands"
-assert_contains "${RUN_OUTPUT}" "No Brew profile drift detected for 'home'" "doctor should report clean drift status"
+assert_contains "${RUN_OUTPUT}" "Brewfile: all packages present" "doctor should report Brewfile health"
 assert_contains "${RUN_OUTPUT}" "auto-update channel: latest" "doctor should validate Claude channel"
 assert_contains "${RUN_OUTPUT}" "default model: gpt-5.4" "doctor should validate Codex model baseline"
 assert_contains "${RUN_OUTPUT}" "sandbox mode: workspace-write" "doctor should validate Codex sandbox baseline"
@@ -328,8 +326,7 @@ assert_contains "${RUN_OUTPUT}" "clasp 2.5.0" "doctor should detect clasp versio
 
 # ---- Scenario 2: drift ----
 home_drift="${tmpdir}/home-drift"
-mkdir -p "${home_drift}/.config/dotfiles" "${home_drift}/.codex" "${home_drift}/.serena" "${home_drift}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_drift}/Library/LaunchAgents"
-printf 'core\n' > "${home_drift}/.config/dotfiles/profile"
+mkdir -p "${home_drift}/.codex" "${home_drift}/.serena" "${home_drift}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_drift}/Library/LaunchAgents"
 cat > "${home_drift}/.codex/config.toml" <<'EOF'
 model = "codex-mini-latest"
 [features]
@@ -375,7 +372,6 @@ DOCTOR_TEST_PATH_OVERRIDE="${STUB_BIN}:${SANITIZED_PATH}" \
 # Restore clasp stub
 mv "${STUB_BIN}/_clasp.bak" "${STUB_BIN}/clasp"
 assert_eq "0" "${RUN_STATUS}" "doctor should stay green when only optional drift warnings are present"
-assert_contains "${RUN_OUTPUT}" "Brew profile drift: casks installed outside 'core' profile" "doctor should warn on cask drift"
 assert_contains "${RUN_OUTPUT}" "auto-update channel should be latest" "doctor should warn on Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "default model should be gpt-5.4" "doctor should warn on Codex model drift"
 assert_contains "${RUN_OUTPUT}" "sandbox mode should be workspace-write" "doctor should warn on Codex sandbox drift"
@@ -383,7 +379,6 @@ assert_contains "${RUN_OUTPUT}" "approval policy should be on-request" "doctor s
 assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP: missing" "doctor should warn on missing Docs MCP"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: enabled, but dotfiles policy is disabled" "doctor should warn when brew autoupdate is enabled"
 assert_contains "${RUN_OUTPUT}" "serena config: language_backend is not LSP" "doctor should warn on Serena config drift"
-assert_contains "${RUN_OUTPUT}" "bitwarden" "doctor should list drifting cask names"
 assert_contains "${RUN_OUTPUT}" "serena MCP: not registered" "doctor should warn about missing serena MCP"
 assert_contains "${RUN_OUTPUT}" "VERIFY_X509_STRICT bypass: not active" "doctor should warn when SSL compat is missing"
 assert_contains "${RUN_OUTPUT}" "clasp not found" "doctor should warn when clasp is missing"

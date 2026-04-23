@@ -5,26 +5,18 @@
 #   1. Verify Homebrew is present
 #   2. Install chezmoi if missing
 #   3. Apply Python 3.13 SSL compat (corporate proxy workaround)
-#   4. Install core Brew packages (no cleanup — won't remove home packages)
-#   5. Persist the active machine profile
-#   6. Apply dotfiles via chezmoi
+#   4. Install Brew packages (no cleanup)
+#   5. Apply dotfiles via chezmoi
 #
-# Called automatically by: make install / install-home
+# Called automatically by: make install
 #
-# Usage: ./scripts/bootstrap.sh [core|home]
+# Usage: ./scripts/bootstrap.sh
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROFILE="${1:-core}"
 
 log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
-
-case "${PROFILE}" in
-  core|home) ;;
-  work) PROFILE="core" ;;
-  *) die "Unsupported profile '${PROFILE}' (expected: core or home)" ;;
-esac
 
 # ---- 0. Xcode Command Line Tools -------------------------------------------
 if ! xcode-select -p &>/dev/null; then
@@ -61,28 +53,11 @@ if [[ -f "${_ssl_compat_src}" ]]; then
 fi
 unset _ssl_compat_src _ssl_compat_dst
 
-# ---- 4. Homebrew packages (install core profile, no cleanup) ---------------
-# Cleanup is intentionally skipped here so that home packages
-# installed by broader profiles are not removed when bootstrap re-runs.
-# Cleanup happens only when explicitly running brew-bundle.sh sync <profile>.
-log "Installing packages for 'core' profile..."
-brew bundle --file="${REPO_ROOT}/home/dot_Brewfile.core"
+# ---- 4. Homebrew packages (install, no cleanup) ----------------------------
+log "Installing packages from Brewfile..."
+brew bundle --file="${REPO_ROOT}/home/dot_Brewfile"
 
-# ---- 5. Persist active profile ---------------------------------------------
-if [[ "${PROFILE}" == "core" ]]; then
-  if bash "${REPO_ROOT}/scripts/profile.sh" exists; then
-    ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
-    log "Keeping existing dotfiles profile '${ACTIVE_PROFILE}'..."
-  else
-    log "Setting active dotfiles profile to 'core'..."
-    ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" set core)"
-  fi
-else
-  log "Setting active dotfiles profile to '${PROFILE}'..."
-  ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" set "${PROFILE}")"
-fi
-
-# ---- 6. Point chezmoi at this repo and apply dotfiles ----------------------
+# ---- 5. Point chezmoi at this repo and apply dotfiles ----------------------
 # Keep a single source of truth for day-to-day edits:
 #   ~/.local/share/chezmoi -> ~/dotfiles
 # .chezmoiroot tells chezmoi the actual source is home/ inside that repo.
@@ -111,7 +86,5 @@ chezmoi apply
 
 log "Bootstrap complete."
 printf '\nNext:\n'
-printf '  • Active profile: %s\n' "${ACTIVE_PROFILE}"
 printf '  • Open a new terminal to load zsh config\n'
-printf '  • Optional: make install-home       (add home apps)\n'
-printf '  • Run:      make doctor             (verify setup)\n'
+printf '  • Run: make doctor             (verify setup)\n'

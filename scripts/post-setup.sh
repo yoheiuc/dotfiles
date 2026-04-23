@@ -13,7 +13,7 @@
 #   - Keep brew-autoupdate disabled (manual brew update/upgrade policy)
 #
 # Safe to re-run: already-configured items are skipped.
-# Called automatically by: make install-home
+# Called automatically by: make install / make sync
 #
 # Usage: ./scripts/post-setup.sh
 set -euo pipefail
@@ -57,7 +57,7 @@ if command -v codex &>/dev/null; then
   ok "Codex already installed: $(codex --version 2>/dev/null | tail -1 || true)"
 else
   if ! command -v npm &>/dev/null; then
-    warn "npm not found — install the core Brew profile first."
+    warn "npm not found — run `make install` first."
     exit 1
   fi
 
@@ -78,7 +78,7 @@ if command -v clasp &>/dev/null; then
   ok "clasp already installed: $(clasp --version 2>/dev/null | head -1 || true)"
 else
   if ! command -v npm &>/dev/null; then
-    warn "npm not found — install the core Brew profile first."
+    warn "npm not found — run `make install` first."
     exit 1
   fi
 
@@ -99,7 +99,7 @@ if command -v playwright-cli &>/dev/null; then
   ok "playwright-cli already installed: $(playwright-cli --version 2>/dev/null | head -1 || true)"
 else
   if ! command -v npm &>/dev/null; then
-    warn "npm not found — install the core Brew profile first."
+    warn "npm not found — run `make install` first."
     exit 1
   fi
 
@@ -146,7 +146,7 @@ fi
 # ---- Serena MCP (Claude Code / Codex) -------------------------------------
 if ! command -v uvx &>/dev/null; then
   log "Serena MCP registration..."
-  warn "uvx not found — Serena MCP skipped (install the core Brew profile first)"
+  warn "uvx not found — Serena MCP skipped (run \`make install\` first)"
 else
   bash "${REPO_ROOT}/scripts/ai-repair.sh"
 fi
@@ -175,9 +175,9 @@ ok "Codex skills are managed by chezmoi under ~/.codex/skills"
 log "Google Workspace CLI skills..."
 
 if ! command -v gws &>/dev/null; then
-  warn "gws not found — install the core Brew profile first (googleworkspace-cli)"
+  warn "gws not found — run \`make install\` first (googleworkspace-cli)"
 elif ! command -v npx &>/dev/null; then
-  warn "npx not found — gws skills skipped (install node via core Brew profile)"
+  warn "npx not found — gws skills skipped (run \`make install\` first)"
 else
   for target in claude-code:"${HOME}/.claude/skills" codex:"${HOME}/.codex/skills"; do
     agent="${target%%:*}"
@@ -206,7 +206,7 @@ fi
 log "find-skills skill..."
 
 if ! command -v npx &>/dev/null; then
-  warn "npx not found — find-skills skipped (install node via core Brew profile)"
+  warn "npx not found — find-skills skipped (run \`make install\` first)"
 else
   # npx skills layout:
   #   -a claude-code → copies to ~/.claude/skills/ AND ~/.agents/skills/
@@ -255,7 +255,7 @@ fi
 log "Notion CLI skills..."
 
 if ! command -v npx &>/dev/null; then
-  warn "npx not found — notion-cli skills skipped (install node via core Brew profile)"
+  warn "npx not found — notion-cli skills skipped (run \`make install\` first)"
 else
   for target in claude-code:"${HOME}/.claude/skills" codex:"${HOME}/.codex/skills"; do
     agent="${target%%:*}"

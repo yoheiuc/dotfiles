@@ -8,13 +8,6 @@ set -euo pipefail
 REPO_ROOT="${DOTFILES_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
 source "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh"
-source "${REPO_ROOT}/scripts/lib/brew-profile.sh"
-
-ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
-PROFILE_IS_EXPLICIT=0
-if bash "${REPO_ROOT}/scripts/profile.sh" exists; then
-  PROFILE_IS_EXPLICIT=1
-fi
 
 ATTENTION_COUNT=0
 
@@ -27,24 +20,6 @@ attention() {
   ATTENTION_COUNT=$((ATTENTION_COUNT + 1))
 }
 
-report_profile_drift() {
-  local kind="$1"
-  local label unexpected
-
-  case "${kind}" in
-    formula) label="formulae" ;;
-    cask) label="casks" ;;
-    *) return 1 ;;
-  esac
-
-  unexpected="$(brew_profile_drift_entries "${ACTIVE_PROFILE}" "${REPO_ROOT}" "${kind}" || true)"
-  [[ -n "${unexpected}" ]] || return 1
-
-  attention "Brew profile drift: ${label} from 'home' are installed on a 'core' machine"
-  printf '%s\n' "${unexpected}" | sed 's/^/    /'
-  return 0
-}
-
 audit_local_file() {
   local label="$1"
   local path="$2"
@@ -54,10 +29,6 @@ audit_local_file() {
 
 echo
 printf '\033[1m=== dotfiles status ===\033[0m\n'
-printf 'Active profile: %s\n' "${ACTIVE_PROFILE}"
-if [[ "${PROFILE_IS_EXPLICIT}" -ne 1 ]]; then
-  warn "No persisted machine profile yet; defaulting to 'core'."
-fi
 
 section "Repo"
 if git_status_out="$(git -C "${REPO_ROOT}" status --short --branch 2>&1)"; then
@@ -102,37 +73,15 @@ fi
 
 section "Brew"
 set +e
-brew_check_out="$(bash "${REPO_ROOT}/scripts/brew-bundle.sh" check "${ACTIVE_PROFILE}" 2>&1)"
+brew_check_out="$(bash "${REPO_ROOT}/scripts/brew-bundle.sh" check 2>&1)"
 set -e
 
 if printf '%s\n' "${brew_check_out}" | grep -q "The Brewfile's dependencies are satisfied."; then
-  ok "${ACTIVE_PROFILE} Brew profile: all declared packages present"
+  ok "Brewfile: all declared packages present"
 else
-  attention "${ACTIVE_PROFILE} Brew profile: missing packages or check failed"
+  attention "Brewfile: missing packages or check failed"
   printf '%s\n' "${brew_check_out}" | grep -v '^Using ' | sed 's/^/    /' || true
 fi
-
-if [[ "${PROFILE_IS_EXPLICIT}" -ne 1 ]]; then
-  warn "Brew profile drift: skipped until a machine profile is explicitly saved"
-else
-  drift_found=0
-  if command -v brew >/dev/null 2>&1; then
-    if report_profile_drift formula; then
-      drift_found=1
-    fi
-    if report_profile_drift cask; then
-      drift_found=1
-    fi
-    if [[ "${drift_found}" -eq 0 ]]; then
-      ok "Brew profile drift: none"
-    fi
-  else
-    attention "brew not found"
-  fi
-  unset drift_found
-fi
-
-unset brew_check_code
 
 section "Playwright CLI"
 if command -v playwright-cli >/dev/null 2>&1; then

@@ -26,10 +26,6 @@ _b="$(_tool_bin direnv)" && _zsh_cache_eval direnv "$_b" 'direnv hook zsh'
 unset _b
 unfunction _tool_bin
 
-dotprofile() {
-  printf '%s\n' "${DOTFILES_PROFILE:-core}"
-}
-
 dothelp() {
   local repo_root=""
 

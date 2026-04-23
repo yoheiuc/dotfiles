@@ -45,11 +45,11 @@ fi
 
 # ---- 4. Optional: remove Homebrew packages ----------------------------------------
 echo
-printf 'Remove Homebrew packages installed by the core Brewfile? [y/N] '
+printf 'Remove Homebrew packages installed by the Brewfile? [y/N] '
 read -r response
 if [[ "$response" =~ ^[Yy]$ ]]; then
   log "Removing Homebrew packages..."
-  brew bundle cleanup --file="${REPO_ROOT}/home/dot_Brewfile.core" --force
+  brew bundle cleanup --file="${REPO_ROOT}/home/dot_Brewfile" --force
 else
   log "Skipping Homebrew package removal."
 fi

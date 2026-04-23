@@ -10,48 +10,18 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
 source "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh"
-source "${REPO_ROOT}/scripts/lib/brew-profile.sh"
-
-ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
-PROFILE_IS_EXPLICIT=0
-if bash "${REPO_ROOT}/scripts/profile.sh" exists; then
-  PROFILE_IS_EXPLICIT=1
-fi
 
 ok()      { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn()    { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 fail()    { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=1; }
 info()    { printf '  - %s\n' "$*"; }
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
-report_profile_drift() {
-  local kind="$1"
-  local label unexpected
 
-  case "${kind}" in
-    formula) label="formulae" ;;
-    cask) label="casks" ;;
-    *) return 1 ;;
-  esac
-
-  unexpected="$(brew_profile_drift_entries "${ACTIVE_PROFILE}" "${REPO_ROOT}" "${kind}" || true)"
-  if [[ -n "${unexpected}" ]]; then
-    warn "Brew profile drift: ${label} installed outside '${ACTIVE_PROFILE}' profile"
-    printf '%s\n' "${unexpected}" | sed 's/^/    /'
-    warn "  Preview cleanup with: ./scripts/brew-bundle.sh preview ${ACTIVE_PROFILE}"
-    return 0
-  fi
-
-  return 1
-}
 REQUIRED_FAILED=0
 
 echo
 printf '\033[1m=== dotfiles doctor ===\033[0m\n'
-printf 'Active profile: %s\n' "${ACTIVE_PROFILE}"
 info "Daily checks live in: make status / make ai-audit"
-if [[ "${PROFILE_IS_EXPLICIT}" -ne 1 ]]; then
-  warn "No persisted machine profile yet; defaulting to 'core'"
-fi
 
 # ===========================================================================
 # REQUIRED checks — failures increment REQUIRED_FAILED and affect exit code
@@ -111,30 +81,13 @@ else
   fail "chezmoi not found — run: brew install chezmoi"
 fi
 
-section "Active Brew profile (required)"
-brew_check_out="$(bash "${REPO_ROOT}/scripts/brew-bundle.sh" check "${ACTIVE_PROFILE}" 2>&1 || true)"
+section "Brewfile (required)"
+brew_check_out="$(bash "${REPO_ROOT}/scripts/brew-bundle.sh" check 2>&1 || true)"
 if printf '%s\n' "$brew_check_out" | grep -q "The Brewfile's dependencies are satisfied."; then
-  ok "${ACTIVE_PROFILE} Brew profile: all packages present"
+  ok "Brewfile: all packages present"
 else
-  fail "${ACTIVE_PROFILE} Brew profile: missing packages — run: ./scripts/brew-bundle.sh sync ${ACTIVE_PROFILE}"
+  fail "Brewfile: missing packages — run: make sync"
   printf '%s\n' "$brew_check_out" | grep -v '^Using ' | sed 's/^/    /' || true
-fi
-
-section "Brew profile drift (optional)"
-if [[ "${PROFILE_IS_EXPLICIT}" -ne 1 ]]; then
-  warn "skipped until a machine profile is explicitly saved"
-else
-  drift_found=0
-  if report_profile_drift formula; then
-    drift_found=1
-  fi
-  if report_profile_drift cask; then
-    drift_found=1
-  fi
-  if [[ "${drift_found}" -eq 0 ]]; then
-    ok "No Brew profile drift detected for '${ACTIVE_PROFILE}'"
-  fi
-  unset drift_found
 fi
 
 section "Git identity/privacy (required)"

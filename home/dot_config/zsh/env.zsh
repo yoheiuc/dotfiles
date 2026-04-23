@@ -55,11 +55,3 @@ unset _ssl_compat
 # Claude Code — flicker-free fullscreen rendering
 export CLAUDE_CODE_NO_FLICKER=1
 
-# Persisted machine role for dotfiles operations
-export DOTFILES_PROFILE="core"
-_dotfiles_profile_path="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/profile"
-if [[ -r "${_dotfiles_profile_path}" ]]; then
-  _dotfiles_profile="$(tr -d '[:space:]' < "${_dotfiles_profile_path}")"
-  [[ -n "${_dotfiles_profile}" ]] && export DOTFILES_PROFILE="${_dotfiles_profile}"
-fi
-unset _dotfiles_profile_path _dotfiles_profile

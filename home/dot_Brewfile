@@ -1,10 +1,7 @@
-# ~/.Brewfile.core — managed by chezmoi (source: home/dot_Brewfile.core)
+# ~/.Brewfile — managed by chezmoi (source: home/dot_Brewfile)
 # Manual baseline for tools I want on every machine.
-# Put packages here when they are part of my own shared dev baseline:
-#   - I use them for work and want to install them myself
-#   - they are not simply "already on the work laptop via company auto-deploy"
 # Install: make install
-# Update:  make update
+# Update:  make sync
 
 # ---------- Core CLI ----------
 brew "chezmoi"            # dotfiles manager
@@ -72,6 +69,10 @@ cask "visual-studio-code", args: { appdir: "/Applications" }
 cask "codex-app"                 # OpenAI Codex desktop app
 cask "aws-vault-binary", args: { appdir: "/Applications" }
 
+# ---------- Casks: browser / accounts ----------
+cask "google-chrome"
+cask "bitwarden", args: { appdir: "/Applications" }  # password manager
+
 # ---------- Casks: productivity / system ----------
 cask "raycast"                   # launcher
 cask "alt-tab"                   # Windows-like Alt-Tab window switcher
@@ -79,6 +80,7 @@ cask "libreoffice"               # office suite
 cask "ente-auth"                 # 2FA
 cask "stats"                     # menu bar system monitor (CPU/RAM/disk/network)
 cask "cleanshot"                 # screenshot tool
+cask "maccy"                     # clipboard manager (configure ignore list for password managers)
 cask "google-japanese-ime"
 cask "logi-options+"
 

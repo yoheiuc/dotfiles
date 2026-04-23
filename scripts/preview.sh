@@ -3,32 +3,16 @@
 #
 # Usage:
 #   ./scripts/preview.sh
-#   ./scripts/preview.sh home
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ACTIVE_PROFILE="$(bash "${REPO_ROOT}/scripts/profile.sh" get)"
-PROFILE="${1:-${ACTIVE_PROFILE}}"
-PROFILE_IS_EXPLICIT=0
-if bash "${REPO_ROOT}/scripts/profile.sh" exists; then
-  PROFILE_IS_EXPLICIT=1
-fi
 
 section() { printf '\n\033[1m[%s]\033[0m\n' "$*"; }
 ok() { printf '  \033[1;32m✓\033[0m  %s\n' "$*"; }
 warn() { printf '  \033[1;33m⚠\033[0m  %s\n' "$*"; }
 
 echo
-printf '\033[1m=== dotfiles preview (%s) ===\033[0m\n' "${PROFILE}"
-
-section "dotfiles profile"
-printf '  Active profile: %s\n' "${ACTIVE_PROFILE}"
-if [[ "${PROFILE_IS_EXPLICIT}" -ne 1 ]]; then
-  warn "No persisted machine profile yet; defaulting to 'core'."
-fi
-if [[ "${PROFILE}" != "${ACTIVE_PROFILE}" ]]; then
-  warn "Preview target differs from active profile."
-fi
+printf '\033[1m=== dotfiles preview ===\033[0m\n'
 
 section "chezmoi diff"
 diff_out="$(chezmoi diff 2>&1 || true)"
@@ -47,7 +31,7 @@ else
 fi
 
 section "Homebrew bundle"
-if ! bash "${REPO_ROOT}/scripts/brew-bundle.sh" preview "${PROFILE}"; then
+if ! bash "${REPO_ROOT}/scripts/brew-bundle.sh" preview; then
   warn "Brew preview reported an error."
   exit 1
 fi
