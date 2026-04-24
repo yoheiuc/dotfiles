@@ -11,6 +11,8 @@ elapsed_ms=$(printf '%s' "$input" | jq -r '.cost.total_duration_ms // 0')
 elapsed_min=$((elapsed_ms / 60000))
 
 ctx_pct=$(printf '%s' "$input" | jq -r '.context_window.used_percentage // empty')
+effort=$(printf '%s' "$input" | jq -r '.effort.level // empty')
+thinking=$(printf '%s' "$input" | jq -r '.thinking.enabled // empty')
 five_used=$(printf '%s' "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 five_reset=$(printf '%s' "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
 week_used=$(printf '%s' "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
@@ -111,6 +113,14 @@ fi
 
 if [ -n "$ctx_pct" ]; then
   parts+=("ctx $(printf '%.0f' "$ctx_pct")%")
+fi
+
+if [ -n "$effort" ]; then
+  parts+=("eff $effort")
+fi
+
+if [ "$thinking" = "true" ]; then
+  parts+=("think")
 fi
 
 parts+=("$(format_elapsed "$elapsed_min")")
