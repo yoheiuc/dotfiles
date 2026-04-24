@@ -12,10 +12,10 @@ source "${REPO_ROOT}/scripts/lib/ai-config.sh"
 log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 
 # Serialize concurrent runs via atomic mkdir lock. Guards against two shells
-# invoking `make ai-repair` simultaneously and fighting over ~/.claude.json /
-# ~/.codex/config.toml mid-write. The $(id -u) suffix prevents a local user
-# from squatting another user's lock directory on shared /tmp (macOS $TMPDIR
-# is already per-user, but we add the uid for Linux/CI correctness).
+# invoking `make ai-repair` simultaneously and fighting over ~/.claude.json
+# mid-write. The $(id -u) suffix prevents a local user from squatting another
+# user's lock directory on shared /tmp (macOS $TMPDIR is already per-user, but
+# we add the uid for Linux/CI correctness).
 LOCK_DIR="${TMPDIR:-/tmp}/dotfiles-ai-repair-$(id -u).lock"
 if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
   printf 'ERROR: another ai-repair run is in progress (lock: %s)\n' "${LOCK_DIR}" >&2
@@ -31,8 +31,6 @@ SERENA_CONFIG_BACKUP_SUFFIX="$(date +%Y%m%d%H%M%S)"
 
 CLAUDE_JSON="${HOME}/.claude.json"
 CLAUDE_SETTINGS_JSON="${HOME}/.claude/settings.json"
-CODEX_CONFIG="${HOME}/.codex/config.toml"
-OPENAI_DOCS_MCP_URL="https://developers.openai.com/mcp"
 
 restart_needed=0
 
@@ -251,93 +249,7 @@ else
 fi
 unset _claude_hooks_current _claude_hooks_expected
 
-# ---- Codex baseline ---------------------------------------------------------
-log "Codex baseline..."
-mkdir -p "$(dirname "${CODEX_CONFIG}")"
-ai_config_toml_upsert_top_level "${CODEX_CONFIG}" model '"gpt-5.4"'
-ai_config_toml_upsert_top_level "${CODEX_CONFIG}" model_reasoning_effort '"medium"'
-ai_config_toml_upsert_top_level "${CODEX_CONFIG}" personality '"pragmatic"'
-ai_config_toml_upsert_top_level "${CODEX_CONFIG}" sandbox_mode '"workspace-write"'
-ai_config_toml_upsert_top_level "${CODEX_CONFIG}" approval_policy '"on-request"'
-ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[features]" $'multi_agent = true\ncodex_hooks = true'
-ok "Codex: baseline model/sandbox settings normalized"
-
-# ---- Codex MCP registration (TOML direct) -----------------------------------
-log "Codex MCP registration..."
-case "$(ai_config_codex_mcp_state "${CODEX_CONFIG}" "${SERENA_WRAPPER}")" in
-  ok)
-    ok "Codex: serena already registered with wrapper"
-    ;;
-  wrong-command)
-    ai_config_codex_upsert_mcp "${CODEX_CONFIG}" serena "${SERENA_WRAPPER}" codex
-    ok "Codex: serena registration repaired"
-    restart_needed=1
-    ;;
-  missing)
-    ai_config_codex_upsert_mcp "${CODEX_CONFIG}" serena "${SERENA_WRAPPER}" codex
-    ok "Codex: serena registration created"
-    restart_needed=1
-    ;;
-esac
-
-case "$(ai_config_codex_mcp_url_state "${CODEX_CONFIG}" openaiDeveloperDocs "${OPENAI_DOCS_MCP_URL}")" in
-  ok)
-    ok "Codex: OpenAI Docs MCP already registered"
-    ;;
-  wrong-url|missing)
-    ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.openaiDeveloperDocs]" "url = \"${OPENAI_DOCS_MCP_URL}\""
-    ok "Codex: OpenAI Docs MCP registered"
-    restart_needed=1
-    ;;
-esac
-
-codex_vision_cmd="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)"
-codex_vision_args="$(ai_config_toml_read "${CODEX_CONFIG}" "'|'.join(d.get('mcp_servers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
-codex_exa_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
-codex_slack_url="$(ai_config_toml_read "${CODEX_CONFIG}" "d.get('mcp_servers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
-
-_codex_vision_expected_args='-y|@tuannvm/vision-mcp-server'
-if [[ "${codex_vision_cmd}" != "npx" || "${codex_vision_args}" != "${_codex_vision_expected_args}" ]]; then
-  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.vision]" $'command = "npx"\nargs = ["-y", "@tuannvm/vision-mcp-server"]'
-  ok "Codex: vision MCP registered"
-  restart_needed=1
-else
-  ok "Codex: vision MCP already registered"
-fi
-unset _codex_vision_expected_args
-
-if [[ "${codex_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
-  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.exa]" 'url = "https://mcp.exa.ai/mcp"'
-  ok "Codex: exa MCP registered"
-  restart_needed=1
-else
-  ok "Codex: exa MCP already registered"
-fi
-
-if [[ "${codex_slack_url}" != "https://mcp.slack.com/mcp" ]]; then
-  ai_config_toml_upsert_section_block "${CODEX_CONFIG}" "[mcp_servers.slack]" 'url = "https://mcp.slack.com/mcp"'
-  ok "Codex: slack MCP registered"
-  restart_needed=1
-else
-  ok "Codex: slack MCP already registered"
-fi
-
-unset codex_vision_cmd codex_vision_args codex_exa_url codex_slack_url
-
-# Strip legacy Codex MCP registrations retired in favor of CLIs / native tools
-# or replaced by a newer MCP (owlocr → vision). chrome-devtools retired in
-# favor of playwright-cli attach --cdp=chrome — MCP kept launching its own
-# throwaway Chrome instead of driving the user's logged-in session.
-# brave-search retired in favor of Exa MCP alone.
-for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search; do
-  if [[ "$(ai_config_toml_remove_mcp_section "${CODEX_CONFIG}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
-    ok "Codex: legacy ${_legacy} MCP removed"
-    restart_needed=1
-  fi
-done
-unset _legacy
-
 printf '\nVerify with: make ai-audit\n'
 if [[ "${restart_needed}" == "1" ]]; then
-  printf 'Then restart Claude Code / Codex and close any old terminals still using stale MCP settings.\n'
+  printf 'Then restart Claude Code and close any old terminals still using stale MCP settings.\n'
 fi

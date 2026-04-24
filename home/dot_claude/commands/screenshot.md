@@ -13,27 +13,27 @@ Capture desktop or system screenshots (full screen, specific app/window, or pixe
 ## macOS
 
 ### Permission preflight
-If the Codex screenshot helper is available, run permission check first:
+If the screenshot helper is available, run permission check first:
 ```bash
-bash ~/.codex/skills/screenshot/scripts/ensure_macos_permissions.sh
+bash ~/.claude/skills/screenshot/scripts/ensure_macos_permissions.sh
 ```
 
 ### Python helper (preferred)
 ```bash
 # Full screen to temp
-python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --mode temp
+python3 ~/.claude/skills/screenshot/scripts/take_screenshot.py --mode temp
 
 # Specific app
-python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --app "Safari" --mode temp
+python3 ~/.claude/skills/screenshot/scripts/take_screenshot.py --app "Safari" --mode temp
 
 # Pixel region (x,y,w,h)
-python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --region 100,200,800,600 --mode temp
+python3 ~/.claude/skills/screenshot/scripts/take_screenshot.py --region 100,200,800,600 --mode temp
 
 # Active window
-python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --active-window --mode temp
+python3 ~/.claude/skills/screenshot/scripts/take_screenshot.py --active-window --mode temp
 
 # Explicit path
-python3 ~/.codex/skills/screenshot/scripts/take_screenshot.py --path output/screen.png
+python3 ~/.claude/skills/screenshot/scripts/take_screenshot.py --path output/screen.png
 ```
 
 ### Direct OS commands (fallback)

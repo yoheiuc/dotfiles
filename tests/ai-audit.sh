@@ -8,7 +8,7 @@ source "${REPO_ROOT}/tests/lib/testlib.sh"
 tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-ai-audit-test.XXXXXX")"
 trap 'rm -rf "${tmpdir}"' EXIT
 
-mkdir -p "${tmpdir}/home/.codex" "${tmpdir}/home/.claude" "${tmpdir}/home/.gemini" "${tmpdir}/home/.serena"
+mkdir -p "${tmpdir}/home/.claude" "${tmpdir}/home/.serena"
 mkdir -p "${tmpdir}/scripts/lib"
 export HOME="${tmpdir}/home"
 export XDG_CONFIG_HOME="${HOME}/.config"
@@ -81,33 +81,6 @@ cp "${REPO_ROOT}/scripts/lib/ai_config.py" "${tmpdir}/scripts/lib/ai_config.py"
 chmod +x "${tmpdir}/scripts/ai-audit.sh" "${tmpdir}/scripts/lib/ai-config.sh"
 
 # ---- Scenario 1: clean case ----
-cat > "${HOME}/.codex/config.toml" <<EOF
-model = "gpt-5.4"
-model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
-approval_policy = "on-request"
-
-[features]
-multi_agent = true
-codex_hooks = true
-
-[mcp_servers.openaiDeveloperDocs]
-url = "https://developers.openai.com/mcp"
-
-[mcp_servers.exa]
-url = "https://mcp.exa.ai/mcp"
-
-[mcp_servers.slack]
-url = "https://mcp.slack.com/mcp"
-
-[mcp_servers.vision]
-command = "npx"
-args = ["-y", "@tuannvm/vision-mcp-server"]
-
-[mcp_servers.serena]
-command = "${HOME}/.local/bin/serena-mcp"
-args = ["codex"]
-EOF
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "latest",
@@ -148,10 +121,7 @@ cat > "${HOME}/.claude.json" <<EOF
   }
 }
 EOF
-: > "${HOME}/.gemini/settings.json"
-: > "${HOME}/.codex/hooks.json"
 : > "${HOME}/.claude/CLAUDE.md"
-: > "${HOME}/AGENTS.md"
 cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
 language_backend: LSP
 web_dashboard: true
@@ -160,9 +130,7 @@ project_serena_folder_location: "$projectDir/.serena"
 EOF
 run_capture bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should succeed in the clean case"
-assert_contains "${RUN_OUTPUT}" "Codex config: present" "ai-audit should report local codex config"
 assert_contains "${RUN_OUTPUT}" "Claude settings: present" "ai-audit should report local claude settings"
-assert_contains "${RUN_OUTPUT}" "Codex config: no legacy bridge settings detected" "ai-audit should scan codex config"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai-audit should validate Claude channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env is set" "ai-audit should validate ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/lsp-hint.sh)" "ai-audit should validate lsp-hint hook"
@@ -171,35 +139,19 @@ assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: registered" "ai-audit s
 assert_not_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should not expect retired Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: registered" "ai-audit should validate Claude Slack MCP"
-assert_contains "${RUN_OUTPUT}" "Codex: sandbox mode is workspace-write" "ai-audit should validate Codex sandbox"
-assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: registered" "ai-audit should validate Docs MCP"
-assert_contains "${RUN_OUTPUT}" "Codex exa MCP: registered" "ai-audit should validate Exa MCP"
-assert_contains "${RUN_OUTPUT}" "Codex slack MCP: registered" "ai-audit should validate Slack MCP"
-assert_not_contains "${RUN_OUTPUT}" "Codex brave-search MCP: registered" "ai-audit should not expect retired Codex Brave Search MCP"
-assert_contains "${RUN_OUTPUT}" "Codex vision MCP: registered" "ai-audit should validate Codex vision MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: web_dashboard enabled" "ai-audit should validate Serena config"
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should report Claude MCP registration"
-assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: registered via wrapper" "ai-audit should report Codex MCP registration"
+assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.codex" "ai-audit should report absence of retired Codex state"
+assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.gemini" "ai-audit should report absence of retired Gemini state"
 assert_contains "${RUN_OUTPUT}" "AI config audit looks good." "ai-audit should report a clean result"
 
 # ---- Scenario 2: drift + registrations ----
-cat > "${HOME}/.codex/config.toml" <<EOF
-# --- BEGIN CCB ---
-approval_policy = "never"
-sandbox_mode = "danger-full-access"
-
-[mcp_servers.serena]
-command = "${HOME}/.local/bin/serena-mcp"
-args = ["codex"]
-EOF
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "stable"
 }
 cc-bridge
 EOF
-rm -f "${HOME}/.gemini/settings.json"
-: > "${HOME}/.codex/config.toml.pre-unmanage-test"
 cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
 language_backend: JetBrains
 web_dashboard: false
@@ -218,12 +170,15 @@ cat > "${HOME}/.claude.json" <<EOF
   }
 }
 EOF
+: > "${HOME}/.claude/settings.json.pre-unmanage-test"
 : > "${FAKE_SECURITY_DB}"
+
+# Retired agent state left on disk — audit should flag for removal.
+mkdir -p "${HOME}/.codex"
+mkdir -p "${HOME}/.gemini"
 
 run_capture bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational with warnings"
-assert_contains "${RUN_OUTPUT}" "Gemini settings: missing" "ai-audit should warn on missing gemini settings"
-assert_contains "${RUN_OUTPUT}" "Codex config: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy codex settings"
 assert_contains "${RUN_OUTPUT}" "Claude settings: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy claude settings"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be latest" "ai-audit should detect Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5" "ai-audit should detect missing ENABLE_TOOL_SEARCH env"
@@ -234,66 +189,15 @@ assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: missing or drifted" "ai-au
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: missing or drifted" "ai-audit should detect missing Claude Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Serena config: language_backend should be LSP" "ai-audit should detect Serena config drift"
 assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should detect Claude MCP registration"
-assert_contains "${RUN_OUTPUT}" "Codex Serena MCP: registered via wrapper" "ai-audit should detect Codex wrapper registration"
-assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: missing" "ai-audit should detect missing Docs MCP"
-assert_contains "${RUN_OUTPUT}" "Codex exa MCP: missing" "ai-audit should detect missing Exa MCP"
-assert_contains "${RUN_OUTPUT}" "Codex slack MCP: missing" "ai-audit should detect missing Slack MCP"
-assert_contains "${RUN_OUTPUT}" "Codex vision MCP: missing" "ai-audit should detect missing Codex vision MCP"
-assert_contains "${RUN_OUTPUT}" "Codex config backups: found backup files to review or delete" "ai-audit should report backup files"
+assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.codex" "ai-audit should flag retired Codex state"
+assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.gemini" "ai-audit should flag retired Gemini state"
+assert_contains "${RUN_OUTPUT}" "Claude settings backups: found backup files to review or delete" "ai-audit should report backup files"
 assert_contains "${RUN_OUTPUT}" "AI config audit needs attention:" "ai-audit should summarize warnings"
 
+# Clean up retired-state dirs for next scenario
+rm -rf "${HOME}/.codex" "${HOME}/.gemini"
+
 # ---- Scenario 3: legacy MCP entries (playwright, filesystem, drawio) still present ----
-cat > "${HOME}/.codex/config.toml" <<EOF
-model = "gpt-5.4"
-model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
-approval_policy = "on-request"
-
-[features]
-multi_agent = true
-codex_hooks = true
-
-[mcp_servers.openaiDeveloperDocs]
-url = "https://developers.openai.com/mcp"
-
-[mcp_servers.exa]
-url = "https://mcp.exa.ai/mcp"
-
-[mcp_servers.brave-search]
-command = "${HOME}/.local/bin/mcp-with-keychain-secret"
-args = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
-
-[mcp_servers.chrome-devtools]
-command = "npx"
-args = ["-y", "chrome-devtools-mcp@latest"]
-
-[mcp_servers.playwright]
-command = "npx"
-args = ["-y", "@playwright/mcp@latest"]
-
-[mcp_servers.filesystem]
-command = "bash"
-args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]
-
-[mcp_servers.drawio]
-command = "npx"
-args = ["-y", "@drawio/mcp@latest"]
-
-[mcp_servers.notion]
-url = "https://mcp.notion.com/mcp"
-
-[mcp_servers.github]
-command = "npx"
-args = ["-y", "@modelcontextprotocol/server-github"]
-
-[mcp_servers.owlocr]
-command = "bash"
-args = ["-lc", "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]
-
-[mcp_servers.serena]
-command = "${HOME}/.local/bin/serena-mcp"
-args = ["codex"]
-EOF
 cat > "${HOME}/.claude.json" <<EOF
 {
   "mcpServers": {
@@ -310,7 +214,7 @@ cat > "${HOME}/.claude.json" <<EOF
   }
 }
 EOF
-rm -f "${HOME}/.codex/config.toml.pre-unmanage-test"
+rm -f "${HOME}/.claude/settings.json.pre-unmanage-test"
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "latest",
@@ -335,20 +239,12 @@ EOF
 run_capture bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational when legacy MCPs are present"
 assert_contains "${RUN_OUTPUT}" "Claude Code playwright MCP: legacy entry present" "ai-audit should flag legacy Claude Code playwright MCP"
-assert_contains "${RUN_OUTPUT}" "Codex playwright MCP: legacy entry present" "ai-audit should flag legacy Codex playwright MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code filesystem MCP: legacy entry present" "ai-audit should flag legacy Claude Code filesystem MCP"
-assert_contains "${RUN_OUTPUT}" "Codex filesystem MCP: legacy entry present" "ai-audit should flag legacy Codex filesystem MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code drawio MCP: legacy entry present" "ai-audit should flag legacy Claude Code drawio MCP"
-assert_contains "${RUN_OUTPUT}" "Codex drawio MCP: legacy entry present" "ai-audit should flag legacy Codex drawio MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code notion MCP: legacy entry present" "ai-audit should flag legacy Claude Code notion MCP"
-assert_contains "${RUN_OUTPUT}" "Codex notion MCP: legacy entry present" "ai-audit should flag legacy Codex notion MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code github MCP: legacy entry present" "ai-audit should flag legacy Claude Code github MCP"
-assert_contains "${RUN_OUTPUT}" "Codex github MCP: legacy entry present" "ai-audit should flag legacy Codex github MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code owlocr MCP: legacy entry present" "ai-audit should flag legacy Claude Code owlocr MCP"
-assert_contains "${RUN_OUTPUT}" "Codex owlocr MCP: legacy entry present" "ai-audit should flag legacy Codex owlocr MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: legacy entry present" "ai-audit should flag legacy Claude Code chrome-devtools MCP"
-assert_contains "${RUN_OUTPUT}" "Codex chrome-devtools MCP: legacy entry present" "ai-audit should flag legacy Codex chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: legacy entry present" "ai-audit should flag legacy Claude Code brave-search MCP"
-assert_contains "${RUN_OUTPUT}" "Codex brave-search MCP: legacy entry present" "ai-audit should flag legacy Codex brave-search MCP"
 
 pass_test "tests/ai-audit.sh"

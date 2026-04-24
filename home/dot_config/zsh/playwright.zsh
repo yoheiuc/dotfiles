@@ -18,7 +18,7 @@ pwsession() {
 }
 
 # pwattach — 起動中の実 Chrome に CDP attach し、PLAYWRIGHT_CLI_SESSION=chrome
-# を export する。以降このシェルから起動した Claude Code / Codex の
+# を export する。以降このシェルから起動した Claude Code の
 # playwright-cli 呼び出しは、サンドボックス Chromium ではなくユーザーが
 # ログイン済みの Chrome を操作する。
 #

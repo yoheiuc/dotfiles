@@ -141,7 +141,7 @@ section "node (optional)"
 if node --version &>/dev/null; then
   ok "node $(node --version)"
 else
-  warn "node not found — needed for Codex CLI installs via npm"
+  warn "node not found — needed for npm-distributed MCP servers (e.g., vision)"
 fi
 
 section "playwright-cli (optional)"
@@ -357,13 +357,6 @@ else
   warn "claude not found — run: ./scripts/post-setup.sh"
 fi
 
-section "Gemini CLI (optional)"
-if command -v gemini &>/dev/null; then
-  ok "$(gemini --version 2>&1 | head -1 || true)"
-else
-  warn "gemini not found — install via Brewfile (brew \"gemini-cli\")"
-fi
-
 section "clasp (optional)"
 if command -v clasp &>/dev/null; then
   ok "clasp $(clasp --version 2>/dev/null | head -1 || true)"
@@ -371,88 +364,12 @@ else
   warn "clasp not found — run: ./scripts/post-setup.sh"
 fi
 
-section "Codex (optional)"
-if command -v codex &>/dev/null; then
-  codex_version_line="$(codex --version 2>&1 | head -1)"
-  if [[ -n "$codex_version_line" ]]; then
-    ok "$codex_version_line"
-  else
-    warn "codex found but --version returned no usable output"
-  fi
-
-  _codex_config="${HOME}/.codex/config.toml"
-  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('model','')" 2>/dev/null || true)" == "gpt-5.4" ]]; then
-    ok "default model: gpt-5.4"
-  else
-    warn "default model should be gpt-5.4 — run: make ai-repair"
-  fi
-
-  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('sandbox_mode','')" 2>/dev/null || true)" == "workspace-write" ]]; then
-    ok "sandbox mode: workspace-write"
-  else
-    warn "sandbox mode should be workspace-write — run: make ai-repair"
-  fi
-
-  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('approval_policy','')" 2>/dev/null || true)" == "on-request" ]]; then
-    ok "approval policy: on-request"
-  else
-    warn "approval policy should be on-request — run: make ai-repair"
-  fi
-
-  case "$(ai_config_codex_mcp_state "${_codex_config}" "${HOME}/.local/bin/serena-mcp")" in
-    ok)
-      ok "serena MCP: registered via wrapper"
-      ;;
-    wrong-command)
-      warn "serena MCP: registered with wrong command — run: make ai-repair"
-      ;;
-    missing)
-      warn "serena MCP: not registered — run: make ai-repair"
-      ;;
-  esac
-
-  if grep -q 'codex_hooks[[:space:]]*=[[:space:]]*true' "${_codex_config}" 2>/dev/null; then
-    ok "codex hooks: enabled"
-  else
-    warn "codex hooks: disabled — set [features].codex_hooks = true"
-  fi
-
-  case "$(ai_config_codex_mcp_url_state "${_codex_config}" openaiDeveloperDocs "https://developers.openai.com/mcp")" in
-    ok)
-      ok "OpenAI Docs MCP: registered"
-      ;;
-    wrong-url)
-      warn "OpenAI Docs MCP: wrong URL — run: make ai-repair"
-      ;;
-    missing)
-      warn "OpenAI Docs MCP: missing — run: make ai-repair"
-      ;;
-  esac
-  unset _codex_config
-
-  if [[ -f "${HOME}/.codex/hooks.json" ]]; then
-    ok "codex hooks.json: present"
-  else
-    warn "codex hooks.json missing — run: chezmoi apply"
-  fi
-
-  if [[ -f "${HOME}/.codex/skills/codex-auto-save-memory/scripts/autosave_memory.py" ]]; then
-    ok "codex auto-save memory skill: present"
-  else
-    warn "codex auto-save memory skill missing — run: chezmoi apply"
-  fi
-
-  # `npx skills add` now uses ~/.agents/skills/ as the unified location for
-  # Codex-tagged skills, even when `-a codex` is passed. Check both for
-  # forward/backward compatibility.
-  if [[ -f "${HOME}/.codex/skills/find-skills/SKILL.md" \
-     || -f "${HOME}/.agents/skills/find-skills/SKILL.md" ]]; then
-    ok "find-skills skill: present"
-  else
-    warn "find-skills skill missing — run: ./scripts/post-setup.sh"
-  fi
+section "find-skills (optional)"
+if [[ -f "${HOME}/.claude/skills/find-skills/SKILL.md" \
+   || -f "${HOME}/.agents/skills/find-skills/SKILL.md" ]]; then
+  ok "find-skills skill: present"
 else
-  warn "codex not found — install Codex CLI separately"
+  warn "find-skills skill missing — run: ./scripts/post-setup.sh"
 fi
 
 # ===========================================================================

@@ -22,7 +22,7 @@ ai-audit: ## ローカル管理の AI 設定だけを詳しく確認
 ai-repair: ## AI 周りのローカル drift を修復 (Serena config / MCP registration)
 	bash scripts/ai-repair.sh
 
-ai-secrets: ## Claude Code / Codex 共通の MCP credential を対話で保存
+ai-secrets: ## Claude Code の MCP credential を対話で保存
 	bash scripts/ai-secrets.sh
 
 install: ## 新しい Mac のセットアップ (Brew + chezmoi apply + post-setup)

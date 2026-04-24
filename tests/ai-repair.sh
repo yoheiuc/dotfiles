@@ -8,7 +8,7 @@ source "${REPO_ROOT}/tests/lib/testlib.sh"
 tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-ai-repair-test.XXXXXX")"
 trap 'rm -rf "${tmpdir}"' EXIT
 
-mkdir -p "${tmpdir}/home/.local/bin" "${tmpdir}/home/.codex"
+mkdir -p "${tmpdir}/home/.local/bin"
 export HOME="${tmpdir}/home"
 export XDG_CONFIG_HOME="${HOME}/.config"
 export DOTFILES_REPO_ROOT="${REPO_ROOT}"
@@ -80,20 +80,13 @@ exit 0
 EOF
 chmod +x "${HOME}/.local/bin/serena-mcp"
 
-# Seed a minimal Codex config so upsert appends
-cat > "${HOME}/.codex/config.toml" <<'EOF'
-model = "gpt-5.4"
-EOF
-
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when creating missing Serena state"
 assert_contains "${RUN_OUTPUT}" "Created Serena config" "ai-repair should create Serena config when missing"
-assert_contains "${RUN_OUTPUT}" "serena registration created" "ai-repair should register Serena for Claude Code"
+assert_contains "${RUN_OUTPUT}" "serena registration repaired/created" "ai-repair should register Serena for Claude Code"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel set to latest" "ai-repair should normalize Claude Code channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env set" "ai-repair should set ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hooks reset to baseline" "ai-repair should install baseline hooks"
-assert_contains "${RUN_OUTPUT}" "Codex: baseline model/sandbox settings normalized" "ai-repair should normalize Codex baseline"
-assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP registered" "ai-repair should register Docs MCP"
 assert_contains "$(cat "${HOME}/.serena/serena_config.yml")" 'project_serena_folder_location: "$projectDir/.serena"' "ai-repair should write the expected Serena config"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"autoUpdatesChannel": "latest"' "ai-repair should write Claude auto-update channel"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"ENABLE_TOOL_SEARCH": "auto:5"' "ai-repair should write ENABLE_TOOL_SEARCH env toggle"
@@ -124,24 +117,6 @@ assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "my-statusl
 claude_json_cmd="$(python3 -c "import json; d=json.load(open('${HOME}/.claude.json')); print(d['mcpServers']['serena']['command'])")"
 assert_eq "${HOME}/.local/bin/serena-mcp" "${claude_json_cmd}" "ai-repair should write the correct serena command to .claude.json"
 
-# Verify Codex TOML registration
-assert_contains "$(cat "${HOME}/.codex/config.toml")" 'sandbox_mode = "workspace-write"' "ai-repair should set Codex sandbox mode"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" 'approval_policy = "on-request"' "ai-repair should set Codex approval policy"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.openaiDeveloperDocs]' "ai-repair should add Docs MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" 'url = "https://developers.openai.com/mcp"' "ai-repair should set Docs MCP URL"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.serena]" "ai-repair should add Codex MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "args = [\"codex\"]" "ai-repair should set correct Codex args"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.filesystem]" "ai-repair should not register retired filesystem MCP in Codex"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/server-filesystem" "ai-repair should not set retired filesystem MCP args in Codex"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.github]" "ai-repair should not add removed GitHub MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.exa]" "ai-repair should add Exa MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" 'url = "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.notion]" "ai-repair should not register retired Notion MCP in Codex"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" 'mcp.notion.com' "ai-repair should not set retired Notion MCP URL in Codex"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.slack]" "ai-repair should add Slack MCP section in Codex"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" 'url = "https://mcp.slack.com/mcp"' "ai-repair should set Slack MCP URL in Codex"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.brave-search]" "ai-repair should not register retired Brave Search MCP in Codex"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@modelcontextprotocol/server-brave-search" "ai-repair should not set retired Brave Search MCP args in Codex"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '"github"' "ai-repair should not register removed GitHub MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-repair should register Exa MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL for Claude Code"
@@ -157,21 +132,12 @@ assert_contains "$(cat "${HOME}/.claude.json")" '"vision"' "ai-repair should reg
 assert_contains "$(cat "${HOME}/.claude.json")" '@tuannvm/vision-mcp-server' "ai-repair should set Claude vision MCP args"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-repair should not register retired Brave Search MCP for Claude Code"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should not set retired Claude Brave Search MCP args"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.drawio]" "ai-repair should not register retired drawio MCP in Codex"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@drawio/mcp@latest" "ai-repair should not set retired drawio MCP args in Codex"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.playwright]" "ai-repair should not register retired Playwright MCP in Codex"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "@playwright/mcp@latest" "ai-repair should not set retired Playwright MCP args in Codex"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.chrome-devtools]" "ai-repair should not register retired chrome-devtools MCP in Codex"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" "chrome-devtools-mcp@latest" "ai-repair should not set retired chrome-devtools MCP args in Codex"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "[mcp_servers.vision]" "ai-repair should add vision MCP section"
-assert_contains "$(cat "${HOME}/.codex/config.toml")" "@tuannvm/vision-mcp-server" "ai-repair should set vision MCP command args"
 
 # Re-run should be idempotent
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on re-run"
 assert_contains "${RUN_OUTPUT}" "already registered" "ai-repair should detect existing registration"
 assert_contains "${RUN_OUTPUT}" "auto-update channel already set to latest" "ai-repair should detect existing Claude baseline"
-assert_contains "${RUN_OUTPUT}" "OpenAI Docs MCP already registered" "ai-repair should detect existing Docs MCP"
 
 # Legacy MCP removal — simulate an old dotfiles install and verify convergence.
 python3 -c "
@@ -209,42 +175,6 @@ d['mcpServers']['brave-search'] = {
 }
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
-cat >> "${HOME}/.codex/config.toml" <<EOF
-
-[mcp_servers.playwright]
-command = "npx"
-args = ["-y", "@playwright/mcp@latest"]
-
-[mcp_servers.playwright.tools.browser_navigate]
-approval_mode = "approve"
-
-[mcp_servers.filesystem]
-command = "bash"
-args = ["-lc", "npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]
-
-[mcp_servers.drawio]
-command = "npx"
-args = ["-y", "@drawio/mcp@latest"]
-
-[mcp_servers.notion]
-url = "https://mcp.notion.com/mcp"
-
-[mcp_servers.github]
-command = "npx"
-args = ["-y", "@modelcontextprotocol/server-github"]
-
-[mcp_servers.owlocr]
-command = "bash"
-args = ["-lc", "uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]
-
-[mcp_servers.chrome-devtools]
-command = "npx"
-args = ["-y", "chrome-devtools-mcp@latest"]
-
-[mcp_servers.brave-search]
-command = "${HOME}/.local/bin/mcp-with-keychain-secret"
-args = ["BRAVE_API_KEY", "dotfiles.ai.mcp", "brave-api-key", "npx", "-y", "@modelcontextprotocol/server-brave-search"]
-EOF
 
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when purging legacy MCPs"
@@ -264,15 +194,6 @@ assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/serve
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'jangisaac-dev/owlocr-mcp' "ai-repair should strip legacy owlocr from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should strip legacy chrome-devtools from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should strip legacy brave-search from .claude.json"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright]' "ai-repair should strip legacy playwright section from Codex config"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.playwright.tools.browser_navigate]' "ai-repair should strip legacy playwright tools subsections from Codex config"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.filesystem]' "ai-repair should strip legacy filesystem section from Codex config"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.drawio]' "ai-repair should strip legacy drawio section from Codex config"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.notion]' "ai-repair should strip legacy notion section from Codex config"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.github]' "ai-repair should strip legacy github section from Codex config"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.owlocr]' "ai-repair should strip legacy owlocr section from Codex config"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.chrome-devtools]' "ai-repair should strip legacy chrome-devtools section from Codex config"
-assert_not_contains "$(cat "${HOME}/.codex/config.toml")" '[mcp_servers.brave-search]' "ai-repair should strip legacy brave-search section from Codex config"
 
 # Retired session-topic hook cleanup — simulate an old dotfiles install that
 # had the Haiku session-topic feature installed, and verify convergence:

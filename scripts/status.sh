@@ -129,44 +129,9 @@ else
 fi
 
 section "AI Config"
-audit_local_file "Codex config" "${HOME}/.codex/config.toml"
 audit_local_file "Claude settings" "${HOME}/.claude/settings.json"
-audit_local_file "Gemini settings" "${HOME}/.gemini/settings.json"
 audit_local_file "Serena config" "${HOME}/.serena/serena_config.yml"
-audit_local_file "Shared Codex hooks" "${HOME}/.codex/hooks.json"
 audit_local_file "Shared Claude guidance" "${HOME}/.claude/CLAUDE.md"
-audit_local_file "Shared AGENTS" "${HOME}/AGENTS.md"
-
-if [[ -f "${HOME}/.codex/config.toml" ]]; then
-  if ai_config_has_legacy_settings "${HOME}/.codex/config.toml"; then
-    attention "Codex config: legacy bridge/auto-approval settings detected"
-  else
-    ok "Codex config: no legacy bridge settings detected"
-  fi
-
-  if [[ "$(ai_config_toml_read "${HOME}/.codex/config.toml" "d.get('sandbox_mode','')" 2>/dev/null || true)" == "workspace-write" ]]; then
-    ok "Codex config: sandbox mode is workspace-write"
-  else
-    attention "Codex config: sandbox mode should be workspace-write"
-  fi
-
-  if [[ "$(ai_config_toml_read "${HOME}/.codex/config.toml" "d.get('approval_policy','')" 2>/dev/null || true)" == "on-request" ]]; then
-    ok "Codex config: approval policy is on-request"
-  else
-    attention "Codex config: approval policy should be on-request"
-  fi
-
-  case "$(ai_config_codex_mcp_url_state "${HOME}/.codex/config.toml" openaiDeveloperDocs "https://developers.openai.com/mcp")" in
-    ok)
-      ok "Codex OpenAI Docs MCP: registered"
-      ;;
-    wrong-url|missing)
-      attention "Codex OpenAI Docs MCP: missing or wrong URL"
-      ;;
-  esac
-else
-  info "Codex config audit skipped: file is missing"
-fi
 
 if [[ -f "${HOME}/.claude/settings.json" ]]; then
   if [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('autoUpdatesChannel','')" 2>/dev/null || true)" == "latest" ]]; then

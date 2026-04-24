@@ -15,9 +15,7 @@ mkdir -p \
   "${fake_repo}/scripts/lib" \
   "${fake_repo}/scripts" \
   "${stub_bin}" \
-  "${tmpdir}/home/.codex" \
   "${tmpdir}/home/.claude" \
-  "${tmpdir}/home/.gemini" \
   "${tmpdir}/home/.serena" \
   "${tmpdir}/home/Library/Application Support/com.github.domt4.homebrew-autoupdate" \
   "${tmpdir}/home/Library/LaunchAgents"
@@ -132,28 +130,12 @@ export PATH="${stub_bin}:${PATH}"
 export DOTFILES_REPO_ROOT="${fake_repo}"
 export HOME="${tmpdir}/home"
 
-cat > "${HOME}/.codex/config.toml" <<'EOF'
-model = "gpt-5.4"
-model_reasoning_effort = "high"
-sandbox_mode = "workspace-write"
-approval_policy = "on-request"
-
-[features]
-multi_agent = true
-codex_hooks = true
-
-[mcp_servers.openaiDeveloperDocs]
-url = "https://developers.openai.com/mcp"
-EOF
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "latest"
 }
 EOF
-: > "${HOME}/.gemini/settings.json"
-: > "${HOME}/.codex/hooks.json"
 : > "${HOME}/.claude/CLAUDE.md"
-: > "${HOME}/AGENTS.md"
 cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
 language_backend: LSP
 web_dashboard: true
@@ -171,24 +153,15 @@ assert_contains "${RUN_OUTPUT}" "working tree: clean" "status should report a cl
 assert_contains "${RUN_OUTPUT}" "chezmoi managed files: clean" "status should report a clean chezmoi state"
 assert_contains "${RUN_OUTPUT}" "Brewfile: all declared packages present" "status should report Brew health"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "status should enforce disabled brew autoupdate policy"
-assert_contains "${RUN_OUTPUT}" "Codex config: no legacy bridge settings detected" "status should audit Codex config"
-assert_contains "${RUN_OUTPUT}" "Codex config: sandbox mode is workspace-write" "status should validate Codex sandbox"
-assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: registered" "status should validate Docs MCP"
 assert_contains "${RUN_OUTPUT}" "Claude settings: auto-update channel is latest" "status should validate Claude channel"
 assert_contains "${RUN_OUTPUT}" "Serena config: expected defaults detected" "status should audit Serena config"
 assert_contains "${RUN_OUTPUT}" "Status looks good." "status should summarize a clean state"
 
-cat > "${HOME}/.codex/config.toml" <<'EOF'
-# --- BEGIN CCB ---
-approval_policy = "never"
-sandbox_mode = "danger-full-access"
-EOF
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "stable"
 }
 EOF
-rm -f "${HOME}/.gemini/settings.json"
 cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
 language_backend: JetBrains
 web_dashboard: false
@@ -215,10 +188,6 @@ assert_contains "${RUN_OUTPUT}" "working tree: local changes detected" "status s
 assert_contains "${RUN_OUTPUT}" "chezmoi managed files: pending changes detected" "status should warn on chezmoi drift"
 assert_contains "${RUN_OUTPUT}" "Brewfile: missing packages or check failed" "status should warn on Brew failures"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: enabled, but dotfiles policy is disabled" "status should warn when brew autoupdate is enabled"
-assert_contains "${RUN_OUTPUT}" "Gemini settings: missing" "status should report missing local settings"
-assert_contains "${RUN_OUTPUT}" "Codex config: legacy bridge/auto-approval settings detected" "status should detect legacy Codex settings"
-assert_contains "${RUN_OUTPUT}" "Codex config: sandbox mode should be workspace-write" "status should detect Codex sandbox drift"
-assert_contains "${RUN_OUTPUT}" "Codex OpenAI Docs MCP: missing or wrong URL" "status should detect missing Docs MCP"
 assert_contains "${RUN_OUTPUT}" "Claude settings: auto-update channel should be latest" "status should detect Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "Serena config: expected defaults drifted" "status should detect Serena config drift"
 assert_contains "${RUN_OUTPUT}" "Attention needed:" "status should summarize warnings"
