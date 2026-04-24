@@ -203,6 +203,9 @@ touch "${HOME}/.claude/session-topics/abc123.count"
 mkdir -p "${HOME}/.local/bin"
 touch "${HOME}/.local/bin/serena-mcp"
 chmod +x "${HOME}/.local/bin/serena-mcp"
+# Leftover vendored frontend-design skill should also be cleaned.
+mkdir -p "${HOME}/.claude/skills/frontend-design"
+: > "${HOME}/.claude/skills/frontend-design/SKILL.md"
 python3 -c "
 import json
 p = '${HOME}/.claude/settings.json'
@@ -222,5 +225,7 @@ assert_not_contains "$(cat "${HOME}/.claude/settings.json")" 'UserPromptSubmit' 
 [[ ! -e "${HOME}/.claude/session-topic.sh" ]] || fail_test "session-topic.sh should be removed"
 [[ ! -d "${HOME}/.claude/session-topics" ]] || fail_test "session-topics cache dir should be removed"
 [[ ! -e "${HOME}/.local/bin/serena-mcp" ]] || fail_test "retired serena-mcp wrapper should be removed"
+[[ ! -d "${HOME}/.claude/skills/frontend-design" ]] || fail_test "retired vendored frontend-design skill should be removed"
+assert_contains "${RUN_OUTPUT}" "removed retired vendored skill" "ai-repair should announce frontend-design cleanup"
 
 pass_test "tests/ai-repair.sh"

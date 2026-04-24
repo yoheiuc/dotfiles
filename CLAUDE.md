@@ -38,11 +38,11 @@
 - `README.md`
 - `tests/` 配下の回帰テスト
 
-### Claude Code の skill
+### Claude Code の skill / plugin
 
 - **公式 CLI で配布される** skill（gws / playwright / notion 等）: `scripts/post-setup.sh` が `~/.claude/skills/` に install。dotfiles source には入れない
-- **plugin 経由のみで配布される** skill（`anthropics/claude-plugins-official` の `frontend-design` 等）:
-  - `home/dot_claude/skills/<name>/` に vendor、`SKILL.md` と `LICENSE.txt` を同梱
-  - `scripts/doctor.sh` の `Claude Code (optional)` セクションに存在確認を追加
-  - `tests/<skill>.sh` に回帰テストを追加
-  - `README.md` の skill ストレージ説明と tree 図を更新
+- **plugin marketplace 経由で配布される** skill / plugin（`claude-plugins-official` の `frontend-design` / `*-lsp` 群）:
+  - `claude plugin install <name>@claude-plugins-official` で install（per-user scope）
+  - `scripts/doctor.sh` の `Claude Code (optional)` セクションで `~/.claude/plugins/installed_plugins.json` を jq で検証
+  - dotfiles に SKILL.md を vendor しない。upstream が marketplace で rolling update するため、vendor すると drift する
+  - README の該当節と `~/.claude/skills/` tree 図を更新

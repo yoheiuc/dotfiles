@@ -303,11 +303,17 @@ if command -v claude &>/dev/null; then
   fi
   unset _claude_json
 
-  if [[ -f "${HOME}/.claude/skills/frontend-design/SKILL.md" ]]; then
-    ok "frontend-design skill: present"
+  # frontend-design moved from a vendored skill under ~/.claude/skills/ to the
+  # claude-plugins-official marketplace (2026-04-24). Claude Code stores the
+  # installed-plugin list at ~/.claude/plugins/installed_plugins.json under
+  # `plugins.<name>@<marketplace>`.
+  _claude_plugins="${HOME}/.claude/plugins/installed_plugins.json"
+  if [[ -f "${_claude_plugins}" ]] && jq -e '.plugins | has("frontend-design@claude-plugins-official")' "${_claude_plugins}" >/dev/null 2>&1; then
+    ok "frontend-design plugin: installed (via claude-plugins-official)"
   else
-    warn "frontend-design skill missing — run: chezmoi apply"
+    warn "frontend-design plugin missing — run: claude plugin install frontend-design@claude-plugins-official"
   fi
+  unset _claude_plugins
 
   if [[ -f "${HOME}/.claude/skills/find-skills/SKILL.md" ]]; then
     ok "find-skills skill: present"

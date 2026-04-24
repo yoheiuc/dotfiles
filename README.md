@@ -538,7 +538,7 @@ Claude Code は `settings.json` を自身で頻繁に書き換えるため、dot
 | `~/.claude/settings.json` のそれ以外（`permissions` / `model` / `effortLevel` / `statusLine`） | ローカル |
 | `~/.claude/settings.local.json` | ローカル（マシン固有 override） |
 | `~/.claude/CLAUDE.md` / `statusline.sh` / `auto-save.sh` / `lsp-hint.sh` / `commands/` / `.mcp.json` | dotfiles |
-| `~/.claude/skills/frontend-design/` | dotfiles（plugin を vendor） |
+| `frontend-design` plugin | `claude plugin install frontend-design@claude-plugins-official`（per-user、dotfiles には vendor しない） |
 | `~/.claude/skills/*`（それ以外） | `post-setup.sh` が外部 CLI 経由で配置 |
 | `~/.claude/history.jsonl` / `projects/` / `sessions/` / `cache/` / `plugins/` | 管理しない |
 | `~/.config/gh/config.yml`（HTTPS、`co = pr checkout` alias） | dotfiles |
@@ -613,7 +613,10 @@ LSP ベースの symbol 解析は Anthropic 公式 marketplace (`claude-plugins-
 - **clasp** は `post-setup.sh` が `npm install -g @google/clasp`。初回 `clasp login` が必要
 - **Sequential Thinking MCP** / **gws skills** / **find-skills**（`vercel-labs/skills`）は `post-setup.sh` が Claude Code に配置
 - **同梱 skill**（`home/dot_claude/skills/`）: `screenshot` / `doc` / `pdf` / `spreadsheet` / `jupyter-notebook` / `security-best-practices` / `ui-ux-pro-max`
-- **frontend-design skill** は `anthropics/claude-plugins-official` の plugin（Apache-2.0）を `home/dot_claude/skills/frontend-design/` に vendor。upstream 更新は `~/.claude/plugins/marketplaces/claude-plugins-official/plugins/frontend-design/skills/frontend-design/SKILL.md` からコピーし直す
+- **claude-plugins-official 経由の plugin**（`claude plugin install ...@claude-plugins-official`）:
+  - `frontend-design`（Apache-2.0。旧 dotfiles は `home/dot_claude/skills/frontend-design/` に vendor していたが、2026-04-24 に plugin へ一本化）
+  - `*-lsp` 群（`clangd` / `csharp` / `gopls` / `jdtls` / `kotlin` / `lua` / `php` / `pyright` / `ruby` / `rust-analyzer` / `swift` / `typescript`）— Serena MCP の後継
+  - `make doctor` が `~/.claude/plugins/installed_plugins.json` を見て `frontend-design` の存在だけ検証（他 plugin は手動管理）
 - **Superpowers** / **Context7** plugin は Claude Code セッション内で `/plugin install` 手動（dotfiles 管理外）
 - **brew-autoupdate** は方針で無効化、`post-setup.sh` が既存 launch agent を削除する
 
@@ -639,7 +642,7 @@ dotfiles/
 │   │   ├── executable_{statusline,auto-save,lsp-hint}.sh  # hooks 配下
 │   │   ├── dot_mcp.json            # → ~/.claude/.mcp.json (HTTP MCP baseline)
 │   │   ├── commands/               # → ~/.claude/commands/*.md (18 slash commands, 下表参照)
-│   │   └── skills/                 # frontend-design vendor + 同梱 skill 7 個（screenshot / doc / pdf / spreadsheet / jupyter-notebook / security-best-practices / ui-ux-pro-max）
+│   │   └── skills/                 # 同梱 skill 7 個（screenshot / doc / pdf / spreadsheet / jupyter-notebook / security-best-practices / ui-ux-pro-max）。frontend-design は plugin 化したので vendor しない
 │   ├── dot_local/
 │   │   ├── bin/                    # ai-secrets / mcp-with-keychain-secret
 │   │   ├── lib/python-ssl-compat/  # Python 3.13 VERIFY_X509_STRICT 無効化（docs/setup-guides/gcloud-python-ssl.md）

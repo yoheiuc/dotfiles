@@ -53,8 +53,8 @@ test: ## 回帰テストを実行
 	bash tests/notion-cli.sh
 	bash tests/ai-config.sh
 	bash tests/lsp-hint.sh
-	bash tests/frontend-design-skill.sh
 	bash tests/find-skills.sh
+	bash tests/skill-verify.sh
 	bash tests/post-setup.sh
 	bash tests/uninstall.sh
 	bash tests/commands.sh
