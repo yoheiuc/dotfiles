@@ -6,6 +6,7 @@ input=$(cat)
 
 model=$(printf '%s' "$input" | jq -r '.model.display_name // .model.id // "Claude"')
 project=$(printf '%s' "$input" | jq -r '(.workspace.project_dir // .cwd // "") | split("/") | map(select(length > 0)) | last // ""')
+worktree=$(printf '%s' "$input" | jq -r '.workspace.git_worktree // empty')
 
 elapsed_ms=$(printf '%s' "$input" | jq -r '.cost.total_duration_ms // 0')
 elapsed_min=$((elapsed_ms / 60000))
@@ -98,7 +99,11 @@ parts=()
 parts+=("$model")
 
 if [ -n "$project" ] && [ "$project" != "." ]; then
-  parts+=("$project")
+  if [ -n "$worktree" ]; then
+    parts+=("$project(wt:$worktree)")
+  else
+    parts+=("$project")
+  fi
 fi
 
 five_part=$(format_window "5h" "$five_used" "$five_reset")
