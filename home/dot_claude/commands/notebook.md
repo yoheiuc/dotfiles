@@ -12,9 +12,9 @@ Create clean, reproducible Jupyter notebooks for experiments or tutorials.
 
 ## Workflow
 1. **Lock the intent**: identify the notebook kind (experiment or tutorial). Capture objective, audience, and what "done" looks like.
-2. **Scaffold**: if the Codex helper script is available, use it:
+2. **Scaffold**: if the helper script is available, use it:
    ```bash
-   export JUPYTER_NOTEBOOK_CLI="$HOME/.codex/skills/jupyter-notebook/scripts/new_notebook.py"
+   export JUPYTER_NOTEBOOK_CLI="$HOME/.claude/skills/jupyter-notebook/scripts/new_notebook.py"
    uv run --python 3.12 python "$JUPYTER_NOTEBOOK_CLI" --kind experiment --title "Title" --out output/jupyter-notebook/file.ipynb
    ```
    Otherwise, create the notebook JSON structure directly.

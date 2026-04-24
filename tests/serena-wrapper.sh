@@ -25,10 +25,10 @@ run_capture env \
   HOME="${tmpdir}/home" \
   SERENA_UVX_BIN="${fake_uvx}" \
   SERENA_UVX_LOG="${tmpdir}/uvx.log" \
-  bash -lc "cd '${repo}/subdir' && bash '${REPO_ROOT}/home/dot_local/bin/executable_serena-mcp' codex"
+  bash -lc "cd '${repo}/subdir' && bash '${REPO_ROOT}/home/dot_local/bin/executable_serena-mcp' claude-code"
 assert_eq "0" "${RUN_STATUS}" "serena wrapper should succeed"
 uvx_log="$(cat "${tmpdir}/uvx.log")"
-assert_contains "${uvx_log}" "-q --from git+https://github.com/oraios/serena serena start-mcp-server --context=codex --project-from-cwd --open-web-dashboard False" "wrapper should forward the expected Serena MCP arguments quietly"
+assert_contains "${uvx_log}" "-q --from git+https://github.com/oraios/serena serena start-mcp-server --context=claude-code --project-from-cwd --open-web-dashboard False" "wrapper should forward the expected Serena MCP arguments quietly"
 assert_not_contains "${uvx_log}" "index-project" "wrapper should not auto-index"
 
 # Test: non-git directory

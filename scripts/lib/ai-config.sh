@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # scripts/lib/ai-config.sh — shell helpers for local AI config inspection.
 #
-# All JSON / TOML mutation is delegated to scripts/lib/ai_config.py, which
-# writes via tempfile + os.replace so crashes cannot corrupt ~/.claude.json or
-# ~/.codex/config.toml mid-write.
+# All JSON mutation is delegated to scripts/lib/ai_config.py, which writes via
+# tempfile + os.replace so crashes cannot corrupt ~/.claude.json mid-write.
 
 AI_CONFIG_LEGACY_PATTERN='approval_policy[[:space:]]*=[[:space:]]*"never"|sandbox_mode[[:space:]]*=[[:space:]]*"danger-full-access"|BEGIN CCB|END CCB|ai-bridge|cc-bridge|codex-dual|\bccb\b'
 
@@ -46,28 +45,6 @@ ai_config_file_contains_regex() {
   grep -Eq "${pattern}" "${path}"
 }
 
-# Resolve a Python 3.11+ interpreter that has `tomllib` in its stdlib. macOS
-# ships /usr/bin/python3 as 3.9 which lacks tomllib, so fall back to
-# homebrew-installed pythons when the default is too old. Cached per shell.
-ai_config_python_with_tomllib() {
-  if [[ -n "${_AI_CONFIG_PY_TOMLLIB:-}" ]]; then
-    printf '%s\n' "${_AI_CONFIG_PY_TOMLLIB}"
-    return 0
-  fi
-  local candidate
-  for candidate in python3 python3.14 python3.13 python3.12 python3.11; do
-    if command -v "${candidate}" >/dev/null 2>&1 \
-       && "${candidate}" -c 'import tomllib' 2>/dev/null; then
-      _AI_CONFIG_PY_TOMLLIB="${candidate}"
-      printf '%s\n' "${_AI_CONFIG_PY_TOMLLIB}"
-      return 0
-    fi
-  done
-  _AI_CONFIG_PY_TOMLLIB="python3"
-  printf '%s\n' "${_AI_CONFIG_PY_TOMLLIB}"
-  return 1
-}
-
 ai_config_backup_matches() {
   local glob_pattern="$1"
   compgen -G "${glob_pattern}" || true
@@ -77,14 +54,6 @@ ai_config_backup_matches() {
 # Usage: ai_config_json_read <file> <python_expr>   (expr receives parsed JSON as `d`)
 ai_config_json_read() {
   python3 "${_AI_CONFIG_PY}" json-read "$1" "$2"
-}
-
-# Read a field from a TOML file. Requires tomllib (Python 3.11+).
-# Usage: ai_config_toml_read <file> <python_expr>   (expr receives parsed TOML as `d`)
-ai_config_toml_read() {
-  local py
-  py="$(ai_config_python_with_tomllib)" || true
-  "${py}" "${_AI_CONFIG_PY}" toml-read "$1" "$2"
 }
 
 ai_config_json_upsert_mcp() {
@@ -101,22 +70,6 @@ ai_config_json_upsert_key() {
 
 ai_config_json_upsert_nested_key() {
   python3 "${_AI_CONFIG_PY}" json-upsert-nested-key "$1" "$2" "$3"
-}
-
-ai_config_toml_remove_mcp_section() {
-  python3 "${_AI_CONFIG_PY}" toml-remove-mcp-section "$1" "$2"
-}
-
-ai_config_toml_upsert_top_level() {
-  python3 "${_AI_CONFIG_PY}" toml-upsert-top-level "$1" "$2" "$3"
-}
-
-ai_config_toml_upsert_section_block() {
-  python3 "${_AI_CONFIG_PY}" toml-upsert-section-block "$1" "$2" "$3"
-}
-
-ai_config_codex_upsert_mcp() {
-  python3 "${_AI_CONFIG_PY}" codex-upsert-mcp "$1" "$2" "$3" "$4"
 }
 
 # Check MCP registration state in a JSON file.
@@ -136,36 +89,6 @@ ai_config_mcp_registration_state() {
     fi
   else
     printf 'missing\n'
-  fi
-}
-
-# Check Codex serena MCP state in config.toml.
-ai_config_codex_mcp_state() {
-  local file="$1"
-  local expected_command="$2"
-
-  local actual_command
-  actual_command="$(ai_config_toml_read "${file}" "d.get('mcp_servers',{}).get('serena',{}).get('command','')" 2>/dev/null)" || { printf 'missing\n'; return; }
-
-  if [[ "${actual_command}" == "${expected_command}" ]]; then
-    printf 'ok\n'
-  else
-    printf 'wrong-command\n'
-  fi
-}
-
-ai_config_codex_mcp_url_state() {
-  local file="$1"
-  local server_name="$2"
-  local expected_url="$3"
-
-  local actual_url
-  actual_url="$(ai_config_toml_read "${file}" "d.get('mcp_servers',{}).get('${server_name}',{}).get('url','')" 2>/dev/null)" || { printf 'missing\n'; return; }
-
-  if [[ "${actual_url}" == "${expected_url}" ]]; then
-    printf 'ok\n'
-  else
-    printf 'wrong-url\n'
   fi
 }
 

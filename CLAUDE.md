@@ -18,16 +18,15 @@
 影響範囲が広い。以下をすべて更新する:
 
 - `home/dot_claude/dot_mcp.json`（Claude 側 HTTP MCP 登録）
-- `home/dot_codex/config.toml.tmpl`（Codex 側 MCP 登録）
 - `scripts/ai-repair.sh`（drift 修復）
 - `scripts/ai-audit.sh`（legacy 警告）
 - `scripts/ai-secrets.sh`（credential が必要な場合）
 - `README.md` の「MCP の基本セット」セクション
-- routing table — Claude: `home/dot_claude/CLAUDE.md` / Codex: `home/AGENTS.md`
+- routing table: `home/dot_claude/CLAUDE.md`
 - 関連する `home/dot_claude/commands/*.md`
 - `tests/` 配下の対応テスト
 
-廃止時は `ai-repair.sh` で `ai_config_json_remove_mcp` / `ai_config_toml_remove_mcp_section` を能動的に呼び、`ai-audit.sh` に legacy 警告を追加する。これを忘れると既存マシンが収束しない。
+廃止時は `ai-repair.sh` で `ai_config_json_remove_mcp` を能動的に呼び、`ai-audit.sh` に legacy 警告を追加する。これを忘れると既存マシンが収束しない。
 
 ### CLI 系ツールの追加（npm global / brew 等）
 

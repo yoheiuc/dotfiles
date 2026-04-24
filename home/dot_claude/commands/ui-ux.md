@@ -5,7 +5,7 @@ UI/UX design intelligence for web and mobile applications. Covers 10 stacks (Rea
 **Skip**: pure backend, API/database design, infrastructure, non-visual scripts.
 
 ## Data references
-If available, load relevant data from `~/.codex/skills/ui-ux-pro-max/data/`:
+If available, load relevant data from `~/.claude/skills/ui-ux-pro-max/data/`:
 - `products.csv` — 161 product types with recommendations
 - `colors.csv` — 161 color palettes with accessibility compliance
 - `styles.csv` — 50+ design styles with variants

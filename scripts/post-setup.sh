@@ -3,13 +3,11 @@
 #
 # Responsibility:
 #   - Install/update Claude Code CLI via native installer and keep it on latest
-#   - Install Codex CLI (via npm install -g @openai/codex)
 #   - Install clasp (via npm install -g @google/clasp)
-#   - Register Serena MCP server into Claude Code and Codex (idempotent)
-#   - Register Sequential Thinking MCP into Claude Code and Codex (idempotent)
-#   - Install Google Workspace CLI (gws) skills under ~/.claude/skills and ~/.codex/skills (idempotent)
-#   - Install find-skills (vercel-labs/skills) so Claude / Codex can discover skills from natural-language queries (idempotent)
-#   - Rely on chezmoi-managed Codex skills bundled in this repository
+#   - Register Serena MCP server into Claude Code (idempotent)
+#   - Register Sequential Thinking MCP into Claude Code (idempotent)
+#   - Install Google Workspace CLI (gws) skills under ~/.claude/skills (idempotent)
+#   - Install find-skills (vercel-labs/skills) so Claude can discover skills from natural-language queries (idempotent)
 #   - Keep brew-autoupdate disabled (manual brew update/upgrade policy)
 #
 # Safe to re-run: already-configured items are skipped.
@@ -50,27 +48,6 @@ else
 fi
 ok "Claude Code auto-update channel: latest"
 unset CLAUDE_SETTINGS_JSON claude_path
-
-# ---- Codex CLI -------------------------------------------------------------
-log "Codex CLI..."
-
-if command -v codex &>/dev/null; then
-  ok "Codex already installed: $(codex --version 2>/dev/null | tail -1 || true)"
-else
-  if ! command -v npm &>/dev/null; then
-    warn "npm not found — run `make install` first."
-    exit 1
-  fi
-
-  log "Installing Codex via npm..."
-  npm install -g @openai/codex
-  if command -v codex &>/dev/null; then
-    ok "Codex installed: $(codex --version 2>/dev/null | tail -1 || true)"
-  else
-    warn "codex CLI still not found after install — open a new terminal and re-run."
-    exit 1
-  fi
-fi
 
 # ---- clasp (Google Apps Script CLI) ----------------------------------------
 log "clasp..."
@@ -130,7 +107,7 @@ fi
 # skill dir lands wherever post-setup happens to be invoked from
 # (e.g. the dotfiles checkout).
 if (cd "${HOME}" && playwright-cli install --skills); then
-  ok "playwright-cli: skills installed for Claude Code and Codex"
+  ok "playwright-cli: skills installed for Claude Code"
 else
   warn "playwright-cli install --skills failed — run manually from \$HOME: (cd \"\${HOME}\" && playwright-cli install --skills)"
 fi
@@ -144,7 +121,7 @@ else
   warn "aider not found — install via Brewfile (brew \"aider\")"
 fi
 
-# ---- Serena MCP (Claude Code / Codex) -------------------------------------
+# ---- Serena MCP (Claude Code) ---------------------------------------------
 if ! command -v uvx &>/dev/null; then
   log "Serena MCP registration..."
   warn "uvx not found — Serena MCP skipped (run \`make install\` first)"
@@ -168,11 +145,7 @@ case "$(ai_config_mcp_registration_state "${CLAUDE_JSON}" sequential-thinking np
     ;;
 esac
 
-# ---- Codex skills ----------------------------------------------------------
-log "Codex skills..."
-ok "Codex skills are managed by chezmoi under ~/.codex/skills"
-
-# ---- Google Workspace CLI skills (Claude Code / Codex) --------------------
+# ---- Google Workspace CLI skills (Claude Code) ----------------------------
 log "Google Workspace CLI skills..."
 
 if ! command -v gws &>/dev/null; then
@@ -180,56 +153,45 @@ if ! command -v gws &>/dev/null; then
 elif ! command -v npx &>/dev/null; then
   warn "npx not found — gws skills skipped (run \`make install\` first)"
 else
-  for target in claude-code:"${HOME}/.claude/skills" codex:"${HOME}/.codex/skills"; do
-    agent="${target%%:*}"
-    dir="${target#*:}"
-    mkdir -p "${dir}"
-    if compgen -G "${dir}/gws-*/SKILL.md" >/dev/null; then
-      ok "gws skills already present under ${dir/#${HOME}/\~}"
+  _dir="${HOME}/.claude/skills"
+  mkdir -p "${_dir}"
+  if compgen -G "${_dir}/gws-*/SKILL.md" >/dev/null; then
+    ok "gws skills already present under ${_dir/#${HOME}/\~}"
+  else
+    log "Installing gws skills for claude-code into ${_dir/#${HOME}/\~} ..."
+    if npx -y skills add https://github.com/googleworkspace/cli -a claude-code -g -y; then
+      ok "gws skills installed"
     else
-      log "Installing gws skills for ${agent} into ${dir/#${HOME}/\~} ..."
-      if npx -y skills add https://github.com/googleworkspace/cli -a "${agent}" -g -y; then
-        ok "gws skills installed (${agent})"
-      else
-        warn "npx skills add failed for ${agent} — re-run or install manually"
-      fi
+      warn "npx skills add failed — re-run or install manually"
     fi
-  done
-  unset target agent dir
+  fi
+  unset _dir
 fi
 
 # ---- find-skills (vercel-labs/skills) -------------------------------------
-# find-skills lets Claude Code / Codex search and install further skills from
-# natural-language queries (English keywords work best). Installing it via
-# `npx skills add` places the skill bundle under ~/.claude/skills/find-skills
-# and ~/.codex/skills/find-skills, so both agents can self-discover skills
-# without manual /plugin install steps.
+# find-skills lets Claude Code search and install further skills from
+# natural-language queries (English keywords work best). `npx skills add
+# -a claude-code` places the bundle under ~/.claude/skills/find-skills AND
+# ~/.agents/skills/find-skills, so the agent can self-discover skills without
+# manual /plugin install steps.
 log "find-skills skill..."
 
 if ! command -v npx &>/dev/null; then
   warn "npx not found — find-skills skipped (run \`make install\` first)"
 else
-  # npx skills layout:
-  #   -a claude-code → copies to ~/.claude/skills/ AND ~/.agents/skills/
-  #   -a codex       → copies only to ~/.agents/skills/ (Codex reads the
-  #                    unified location; ~/.codex/skills/ stays reserved
-  #                    for chezmoi-managed skills)
-  for target in claude-code:"${HOME}/.claude/skills" codex:"${HOME}/.agents/skills"; do
-    agent="${target%%:*}"
-    dir="${target#*:}"
-    mkdir -p "${dir}"
-    if [[ -f "${dir}/find-skills/SKILL.md" ]]; then
-      ok "find-skills already present under ${dir/#${HOME}/\~}"
+  _dir="${HOME}/.claude/skills"
+  mkdir -p "${_dir}"
+  if [[ -f "${_dir}/find-skills/SKILL.md" ]]; then
+    ok "find-skills already present under ${_dir/#${HOME}/\~}"
+  else
+    log "Installing find-skills for claude-code into ${_dir/#${HOME}/\~} ..."
+    if npx -y skills add https://github.com/vercel-labs/skills -a claude-code -g -y --skill find-skills; then
+      ok "find-skills installed"
     else
-      log "Installing find-skills for ${agent} into ${dir/#${HOME}/\~} ..."
-      if npx -y skills add https://github.com/vercel-labs/skills -a "${agent}" -g -y --skill find-skills; then
-        ok "find-skills installed (${agent})"
-      else
-        warn "npx skills add failed for ${agent} — re-run or install manually"
-      fi
+      warn "npx skills add failed — re-run or install manually"
     fi
-  done
-  unset target agent dir
+  fi
+  unset _dir
 fi
 
 # ---- Notion CLI (ntn) ------------------------------------------------------
@@ -259,22 +221,19 @@ log "Notion CLI skills..."
 if ! command -v npx &>/dev/null; then
   warn "npx not found — notion-cli skills skipped (run \`make install\` first)"
 else
-  for target in claude-code:"${HOME}/.claude/skills" codex:"${HOME}/.codex/skills"; do
-    agent="${target%%:*}"
-    dir="${target#*:}"
-    mkdir -p "${dir}"
-    if [[ -f "${dir}/notion-cli/SKILL.md" ]]; then
-      ok "notion-cli skill already present under ${dir/#${HOME}/\~}"
+  _dir="${HOME}/.claude/skills"
+  mkdir -p "${_dir}"
+  if [[ -f "${_dir}/notion-cli/SKILL.md" ]]; then
+    ok "notion-cli skill already present under ${_dir/#${HOME}/\~}"
+  else
+    log "Installing notion-cli skill for claude-code into ${_dir/#${HOME}/\~} ..."
+    if npx -y skills add https://github.com/makenotion/skills -a claude-code -g -y --skill notion-cli; then
+      ok "notion-cli skill installed"
     else
-      log "Installing notion-cli skill for ${agent} into ${dir/#${HOME}/\~} ..."
-      if npx -y skills add https://github.com/makenotion/skills -a "${agent}" -g -y --skill notion-cli; then
-        ok "notion-cli skill installed (${agent})"
-      else
-        warn "npx skills add failed for ${agent} — re-run or install manually"
-      fi
+      warn "npx skills add failed — re-run or install manually"
     fi
-  done
-  unset target agent dir
+  fi
+  unset _dir
 fi
 
 # ---- Homebrew share perms (zsh compinit) ----------------------------------
@@ -307,7 +266,6 @@ rm -f "$(brew_autoupdate_plist_path)" "$(brew_autoupdate_runner_path)"
 ok "brew autoupdate: disabled by dotfiles policy"
 
 printf '\nVerify with: make doctor\n'
-printf '             codex login    (one-time auth)\n'
 printf '             ntn login      (one-time Notion OAuth)\n'
 
 if command -v playwright-cli >/dev/null 2>&1; then
@@ -325,7 +283,7 @@ if command -v playwright-cli >/dev/null 2>&1; then
   printf '    5. restart shell\n'
   printf '  daily use: focus the AI profile'\''s Chrome window, then run\n'
   printf '    pwattach   (exports PLAYWRIGHT_CLI_SESSION=chrome)\n'
-  printf '    → launch Claude Code / Codex from that shell\n'
+  printf '    → launch Claude Code from that shell\n'
   printf '    pwdetach   (close CDP session; Chrome stays open)\n'
   printf '  rationale + risks: see README.md "pwattach のセキュリティ"\n'
 fi

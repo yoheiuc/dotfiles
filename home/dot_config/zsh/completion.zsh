@@ -19,22 +19,10 @@ if [[ -s "$_zcompdump" && ( ! -s "${_zcompdump}.zwc" || "$_zcompdump" -nt "${_zc
 fi
 unset _zcompdump
 
-# codex — register completion after compinit defines compdef.
-# Cached via _zsh_cache_eval (defined in env.zsh) to avoid forking codex each startup.
-if _codex_bin="$(command -v codex 2>/dev/null)"; then
-  _zsh_cache_eval codex-completion "$_codex_bin" \
-    "codex completion zsh 2>/dev/null | sed '/^WARNING: proceeding, even though we could not update PATH:/d'"
-fi
-unset _codex_bin
-
 # Style
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'  # case-insensitive
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
-
-if (( $+functions[_codex] )); then
-  compdef _codex cx cxf cxr cxd cxl
-fi
 
 # ---------- Homebrew zsh plugins (must be after compinit) ----------
 # Loading order matters: you-should-use → autosuggestions → syntax-highlighting

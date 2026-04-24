@@ -61,23 +61,27 @@ echo
 printf '\033[1m=== AI config audit ===\033[0m\n'
 
 section "Local Config Files"
-describe_file "Codex config" "${HOME}/.codex/config.toml"
 describe_file "Claude settings" "${HOME}/.claude/settings.json"
-describe_file "Gemini settings" "${HOME}/.gemini/settings.json"
 describe_file "Serena config" "${HOME}/.serena/serena_config.yml"
 
 section "Shared Guidance"
-describe_file "Codex hooks" "${HOME}/.codex/hooks.json"
 describe_file "Claude guidance" "${HOME}/.claude/CLAUDE.md"
-describe_file "AGENTS" "${HOME}/AGENTS.md"
 
 section "Legacy Pattern Scan"
-scan_file_for_legacy_patterns "Codex config" "${HOME}/.codex/config.toml"
 scan_file_for_legacy_patterns "Claude settings" "${HOME}/.claude/settings.json"
-scan_file_for_legacy_patterns "Gemini settings" "${HOME}/.gemini/settings.json"
-scan_file_for_legacy_patterns "Codex hooks" "${HOME}/.codex/hooks.json"
 scan_file_for_legacy_patterns "Claude guidance" "${HOME}/.claude/CLAUDE.md"
-scan_file_for_legacy_patterns "AGENTS" "${HOME}/AGENTS.md"
+
+section "Retired Agent Configs"
+# Codex / Gemini were retired from this dotfiles setup. Stale state under
+# ~/.codex or ~/.gemini is harmless but flagged so the user can remove it.
+for _retired_path in "${HOME}/.codex" "${HOME}/.gemini"; do
+  if [[ -e "${_retired_path}" ]]; then
+    attention "Retired agent state still on disk: ${_retired_path} (safe to rm -rf if no longer needed)"
+  else
+    ok "No retired agent state at ${_retired_path}"
+  fi
+done
+unset _retired_path
 
 section "Claude Code Baseline"
 if [[ -f "${HOME}/.claude/settings.json" ]]; then
@@ -175,81 +179,6 @@ else
   attention "Claude Code MCP config: missing (${_claude_json})"
 fi
 
-# Check a Codex TOML setting.
-# Usage: check_codex_setting <file> <python_expr> <expected> <ok_msg> <fail_msg>
-check_codex_setting() {
-  local file="$1" expr="$2" expected="$3" ok_msg="$4" fail_msg="$5"
-  if [[ "$(ai_config_toml_read "${file}" "${expr}" 2>/dev/null || true)" == "${expected}" ]]; then
-    ok "${ok_msg}"
-  else
-    attention "${fail_msg}"
-  fi
-}
-
-section "Codex Baseline"
-_codex_config="${HOME}/.codex/config.toml"
-if [[ -f "${_codex_config}" ]]; then
-  check_codex_setting "${_codex_config}" "d.get('model','')" "gpt-5.4" \
-    "Codex: model is gpt-5.4" "Codex: model should be gpt-5.4"
-  check_codex_setting "${_codex_config}" "d.get('model_reasoning_effort','')" "medium" \
-    "Codex: default reasoning effort is medium" "Codex: default reasoning effort should be medium"
-  check_codex_setting "${_codex_config}" "d.get('sandbox_mode','')" "workspace-write" \
-    "Codex: sandbox mode is workspace-write" "Codex: sandbox mode should be workspace-write"
-  check_codex_setting "${_codex_config}" "d.get('approval_policy','')" "on-request" \
-    "Codex: approval policy is on-request" "Codex: approval policy should be on-request"
-  check_codex_setting "${_codex_config}" "d.get('features',{}).get('codex_hooks',False)" "True" \
-    "Codex: hooks enabled" "Codex: hooks should be enabled"
-  check_codex_setting "${_codex_config}" "d.get('features',{}).get('multi_agent',False)" "True" \
-    "Codex: multi-agent enabled" "Codex: multi-agent should be enabled"
-
-  case "$(ai_config_codex_mcp_url_state "${_codex_config}" openaiDeveloperDocs "https://developers.openai.com/mcp")" in
-    ok)
-      ok "Codex OpenAI Docs MCP: registered"
-      ;;
-    wrong-url)
-      attention "Codex OpenAI Docs MCP: wrong URL — run make ai-repair"
-      ;;
-    missing)
-      attention "Codex OpenAI Docs MCP: missing — run make ai-repair"
-      ;;
-  esac
-
-  case "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)" in
-    "")
-      attention "Codex vision MCP: missing — run make ai-repair"
-      ;;
-    *)
-      ok "Codex vision MCP: registered"
-      ;;
-  esac
-
-  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)" == "https://mcp.exa.ai/mcp" ]]; then
-    ok "Codex exa MCP: registered"
-  else
-    attention "Codex exa MCP: missing — run make ai-repair"
-  fi
-
-  if [[ "$(ai_config_toml_read "${_codex_config}" "d.get('mcp_servers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)" == "https://mcp.slack.com/mcp" ]]; then
-    ok "Codex slack MCP: registered"
-  else
-    attention "Codex slack MCP: missing — run make ai-repair"
-  fi
-
-  # Warn on legacy MCP entries that have been retired. Match on key presence.
-  #   owlocr           → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
-  #   chrome-devtools  → playwright-cli attach --cdp=chrome (pwattach helper)
-  #   brave-search     → Exa MCP alone covers web search
-  for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search; do
-    if [[ "$(ai_config_toml_read "${_codex_config}" "'present' if '${_legacy}' in d.get('mcp_servers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
-      attention "Codex ${_legacy} MCP: legacy entry present — run make ai-repair"
-    fi
-  done
-  unset _legacy
-
-else
-  attention "Codex config: missing (${_codex_config})"
-fi
-
 section "Serena Config"
 if [[ -f "${HOME}/.serena/serena_config.yml" ]]; then
   if ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^language_backend:[[:space:]]*LSP([[:space:]]|$)'; then
@@ -294,24 +223,10 @@ case "$(ai_config_mcp_registration_state "${_claude_json}" serena "${_serena_wra
     attention "Claude Code Serena MCP: missing — run make ai-repair"
     ;;
 esac
-
-case "$(ai_config_codex_mcp_state "${_codex_config}" "${_serena_wrapper}")" in
-  ok)
-    ok "Codex Serena MCP: registered via wrapper"
-    ;;
-  wrong-command)
-    attention "Codex Serena MCP: wrong command — run make ai-repair"
-    ;;
-  missing)
-    attention "Codex Serena MCP: missing — run make ai-repair"
-    ;;
-esac
-unset _serena_wrapper _claude_json _codex_config
+unset _serena_wrapper _claude_json
 
 section "Backup Files"
-report_optional_backups "Codex config backups" "${HOME}/.codex/config.toml.pre-unmanage-*"
 report_optional_backups "Claude settings backups" "${HOME}/.claude/settings.json.pre-unmanage-*"
-report_optional_backups "Gemini settings backups" "${HOME}/.gemini/settings.json.pre-unmanage-*"
 
 echo
 if [[ "${ATTENTION_COUNT}" -eq 0 ]]; then

@@ -9,7 +9,7 @@ tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-ai-secrets-wrapper-test.XXXXXX")"
 trap 'rm -rf "${tmpdir}"' EXIT
 
 fake_home="${tmpdir}/home"
-mkdir -p "${fake_home}/.local/bin" "${fake_home}/.codex" "${fake_home}/.config/dotfiles"
+mkdir -p "${fake_home}/.local/bin" "${fake_home}/.config/dotfiles"
 export FAKE_SECURITY_DB="${tmpdir}/security-db"
 
 cat > "${tmpdir}/security" <<'EOF'
@@ -86,6 +86,6 @@ run_capture env \
 assert_eq "0" "${RUN_STATUS}" "ai-secrets wrapper should succeed"
 assert_not_contains "${RUN_OUTPUT}" "BSAtest_from_wrapper" "ai-secrets wrapper should not echo the Brave API key"
 assert_contains "$(cat "${FAKE_SECURITY_DB}")" $'dotfiles.ai.mcp\tbrave-api-key\tBSAtest_from_wrapper' "ai-secrets wrapper should persist the Brave API key to Keychain"
-assert_contains "$(cat "${fake_home}/.codex/config.toml")" 'sandbox_mode = "workspace-write"' "ai-secrets wrapper should refresh Codex config via ai-repair"
+assert_contains "$(cat "${fake_home}/.claude.json")" '"exa"' "ai-secrets wrapper should refresh Claude Code MCP config via ai-repair"
 
 pass_test "tests/ai-secrets-wrapper.sh"

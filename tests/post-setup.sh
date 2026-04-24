@@ -2,7 +2,7 @@
 # tests/post-setup.sh — verify scripts/post-setup.sh idempotency.
 #
 # Full integration testing of post-setup.sh would require stubbing ~10 external
-# CLIs (claude, codex, clasp, playwright-cli, ntn, gws, npm, npx, curl, brew,
+# CLIs (claude, clasp, playwright-cli, ntn, gws, npm, npx, curl, brew,
 # launchctl, uvx, stat). Instead, this test focuses on the property that
 # actually matters — **running post-setup.sh twice produces identical config
 # files** — by stubbing every CLI to the "already installed" path and
@@ -18,7 +18,7 @@ tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-post-setup-test.XXXXXX")"
 trap 'rm -rf "${tmpdir}"' EXIT
 
 export HOME="${tmpdir}/home"
-mkdir -p "${HOME}/.claude" "${HOME}/.codex" "${HOME}/.agents/skills" "${HOME}/.local/bin"
+mkdir -p "${HOME}/.claude" "${HOME}/.agents/skills" "${HOME}/.local/bin"
 
 stub_bin="${tmpdir}/bin"
 mkdir -p "${stub_bin}"
@@ -43,7 +43,6 @@ make_stub claude 'case "${1:-}" in
   *) exit 0 ;;
 esac'
 
-make_stub codex 'echo "codex 1.0.0"; exit 0'
 make_stub clasp 'echo "clasp 3.0.0"; exit 0'
 make_stub playwright-cli 'case "${1:-}" in
   --version) echo "playwright-cli 0.1.8" ;;
@@ -72,15 +71,13 @@ esac'
 
 # Pre-populate skill SKILL.md files so post-setup takes the "already present" path
 # and does not attempt network install via npx.
-mkdir -p "${HOME}/.claude/skills/gws-test" "${HOME}/.codex/skills/gws-test"
+mkdir -p "${HOME}/.claude/skills/gws-test"
 printf 'stub\n' > "${HOME}/.claude/skills/gws-test/SKILL.md"
-printf 'stub\n' > "${HOME}/.codex/skills/gws-test/SKILL.md"
 mkdir -p "${HOME}/.claude/skills/find-skills" "${HOME}/.agents/skills/find-skills"
 printf 'stub\n' > "${HOME}/.claude/skills/find-skills/SKILL.md"
 printf 'stub\n' > "${HOME}/.agents/skills/find-skills/SKILL.md"
-mkdir -p "${HOME}/.claude/skills/notion-cli" "${HOME}/.codex/skills/notion-cli"
+mkdir -p "${HOME}/.claude/skills/notion-cli"
 printf 'stub\n' > "${HOME}/.claude/skills/notion-cli/SKILL.md"
-printf 'stub\n' > "${HOME}/.codex/skills/notion-cli/SKILL.md"
 
 # Pre-populate ~/.claude.json so the sequential-thinking upsert has a parseable base.
 cat > "${HOME}/.claude.json" <<'EOF'

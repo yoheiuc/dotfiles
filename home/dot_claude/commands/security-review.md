@@ -3,7 +3,7 @@ Perform language and framework specific security best-practice reviews. Supporte
 ## Workflow
 
 1. **Identify languages and frameworks** in scope. Focus on primary core frameworks. For web apps, identify BOTH frontend and backend.
-2. **Load reference guides** from `~/.codex/skills/security-best-practices/references/` if available:
+2. **Load reference guides** from `~/.claude/skills/security-best-practices/references/` if available:
    - `python-django-web-server-security.md`
    - `python-fastapi-web-server-security.md`
    - `python-flask-web-server-security.md`

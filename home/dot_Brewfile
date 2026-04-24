@@ -12,7 +12,6 @@ brew "gh"                 # GitHub CLI
 brew "ghq"                # Manage local clones
 brew "lazygit"            # TUI git client
 brew "aider"              # AI pair programming in terminal
-brew "gemini-cli"         # Gemini CLI
 brew "googleworkspace-cli" # Google Workspace CLI (gws): Drive/Gmail/Calendar/Docs/Sheets/Chat/Admin
 brew "jq"                 # JSON processor
 brew "yq"                 # YAML/JSON/TOML processor
@@ -47,7 +46,7 @@ brew "micro"              # simple terminal text editor
 brew "zellij"             # terminal multiplexer
 
 # ---------- Runtimes / package managers ----------
-brew "node"               # npm runtime for Codex CLI
+brew "node"               # npm runtime for npm-distributed MCP servers (vision, sequential-thinking)
 brew "uv"                 # fast Python package manager
 
 # ---------- Misc CLI ----------
@@ -65,7 +64,6 @@ brew "tfenv"              # Terraform version manager
 cask "ghostty"            # GPU-accelerated terminal
 cask "claude"             # Claude desktop
 cask "visual-studio-code", args: { appdir: "/Applications" }
-cask "codex-app"                 # OpenAI Codex desktop app
 cask "aws-vault-binary", args: { appdir: "/Applications" }
 
 # ---------- Casks: browser / accounts ----------

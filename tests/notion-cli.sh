@@ -7,7 +7,7 @@
 #   - scripts/doctor.sh       (version check)
 #   - scripts/status.sh       (daily status section)
 #   - home/dot_local/share/navi/cheats/dotfiles/notion.cheat
-#   - home/dot_claude/CLAUDE.md / home/AGENTS.md routing tables
+#   - home/dot_claude/CLAUDE.md routing table
 # This test is a thin presence-check; it does NOT exercise ntn itself.
 
 set -euo pipefail
@@ -37,10 +37,6 @@ assert_contains "${status}" "command -v ntn" "status.sh should probe for ntn"
 
 claude_routing="$(cat "${REPO_ROOT}/home/dot_claude/CLAUDE.md")"
 assert_contains "${claude_routing}" "ntn" "home/dot_claude/CLAUDE.md routing table should mention ntn"
-
-codex_routing="$(cat "${REPO_ROOT}/home/AGENTS.md")"
-assert_contains "${codex_routing}" "ntn" "home/AGENTS.md routing table should mention ntn"
-assert_contains "${codex_routing}" "notion-cli" "home/AGENTS.md skill table should list notion-cli"
 
 # Behavior check: the notion-cli install block in post-setup must have an
 # idempotent skip branch. Without it, `make install` on an already-configured

@@ -5,7 +5,7 @@
 これは個人用の dotfiles リポジトリで、公開インターネットに晒されるサービスは含まない。SECURITY.md は以下を想定している:
 
 - ローカルマシンの dotfiles 適用によって生じる脆弱性（credential 漏洩、symlink attack、TOCTOU、privilege escalation など）
-- AI agent（Claude Code / Codex）に予期せぬ権限を与える設定不備
+- AI agent（Claude Code）に予期せぬ権限を与える設定不備
 - `mcp-with-keychain-secret` wrapper の credential 取り扱い
 - `pwattach` による実 Chrome 経由のブラウザ操作に関連する blast radius の逸脱
 - chezmoi templating の injection

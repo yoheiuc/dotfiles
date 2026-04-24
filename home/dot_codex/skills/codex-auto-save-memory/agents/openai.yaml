@@ -1,4 +1,0 @@
-interface:
-  display_name: "Codex Auto Save Memory"
-  short_description: "Auto-save memory from Stop hooks"
-  default_prompt: "Use $codex-auto-save-memory to configure or inspect automatic memory capture for Codex hooks."

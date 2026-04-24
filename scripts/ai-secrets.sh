@@ -84,7 +84,7 @@ main() {
 
   echo
   printf '\033[1m=== AI shared secrets ===\033[0m\n'
-  printf 'Claude Code / Codex 共通で使う credential を macOS Keychain に保存します。\n'
+  printf 'Claude Code で使う credential を macOS Keychain に保存します。\n'
   printf '入力は表示されず、shell history にも残りません。\n\n'
 
   brave_next="$(prompt_secret 'Brave Search API Key' "${brave_current}")"
@@ -94,7 +94,7 @@ main() {
   ok "Saved Brave API key to Keychain service ${KEYCHAIN_SERVICE}"
   remove_legacy_env_file
 
-  log "Refreshing Claude Code / Codex MCP config..."
+  log "Refreshing Claude Code MCP config..."
   bash "${REPO_ROOT}/scripts/ai-repair.sh"
 }
 
