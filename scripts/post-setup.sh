@@ -4,7 +4,6 @@
 # Responsibility:
 #   - Install/update Claude Code CLI via native installer and keep it on latest
 #   - Install clasp (via npm install -g @google/clasp)
-#   - Register Serena MCP server into Claude Code (idempotent)
 #   - Register Sequential Thinking MCP into Claude Code (idempotent)
 #   - Install Google Workspace CLI (gws) skills under ~/.claude/skills (idempotent)
 #   - Install find-skills (vercel-labs/skills) so Claude can discover skills from natural-language queries (idempotent)
@@ -121,13 +120,10 @@ else
   warn "aider not found — install via Brewfile (brew \"aider\")"
 fi
 
-# ---- Serena MCP (Claude Code) ---------------------------------------------
-if ! command -v uvx &>/dev/null; then
-  log "Serena MCP registration..."
-  warn "uvx not found — Serena MCP skipped (run \`make install\` first)"
-else
-  bash "${REPO_ROOT}/scripts/ai-repair.sh"
-fi
+# ---- ai-repair (Claude Code local drift) ----------------------------------
+# ai-repair は Claude Code 設定ベースラインの補正と legacy MCP 掃除を担当。
+# post-setup の一環として必ず走らせる（冪等）。
+bash "${REPO_ROOT}/scripts/ai-repair.sh"
 
 # ---- Sequential Thinking MCP (Claude Code) --------------------------------
 log "Sequential Thinking MCP..."

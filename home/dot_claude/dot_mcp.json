@@ -18,16 +18,6 @@
         "-y",
         "@tuannvm/vision-mcp-server"
       ]
-    },
-    "serena": {
-      "command": "bash",
-      "args": [
-        "-lc",
-        "\"$HOME/.local/bin/serena-mcp\" claude-code"
-      ],
-      "env": {
-        "UV_NATIVE_TLS": "true"
-      }
     }
   }
 }

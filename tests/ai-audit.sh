@@ -8,7 +8,7 @@ source "${REPO_ROOT}/tests/lib/testlib.sh"
 tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-ai-audit-test.XXXXXX")"
 trap 'rm -rf "${tmpdir}"' EXIT
 
-mkdir -p "${tmpdir}/home/.claude" "${tmpdir}/home/.serena"
+mkdir -p "${tmpdir}/home/.claude"
 mkdir -p "${tmpdir}/scripts/lib"
 export HOME="${tmpdir}/home"
 export XDG_CONFIG_HOME="${HOME}/.config"
@@ -111,23 +111,11 @@ cat > "${HOME}/.claude.json" <<EOF
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@tuannvm/vision-mcp-server"]
-    },
-    "serena": {
-      "type": "stdio",
-      "command": "${HOME}/.local/bin/serena-mcp",
-      "args": ["claude-code"],
-      "env": {"UV_NATIVE_TLS": "true"}
     }
   }
 }
 EOF
 : > "${HOME}/.claude/CLAUDE.md"
-cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
-language_backend: LSP
-web_dashboard: true
-web_dashboard_open_on_launch: false
-project_serena_folder_location: "$projectDir/.serena"
-EOF
 run_capture bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should succeed in the clean case"
 assert_contains "${RUN_OUTPUT}" "Claude settings: present" "ai-audit should report local claude settings"
@@ -139,8 +127,8 @@ assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: registered" "ai-audit s
 assert_not_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should not expect retired Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: registered" "ai-audit should validate Claude Slack MCP"
-assert_contains "${RUN_OUTPUT}" "Serena config: web_dashboard enabled" "ai-audit should validate Serena config"
-assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should report Claude MCP registration"
+assert_not_contains "${RUN_OUTPUT}" "Claude Code serena MCP: legacy entry present" "ai-audit should not flag serena when absent"
+assert_not_contains "${RUN_OUTPUT}" "Retired Serena state still on disk" "ai-audit should not flag Serena state when absent"
 assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.codex" "ai-audit should report absence of retired Codex state"
 assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.gemini" "ai-audit should report absence of retired Gemini state"
 assert_contains "${RUN_OUTPUT}" "AI config audit looks good." "ai-audit should report a clean result"
@@ -152,22 +140,9 @@ cat > "${HOME}/.claude/settings.json" <<'EOF'
 }
 cc-bridge
 EOF
-cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
-language_backend: JetBrains
-web_dashboard: false
-web_dashboard_open_on_launch: true
-project_serena_folder_location: "/tmp/serena"
-EOF
-cat > "${HOME}/.claude.json" <<EOF
+cat > "${HOME}/.claude.json" <<'EOF'
 {
-  "mcpServers": {
-    "serena": {
-      "type": "stdio",
-      "command": "${HOME}/.local/bin/serena-mcp",
-      "args": ["claude-code"],
-      "env": {}
-    }
-  }
+  "mcpServers": {}
 }
 EOF
 : > "${HOME}/.claude/settings.json.pre-unmanage-test"
@@ -187,8 +162,6 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/auto-
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: missing or drifted" "ai-audit should detect missing Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: missing or drifted" "ai-audit should detect missing Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: missing or drifted" "ai-audit should detect missing Claude Slack MCP"
-assert_contains "${RUN_OUTPUT}" "Serena config: language_backend should be LSP" "ai-audit should detect Serena config drift"
-assert_contains "${RUN_OUTPUT}" "Claude Code Serena MCP: registered" "ai-audit should detect Claude MCP registration"
 assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.codex" "ai-audit should flag retired Codex state"
 assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.gemini" "ai-audit should flag retired Gemini state"
 assert_contains "${RUN_OUTPUT}" "Claude settings backups: found backup files to review or delete" "ai-audit should report backup files"
@@ -214,6 +187,11 @@ cat > "${HOME}/.claude.json" <<EOF
   }
 }
 EOF
+# Simulate leftover Serena wrapper + config so the audit flags them as retired state.
+mkdir -p "${HOME}/.local/bin" "${HOME}/.serena"
+: > "${HOME}/.local/bin/serena-mcp"
+chmod +x "${HOME}/.local/bin/serena-mcp"
+: > "${HOME}/.serena/serena_config.yml"
 rm -f "${HOME}/.claude/settings.json.pre-unmanage-test"
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
@@ -229,13 +207,6 @@ cat > "${HOME}/.claude/settings.json" <<'EOF'
   }
 }
 EOF
-cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
-language_backend: LSP
-web_dashboard: true
-web_dashboard_open_on_launch: false
-project_serena_folder_location: "$projectDir/.serena"
-EOF
-
 run_capture bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational when legacy MCPs are present"
 assert_contains "${RUN_OUTPUT}" "Claude Code playwright MCP: legacy entry present" "ai-audit should flag legacy Claude Code playwright MCP"
@@ -246,5 +217,8 @@ assert_contains "${RUN_OUTPUT}" "Claude Code github MCP: legacy entry present" "
 assert_contains "${RUN_OUTPUT}" "Claude Code owlocr MCP: legacy entry present" "ai-audit should flag legacy Claude Code owlocr MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: legacy entry present" "ai-audit should flag legacy Claude Code chrome-devtools MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: legacy entry present" "ai-audit should flag legacy Claude Code brave-search MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code serena MCP: legacy entry present" "ai-audit should flag legacy Claude Code serena MCP"
+assert_contains "${RUN_OUTPUT}" "Retired Serena state still on disk" "ai-audit should flag leftover Serena state"
+assert_contains "${RUN_OUTPUT}" "Retired Serena wrapper still present" "ai-audit should flag leftover Serena wrapper"
 
 pass_test "tests/ai-audit.sh"

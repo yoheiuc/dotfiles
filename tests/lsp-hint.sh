@@ -2,7 +2,7 @@
 # tests/lsp-hint.sh — regression test for the PreToolUse Grep advisory hook.
 #
 # The hook (home/dot_claude/executable_lsp-hint.sh) reads JSON on stdin,
-# extracts tool_input.pattern, and emits a Serena advisory to stderr ONLY
+# extracts tool_input.pattern, and emits an LSP advisory to stderr ONLY
 # when the pattern looks like an explicit code-symbol search (leading space
 # + definition keyword). It never blocks — all paths must exit 0.
 
@@ -18,7 +18,7 @@ HOOK="${REPO_ROOT}/home/dot_claude/executable_lsp-hint.sh"
 run_capture bash -c "echo '{\"tool_input\":{\"pattern\":\"def main\"}}' | '${HOOK}'"
 assert_eq "0" "${RUN_STATUS}" "hook should exit 0 on trigger case"
 assert_contains "${RUN_OUTPUT}" "lsp-hint" "hook should emit advisory on def pattern"
-assert_contains "${RUN_OUTPUT}" "Serena" "hook advisory should mention Serena"
+assert_contains "${RUN_OUTPUT}" "LSP" "hook advisory should mention the native LSP tool"
 
 # 2. Trigger case: ` class ` pattern.
 run_capture bash -c "echo '{\"tool_input\":{\"pattern\":\"class MyClass\"}}' | '${HOOK}'"

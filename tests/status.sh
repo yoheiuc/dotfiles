@@ -16,7 +16,6 @@ mkdir -p \
   "${fake_repo}/scripts" \
   "${stub_bin}" \
   "${tmpdir}/home/.claude" \
-  "${tmpdir}/home/.serena" \
   "${tmpdir}/home/Library/Application Support/com.github.domt4.homebrew-autoupdate" \
   "${tmpdir}/home/Library/LaunchAgents"
 
@@ -136,12 +135,6 @@ cat > "${HOME}/.claude/settings.json" <<'EOF'
 }
 EOF
 : > "${HOME}/.claude/CLAUDE.md"
-cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
-language_backend: LSP
-web_dashboard: true
-web_dashboard_open_on_launch: false
-project_serena_folder_location: "$projectDir/.serena"
-EOF
 run_capture env \
   GIT_STATUS_OUT=$'## main...origin/main\n' \
   CHEZMOI_STATUS_OUT='' \
@@ -154,19 +147,12 @@ assert_contains "${RUN_OUTPUT}" "chezmoi managed files: clean" "status should re
 assert_contains "${RUN_OUTPUT}" "Brewfile: all declared packages present" "status should report Brew health"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "status should enforce disabled brew autoupdate policy"
 assert_contains "${RUN_OUTPUT}" "Claude settings: auto-update channel is latest" "status should validate Claude channel"
-assert_contains "${RUN_OUTPUT}" "Serena config: expected defaults detected" "status should audit Serena config"
 assert_contains "${RUN_OUTPUT}" "Status looks good." "status should summarize a clean state"
 
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "stable"
 }
-EOF
-cat > "${HOME}/.serena/serena_config.yml" <<'EOF'
-language_backend: JetBrains
-web_dashboard: false
-web_dashboard_open_on_launch: true
-project_serena_folder_location: "/tmp/serena"
 EOF
 cat > "${HOME}/Library/Application Support/com.github.domt4.homebrew-autoupdate/brew_autoupdate" <<'EOF'
 #!/bin/sh
@@ -189,7 +175,6 @@ assert_contains "${RUN_OUTPUT}" "chezmoi managed files: pending changes detected
 assert_contains "${RUN_OUTPUT}" "Brewfile: missing packages or check failed" "status should warn on Brew failures"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: enabled, but dotfiles policy is disabled" "status should warn when brew autoupdate is enabled"
 assert_contains "${RUN_OUTPUT}" "Claude settings: auto-update channel should be latest" "status should detect Claude channel drift"
-assert_contains "${RUN_OUTPUT}" "Serena config: expected defaults drifted" "status should detect Serena config drift"
 assert_contains "${RUN_OUTPUT}" "Attention needed:" "status should summarize warnings"
 
 pass_test "tests/status.sh"

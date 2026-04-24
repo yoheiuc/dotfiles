@@ -71,12 +71,6 @@ esac
 EOF
 chmod +x "${tmpdir}/security"
 
-cat > "${fake_home}/.local/bin/serena-mcp" <<'EOF'
-#!/usr/bin/env bash
-exit 0
-EOF
-chmod +x "${fake_home}/.local/bin/serena-mcp"
-
 run_capture env \
   HOME="${fake_home}" \
   XDG_CONFIG_HOME="${fake_home}/.config" \

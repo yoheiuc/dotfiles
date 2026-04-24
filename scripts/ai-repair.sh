@@ -24,73 +24,13 @@ if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
 fi
 trap 'rmdir "${LOCK_DIR}" 2>/dev/null || true' EXIT
 
-SERENA_WRAPPER="${HOME}/.local/bin/serena-mcp"
-SERENA_CONFIG_DIR="${HOME}/.serena"
-SERENA_CONFIG_PATH="${SERENA_CONFIG_DIR}/serena_config.yml"
-SERENA_CONFIG_BACKUP_SUFFIX="$(date +%Y%m%d%H%M%S)"
-
 CLAUDE_JSON="${HOME}/.claude.json"
 CLAUDE_SETTINGS_JSON="${HOME}/.claude/settings.json"
 
 restart_needed=0
 
-write_serena_config() {
-  mkdir -p "${SERENA_CONFIG_DIR}"
-  cat > "${SERENA_CONFIG_PATH}" <<'EOF'
-language_backend: LSP
-web_dashboard: true
-web_dashboard_open_on_launch: false
-project_serena_folder_location: "$projectDir/.serena"
-projects: []
-EOF
-}
-
-# ---- Serena local config -----------------------------------------------------
-log "Serena local config..."
-if [[ ! -f "${SERENA_CONFIG_PATH}" ]]; then
-  write_serena_config
-  ok "Created Serena config at ${SERENA_CONFIG_PATH}"
-else
-  serena_config_ok=1
-  if ! ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^language_backend:[[:space:]]*LSP([[:space:]]|$)'; then
-    serena_config_ok=0
-  fi
-  if ! ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^web_dashboard:[[:space:]]*true([[:space:]]|$)'; then
-    serena_config_ok=0
-  fi
-  if ! ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^web_dashboard_open_on_launch:[[:space:]]*false([[:space:]]|$)'; then
-    serena_config_ok=0
-  fi
-  if ! ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^project_serena_folder_location:[[:space:]]*"\$projectDir/\.serena"([[:space:]]|$)'; then
-    serena_config_ok=0
-  fi
-  if ! ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^projects:'; then
-    serena_config_ok=0
-  fi
-
-  if [[ "${serena_config_ok}" == "1" ]]; then
-    ok "Serena config already matches expected defaults"
-  else
-    cp "${SERENA_CONFIG_PATH}" "${SERENA_CONFIG_PATH}.pre-ai-repair-${SERENA_CONFIG_BACKUP_SUFFIX}"
-    write_serena_config
-    ok "Reset Serena config to expected defaults"
-    ok "Backup saved to ${SERENA_CONFIG_PATH}.pre-ai-repair-${SERENA_CONFIG_BACKUP_SUFFIX}"
-  fi
-  unset serena_config_ok
-fi
-
-# ---- Serena wrapper ----------------------------------------------------------
-log "Serena wrapper..."
-if [[ -x "${SERENA_WRAPPER}" ]]; then
-  ok "Wrapper present: ${SERENA_WRAPPER}"
-else
-  warn "Wrapper missing: ${SERENA_WRAPPER}"
-  warn "  Run: chezmoi apply"
-fi
-
 # ---- Claude Code MCP registration (JSON direct) -----------------------------
 log "Claude Code MCP registration..."
-SERENA_CLAUDE_ENTRY='{"type":"stdio","command":"'"${SERENA_WRAPPER}"'","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}'
 EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
 # Slack's clientId / callbackPort below are public values published in Slack's
 # official docs (https://docs.slack.dev/ai/slack-mcp-server/connect-to-claude/),
@@ -101,25 +41,10 @@ SLACK_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.slack.com/mcp","oauth":{"c
 # toolchain. Requires macOS 13+ and Node.js 18+. If MCP connect fails,
 # verify with: npx -y @tuannvm/vision-mcp-server --help
 VISION_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@tuannvm/vision-mcp-server"]}'
-serena_cmd_state="$(ai_config_mcp_registration_state "${CLAUDE_JSON}" serena "${SERENA_WRAPPER}")"
-serena_uv_tls="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('serena',{}).get('env',{}).get('UV_NATIVE_TLS','')" 2>/dev/null || true)"
 claude_vision_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)"
 claude_vision_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 claude_slack_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
-
-if [[ "${serena_cmd_state}" == "ok" && "${serena_uv_tls}" == "true" ]]; then
-  ok "Claude Code: serena already registered with wrapper and UV_NATIVE_TLS"
-else
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" serena "${SERENA_CLAUDE_ENTRY}"
-  if [[ "${serena_cmd_state}" != "ok" ]]; then
-    ok "Claude Code: serena registration repaired/created"
-  else
-    ok "Claude Code: serena UV_NATIVE_TLS env added"
-  fi
-  restart_needed=1
-fi
-unset serena_cmd_state serena_uv_tls
 
 _vision_expected_args='-y|@tuannvm/vision-mcp-server'
 if [[ "${claude_vision_cmd}" != "npx" || "${claude_vision_args}" != "${_vision_expected_args}" ]]; then
@@ -154,11 +79,11 @@ unset claude_vision_cmd claude_vision_args claude_exa_url claude_slack_url
 # settings.json), but chezmoi does not auto-remove the script file / cache dir
 # once their source is deleted. Clean them up actively so other machines
 # converge on `make ai-repair`.
-_orphan_scripts=("${HOME}/.claude/session-topic.sh")
+_orphan_scripts=("${HOME}/.claude/session-topic.sh" "${HOME}/.local/bin/serena-mcp")
 for _orphan in "${_orphan_scripts[@]}"; do
   if [[ -e "${_orphan}" ]]; then
     rm -f "${_orphan}"
-    ok "Claude Code: removed retired hook script ${_orphan/#${HOME}/\~}"
+    ok "Claude Code: removed retired helper ${_orphan/#${HOME}/\~}"
   fi
 done
 unset _orphan_scripts
@@ -181,7 +106,13 @@ unset _orphan
 #   brave-search     → Exa MCP covers the same web-search surface; brave required
 #                      a Keychain-backed API key whose value stopped justifying the
 #                      extra wrapper + ai-secrets flow
-for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search; do
+#   serena           → Claude Code native LSP tool + official per-language LSP
+#                      plugins (claude-plugins-official: pyright-lsp / typescript-lsp /
+#                      gopls-lsp / rust-analyzer-lsp / clangd-lsp / csharp-lsp /
+#                      jdtls-lsp / kotlin-lsp / lua-lsp / php-lsp / ruby-lsp /
+#                      swift-lsp). Cross-file rename / find-refs / diagnostics are
+#                      covered by native tool; Serena wrapper + uvx dependency removed.
+for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search serena; do
   if [[ "$(ai_config_json_remove_mcp "${CLAUDE_JSON}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Claude Code: legacy ${_legacy} MCP removed"
     restart_needed=1

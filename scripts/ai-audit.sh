@@ -62,7 +62,6 @@ printf '\033[1m=== AI config audit ===\033[0m\n'
 
 section "Local Config Files"
 describe_file "Claude settings" "${HOME}/.claude/settings.json"
-describe_file "Serena config" "${HOME}/.serena/serena_config.yml"
 
 section "Shared Guidance"
 describe_file "Claude guidance" "${HOME}/.claude/CLAUDE.md"
@@ -169,7 +168,7 @@ if [[ -f "${_claude_json}" ]]; then
   #   chrome-devtools  → playwright-cli attach --cdp=chrome (pwattach helper)
   #   brave-search     → Exa MCP alone covers web search
   # Match on key presence so HTTP-type entries without `command` are still caught.
-  for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search; do
+  for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search serena; do
     if [[ "$(ai_config_json_read "${_claude_json}" "'present' if '${_legacy}' in d.get('mcpServers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
       attention "Claude Code ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi
@@ -179,51 +178,17 @@ else
   attention "Claude Code MCP config: missing (${_claude_json})"
 fi
 
-section "Serena Config"
-if [[ -f "${HOME}/.serena/serena_config.yml" ]]; then
-  if ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^language_backend:[[:space:]]*LSP([[:space:]]|$)'; then
-    ok "Serena config: language_backend is LSP"
-  else
-    attention "Serena config: language_backend should be LSP"
-  fi
-
-  if ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^web_dashboard:[[:space:]]*true([[:space:]]|$)'; then
-    ok "Serena config: web_dashboard enabled"
-  else
-    attention "Serena config: web_dashboard should be true"
-  fi
-
-  if ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^web_dashboard_open_on_launch:[[:space:]]*false([[:space:]]|$)'; then
-    ok "Serena config: dashboard auto-open disabled"
-  else
-    attention "Serena config: web_dashboard_open_on_launch should be false"
-  fi
-
-  if ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^project_serena_folder_location:[[:space:]]*"\$projectDir/\.serena"([[:space:]]|$)'; then
-    ok "Serena config: project metadata stored in-project"
-  else
-    attention 'Serena config: project_serena_folder_location should be "$projectDir/.serena"'
-  fi
-else
-  attention "Serena config: missing (${HOME}/.serena/serena_config.yml)"
+section "Retired Serena state"
+# Serena MCP was retired in favor of Claude Code's native LSP tool plus the
+# per-language plugins shipped via claude-plugins-official. Leftover state from
+# the old install is harmless but flagged so the user can clean up. The
+# per-MCP legacy scan above already covers the .claude.json registration.
+if [[ -e "${HOME}/.serena" ]]; then
+  attention "Retired Serena state still on disk: ${HOME}/.serena (safe to rm -rf if no longer needed)"
 fi
-
-section "MCP Registration"
-_serena_wrapper="${HOME}/.local/bin/serena-mcp"
-
-_claude_json="${HOME}/.claude.json"
-case "$(ai_config_mcp_registration_state "${_claude_json}" serena "${_serena_wrapper}")" in
-  ok)
-    ok "Claude Code Serena MCP: registered"
-    ;;
-  wrong-command)
-    attention "Claude Code Serena MCP: wrong command — run make ai-repair"
-    ;;
-  missing)
-    attention "Claude Code Serena MCP: missing — run make ai-repair"
-    ;;
-esac
-unset _serena_wrapper _claude_json
+if [[ -e "${HOME}/.local/bin/serena-mcp" ]]; then
+  attention "Retired Serena wrapper still present: ${HOME}/.local/bin/serena-mcp (should be removed by chezmoi apply)"
+fi
 
 section "Backup Files"
 report_optional_backups "Claude settings backups" "${HOME}/.claude/settings.json.pre-unmanage-*"

@@ -130,7 +130,6 @@ fi
 
 section "AI Config"
 audit_local_file "Claude settings" "${HOME}/.claude/settings.json"
-audit_local_file "Serena config" "${HOME}/.serena/serena_config.yml"
 audit_local_file "Shared Claude guidance" "${HOME}/.claude/CLAUDE.md"
 
 if [[ -f "${HOME}/.claude/settings.json" ]]; then
@@ -139,31 +138,6 @@ if [[ -f "${HOME}/.claude/settings.json" ]]; then
   else
     attention "Claude settings: auto-update channel should be latest"
   fi
-fi
-
-if [[ -f "${HOME}/.serena/serena_config.yml" ]]; then
-  serena_config_attention=0
-  if ! ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^language_backend:[[:space:]]*LSP([[:space:]]|$)'; then
-    serena_config_attention=1
-  fi
-  if ! ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^web_dashboard:[[:space:]]*true([[:space:]]|$)'; then
-    serena_config_attention=1
-  fi
-  if ! ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^web_dashboard_open_on_launch:[[:space:]]*false([[:space:]]|$)'; then
-    serena_config_attention=1
-  fi
-  if ! ai_config_file_contains_regex "${HOME}/.serena/serena_config.yml" '^project_serena_folder_location:[[:space:]]*"\$projectDir/\.serena"([[:space:]]|$)'; then
-    serena_config_attention=1
-  fi
-
-  if [[ "${serena_config_attention}" == "0" ]]; then
-    ok "Serena config: expected defaults detected"
-  else
-    attention "Serena config: expected defaults drifted"
-  fi
-  unset serena_config_attention
-else
-  attention "Serena config: missing"
 fi
 
 echo

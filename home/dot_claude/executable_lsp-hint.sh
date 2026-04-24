@@ -3,7 +3,7 @@
 #
 # When an agent uses Grep with a pattern that looks like it's searching
 # for a code symbol definition (literal `def ` / `function ` / `class `),
-# emit an advisory to stderr suggesting Serena's LSP-backed tools.
+# emit an advisory to stderr suggesting Claude Code's native LSP tool.
 # Never blocks (always exit 0). The agent sees the hint and can decide
 # whether to switch tools.
 #
@@ -28,9 +28,9 @@ fi
 if printf '%s' "${pattern}" | grep -Eq '(^| )(def |function |class |interface |struct |trait |impl )'; then
   cat >&2 <<'EOF'
 [lsp-hint] This Grep pattern looks like a code-symbol search.
-  Consider mcp__serena__find_symbol / find_references / get_symbol_detail
-  instead — they use LSP and return structured results (no false positives
-  from comments / strings). Keep Grep for text search; use Serena for code
+  Consider the native LSP tool (go-to-definition / find-references / hover)
+  instead — LSP returns structured results with no false positives from
+  comments or strings. Keep Grep for text search; use LSP for code
   navigation.
 EOF
 fi

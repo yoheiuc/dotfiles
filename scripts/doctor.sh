@@ -187,7 +187,7 @@ section "uv (optional)"
 if uv --version &>/dev/null; then
   ok "$(uv --version)"
 else
-  warn "uv not found — needed for Serena MCP (uvx)"
+  warn "uv not found — optional Python toolchain; no longer required after Serena retirement"
 fi
 
 section "brew-autoupdate (optional)"
@@ -200,39 +200,6 @@ if command -v launchctl >/dev/null 2>&1 && command -v plutil >/dev/null 2>&1; th
 else
   warn "brew autoupdate audit skipped — launchctl/plutil unavailable"
 fi
-
-section "Serena config (optional)"
-SERENA_CONFIG_PATH="${HOME}/.serena/serena_config.yml"
-if [[ -f "${SERENA_CONFIG_PATH}" ]]; then
-  ok "serena config: present (${SERENA_CONFIG_PATH})"
-
-  if ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^language_backend:[[:space:]]*LSP([[:space:]]|$)'; then
-    ok "serena config: language_backend = LSP"
-  else
-    warn "serena config: language_backend is not LSP"
-  fi
-
-  if ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^web_dashboard:[[:space:]]*true([[:space:]]|$)'; then
-    ok "serena config: web_dashboard = true"
-  else
-    warn "serena config: web_dashboard should be true"
-  fi
-
-  if ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^web_dashboard_open_on_launch:[[:space:]]*false([[:space:]]|$)'; then
-    ok "serena config: dashboard auto-open disabled"
-  else
-    warn "serena config: web_dashboard_open_on_launch should be false"
-  fi
-
-  if ai_config_file_contains_regex "${SERENA_CONFIG_PATH}" '^project_serena_folder_location:[[:space:]]*"\$projectDir/\.serena"([[:space:]]|$)'; then
-    ok "serena config: project metadata stored in-project"
-  else
-    warn 'serena config: project_serena_folder_location should be "$projectDir/.serena"'
-  fi
-else
-  warn "serena config missing — expected at ${SERENA_CONFIG_PATH}"
-fi
-unset SERENA_CONFIG_PATH
 
 section "gcloud (optional)"
 if command -v gcloud &>/dev/null; then
@@ -329,17 +296,11 @@ if command -v claude &>/dev/null; then
     warn "auto-update channel should be latest — run: ./scripts/post-setup.sh"
   fi
   _claude_json="${HOME}/.claude.json"
-  case "$(ai_config_mcp_registration_state "${_claude_json}" serena "${HOME}/.local/bin/serena-mcp")" in
-    ok)
-      ok "serena MCP: registered"
-      ;;
-    wrong-command)
-      warn "serena MCP: registered with wrong command — run: make ai-repair"
-      ;;
-    missing)
-      warn "serena MCP: not registered — run: make ai-repair"
-      ;;
-  esac
+  if [[ "$(ai_config_json_read "${_claude_json}" "'present' if 'serena' in d.get('mcpServers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
+    warn "serena MCP: legacy registration detected — run: make ai-repair (retired in favor of native LSP)"
+  else
+    ok "serena MCP: removed (native LSP plugins in use)"
+  fi
   unset _claude_json
 
   if [[ -f "${HOME}/.claude/skills/frontend-design/SKILL.md" ]]; then

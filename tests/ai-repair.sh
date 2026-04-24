@@ -74,20 +74,11 @@ EOF
 chmod +x "${tmpdir}/security"
 export SECURITY_BIN="${tmpdir}/security"
 
-cat > "${HOME}/.local/bin/serena-mcp" <<'EOF'
-#!/usr/bin/env bash
-exit 0
-EOF
-chmod +x "${HOME}/.local/bin/serena-mcp"
-
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
-assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when creating missing Serena state"
-assert_contains "${RUN_OUTPUT}" "Created Serena config" "ai-repair should create Serena config when missing"
-assert_contains "${RUN_OUTPUT}" "serena registration repaired/created" "ai-repair should register Serena for Claude Code"
+assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on first run"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel set to latest" "ai-repair should normalize Claude Code channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env set" "ai-repair should set ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hooks reset to baseline" "ai-repair should install baseline hooks"
-assert_contains "$(cat "${HOME}/.serena/serena_config.yml")" 'project_serena_folder_location: "$projectDir/.serena"' "ai-repair should write the expected Serena config"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"autoUpdatesChannel": "latest"' "ai-repair should write Claude auto-update channel"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"ENABLE_TOOL_SEARCH": "auto:5"' "ai-repair should write ENABLE_TOOL_SEARCH env toggle"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/lsp-hint.sh"' "ai-repair should wire lsp-hint PreToolUse hook"
@@ -114,9 +105,7 @@ assert_contains "$(cat "${HOME}/.claude/settings.json")" '"effortLevel": "high"'
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "my-statusline"' "ai-repair must preserve user-managed statusLine"
 
 # Verify Claude Code JSON registration
-claude_json_cmd="$(python3 -c "import json; d=json.load(open('${HOME}/.claude.json')); print(d['mcpServers']['serena']['command'])")"
-assert_eq "${HOME}/.local/bin/serena-mcp" "${claude_json_cmd}" "ai-repair should write the correct serena command to .claude.json"
-
+assert_not_contains "$(cat "${HOME}/.claude.json")" '"serena"' "ai-repair should not register retired Serena MCP for Claude Code"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '"github"' "ai-repair should not register removed GitHub MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-repair should register Exa MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL for Claude Code"
@@ -173,6 +162,10 @@ d['mcpServers']['brave-search'] = {
   'type': 'stdio', 'command': '${HOME}/.local/bin/mcp-with-keychain-secret',
   'args': ['BRAVE_API_KEY', 'dotfiles.ai.mcp', 'brave-api-key', 'npx', '-y', '@modelcontextprotocol/server-brave-search']
 }
+d['mcpServers']['serena'] = {
+  'type': 'stdio', 'command': '${HOME}/.local/bin/serena-mcp',
+  'args': ['claude-code'], 'env': {'UV_NATIVE_TLS': 'true'}
+}
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
 
@@ -186,6 +179,7 @@ assert_contains "${RUN_OUTPUT}" "legacy github MCP removed" "ai-repair should an
 assert_contains "${RUN_OUTPUT}" "legacy owlocr MCP removed" "ai-repair should announce legacy owlocr removal"
 assert_contains "${RUN_OUTPUT}" "legacy chrome-devtools MCP removed" "ai-repair should announce legacy chrome-devtools removal"
 assert_contains "${RUN_OUTPUT}" "legacy brave-search MCP removed" "ai-repair should announce legacy brave-search removal"
+assert_contains "${RUN_OUTPUT}" "legacy serena MCP removed" "ai-repair should announce legacy serena removal"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should strip legacy playwright from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-filesystem' "ai-repair should strip legacy filesystem from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should strip legacy drawio from .claude.json"
@@ -194,6 +188,7 @@ assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/serve
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'jangisaac-dev/owlocr-mcp' "ai-repair should strip legacy owlocr from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should strip legacy chrome-devtools from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should strip legacy brave-search from .claude.json"
+assert_not_contains "$(cat "${HOME}/.claude.json")" '/.local/bin/serena-mcp' "ai-repair should strip legacy serena wrapper reference from .claude.json"
 
 # Retired session-topic hook cleanup — simulate an old dotfiles install that
 # had the Haiku session-topic feature installed, and verify convergence:
@@ -204,6 +199,10 @@ touch "${HOME}/.claude/session-topic.sh"
 chmod +x "${HOME}/.claude/session-topic.sh"
 mkdir -p "${HOME}/.claude/session-topics"
 touch "${HOME}/.claude/session-topics/abc123.count"
+# Leftover Serena wrapper should be cleaned by the same retired-helper loop.
+mkdir -p "${HOME}/.local/bin"
+touch "${HOME}/.local/bin/serena-mcp"
+chmod +x "${HOME}/.local/bin/serena-mcp"
 python3 -c "
 import json
 p = '${HOME}/.claude/settings.json'
@@ -216,11 +215,12 @@ with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when cleaning retired session-topic hook"
-assert_contains "${RUN_OUTPUT}" "removed retired hook script" "ai-repair should announce session-topic.sh removal"
+assert_contains "${RUN_OUTPUT}" "removed retired helper" "ai-repair should announce session-topic.sh removal"
 assert_contains "${RUN_OUTPUT}" "removed retired session-topics cache" "ai-repair should announce session-topics cache removal"
 assert_not_contains "$(cat "${HOME}/.claude/settings.json")" 'session-topic.sh' "ai-repair should strip orphan UserPromptSubmit hook from settings.json"
 assert_not_contains "$(cat "${HOME}/.claude/settings.json")" 'UserPromptSubmit' "ai-repair should leave no UserPromptSubmit hook entry in settings.json"
 [[ ! -e "${HOME}/.claude/session-topic.sh" ]] || fail_test "session-topic.sh should be removed"
 [[ ! -d "${HOME}/.claude/session-topics" ]] || fail_test "session-topics cache dir should be removed"
+[[ ! -e "${HOME}/.local/bin/serena-mcp" ]] || fail_test "retired serena-mcp wrapper should be removed"
 
 pass_test "tests/ai-repair.sh"

@@ -227,7 +227,7 @@ run_doctor() {
   mkdir -p "${home_dir}/.config/git/hooks"
   : > "${home_dir}/.config/git/hooks/pre-commit"
   chmod +x "${home_dir}/.config/git/hooks/pre-commit"
-  mkdir -p "${home_dir}/dotfiles/scripts/lib" "${home_dir}/.serena" "${home_dir}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_dir}/Library/LaunchAgents"
+  mkdir -p "${home_dir}/dotfiles/scripts/lib" "${home_dir}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_dir}/Library/LaunchAgents"
   cp "${REPO_ROOT}/scripts/lib/ui.sh" "${home_dir}/dotfiles/scripts/lib/ui.sh"
   cp "${REPO_ROOT}/scripts/lib/ai-config.sh" "${home_dir}/dotfiles/scripts/lib/ai-config.sh"
   cp "${REPO_ROOT}/scripts/lib/ai_config.py" "${home_dir}/dotfiles/scripts/lib/ai_config.py"
@@ -240,18 +240,11 @@ run_doctor() {
 
 # ---- Scenario 1: healthy ----
 home_ok="${tmpdir}/home-ok"
-mkdir -p "${home_ok}/.serena" "${home_ok}/.local/bin" "${home_ok}/.local/lib/python-ssl-compat" "${home_ok}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_ok}/Library/LaunchAgents"
+mkdir -p "${home_ok}/.local/bin" "${home_ok}/.local/lib/python-ssl-compat" "${home_ok}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_ok}/Library/LaunchAgents"
 cp "${REPO_ROOT}/home/dot_local/lib/python-ssl-compat/sitecustomize.py" "${home_ok}/.local/lib/python-ssl-compat/sitecustomize.py"
-cat > "${home_ok}/.claude.json" <<EOF
+cat > "${home_ok}/.claude.json" <<'EOF'
 {
-  "mcpServers": {
-    "serena": {
-      "type": "stdio",
-      "command": "${home_ok}/.local/bin/serena-mcp",
-      "args": ["claude-code"],
-      "env": {}
-    }
-  }
+  "mcpServers": {}
 }
 EOF
 mkdir -p "${home_ok}/.claude"
@@ -259,12 +252,6 @@ cat > "${home_ok}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "latest"
 }
-EOF
-cat > "${home_ok}/.serena/serena_config.yml" <<'EOF'
-language_backend: LSP
-web_dashboard: true
-web_dashboard_open_on_launch: false
-project_serena_folder_location: "$projectDir/.serena"
 EOF
 run_capture run_doctor "${home_ok}" \
   LAUNCHCTL_AUTUPDATE_LOADED=0 \
@@ -275,26 +262,32 @@ assert_contains "${RUN_OUTPUT}" "Daily checks live in: make status / make ai-aud
 assert_contains "${RUN_OUTPUT}" "Brewfile: all packages present" "doctor should report Brewfile health"
 assert_contains "${RUN_OUTPUT}" "auto-update channel: latest" "doctor should validate Claude channel"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "doctor should validate disabled brew autoupdate policy"
-assert_contains "${RUN_OUTPUT}" "serena config: language_backend = LSP" "doctor should validate Serena global config"
-assert_contains "${RUN_OUTPUT}" "serena MCP: registered" "doctor should detect Claude serena registration"
+assert_contains "${RUN_OUTPUT}" "serena MCP: removed (native LSP plugins in use)" "doctor should confirm Serena is retired"
 assert_contains "${RUN_OUTPUT}" "Google Cloud SDK" "doctor should detect gcloud version"
 assert_contains "${RUN_OUTPUT}" "VERIFY_X509_STRICT bypass: active" "doctor should confirm SSL compat is active"
 assert_contains "${RUN_OUTPUT}" "clasp 2.5.0" "doctor should detect clasp version"
 
 # ---- Scenario 2: drift ----
 home_drift="${tmpdir}/home-drift"
-mkdir -p "${home_drift}/.serena" "${home_drift}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_drift}/Library/LaunchAgents"
+mkdir -p "${home_drift}/Library/Application Support/com.github.domt4.homebrew-autoupdate" "${home_drift}/Library/LaunchAgents"
 mkdir -p "${home_drift}/.claude"
 cat > "${home_drift}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "stable"
 }
 EOF
-cat > "${home_drift}/.serena/serena_config.yml" <<'EOF'
-language_backend: JetBrains
-web_dashboard: false
-web_dashboard_open_on_launch: true
-project_serena_folder_location: "/tmp/serena"
+# Simulate a legacy Serena registration so the drift scenario exercises the
+# retired-state warning path in doctor.
+cat > "${home_drift}/.claude.json" <<EOF
+{
+  "mcpServers": {
+    "serena": {
+      "type": "stdio",
+      "command": "${home_drift}/.local/bin/serena-mcp",
+      "args": ["claude-code"]
+    }
+  }
+}
 EOF
 cat > "${home_drift}/Library/Application Support/com.github.domt4.homebrew-autoupdate/brew_autoupdate" <<'EOF'
 #!/bin/sh
@@ -323,8 +316,7 @@ mv "${STUB_BIN}/_clasp.bak" "${STUB_BIN}/clasp"
 assert_eq "0" "${RUN_STATUS}" "doctor should stay green when only optional drift warnings are present"
 assert_contains "${RUN_OUTPUT}" "auto-update channel should be latest" "doctor should warn on Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: enabled, but dotfiles policy is disabled" "doctor should warn when brew autoupdate is enabled"
-assert_contains "${RUN_OUTPUT}" "serena config: language_backend is not LSP" "doctor should warn on Serena config drift"
-assert_contains "${RUN_OUTPUT}" "serena MCP: not registered" "doctor should warn about missing serena MCP"
+assert_contains "${RUN_OUTPUT}" "serena MCP: legacy registration detected" "doctor should warn when a legacy Serena MCP registration is still present"
 assert_contains "${RUN_OUTPUT}" "VERIFY_X509_STRICT bypass: not active" "doctor should warn when SSL compat is missing"
 assert_contains "${RUN_OUTPUT}" "clasp not found" "doctor should warn when clasp is missing"
 

@@ -74,12 +74,6 @@ EOF
 chmod +x "${tmpdir}/security"
 export SECURITY_BIN="${tmpdir}/security"
 
-cat > "${HOME}/.local/bin/serena-mcp" <<'EOF'
-#!/usr/bin/env bash
-exit 0
-EOF
-chmod +x "${HOME}/.local/bin/serena-mcp"
-
 run_capture bash -lc "printf 'BSAtest_prompted_key\n' | bash '${REPO_ROOT}/scripts/ai-secrets.sh'"
 assert_eq "0" "${RUN_STATUS}" "ai-secrets should succeed with piped input"
 assert_contains "${RUN_OUTPUT}" "Saved Brave API key to Keychain service dotfiles.ai.mcp" "ai-secrets should report keychain save"

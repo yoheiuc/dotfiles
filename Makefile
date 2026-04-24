@@ -19,7 +19,7 @@ status: ## 日常確認に必要な状態を短く表示
 ai-audit: ## ローカル管理の AI 設定だけを詳しく確認
 	bash scripts/ai-audit.sh
 
-ai-repair: ## AI 周りのローカル drift を修復 (Serena config / MCP registration)
+ai-repair: ## AI 周りのローカル drift を修復 (MCP registration / hooks / legacy 掃除)
 	bash scripts/ai-repair.sh
 
 ai-secrets: ## Claude Code の MCP credential を対話で保存
@@ -43,7 +43,6 @@ doctor: ## セットアップ状態の深い確認
 
 test: ## 回帰テストを実行
 	bash tests/doctor.sh
-	bash tests/serena-wrapper.sh
 	bash tests/ai-repair.sh
 	bash tests/ai-secrets.sh
 	bash tests/ai-secrets-wrapper.sh

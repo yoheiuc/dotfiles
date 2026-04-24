@@ -5,7 +5,9 @@
 # when invoked outside $HOME). Dotfiles doesn't track project-local skills.
 .claude/skills/
 
-# Serena local state (machine-specific, not for tracking)
+# Leftover state from the retired Serena MCP (see issue #60 / 2026-04-24).
+# Ignored so old project-local .serena/ directories don't surface in `git status`.
+# Safe to delete manually; nothing in the repo depends on it any more.
 .serena/
 
 # Playwright CLI local state (machine-specific, not for tracking)

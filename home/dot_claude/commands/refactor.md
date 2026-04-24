@@ -21,7 +21,7 @@ Systematically refactor code. Change structure without changing behavior.
 
 ### Rename
 - **Rename for clarity**: names should describe what, not how. Use the domain language.
-- **Use serena MCP** (`mcp__serena__rename_symbol`) for safe cross-file renames.
+- **Use the native LSP rename** tool for safe cross-file renames (backed by the per-language LSP plugins under `claude-plugins-official`).
 
 ### Simplify
 - **Remove dead code**: unused functions, unreachable branches, commented-out code.
