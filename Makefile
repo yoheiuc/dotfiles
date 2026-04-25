@@ -16,7 +16,7 @@ tips: ## よく使う dotfiles コマンドのヒント表示
 status: ## 日常確認に必要な状態を短く表示
 	bash scripts/status.sh
 
-ai-audit: ## ローカル管理の AI 設定だけを詳しく確認
+ai-audit: ## ローカル管理の AI 設定だけを詳しく確認 (CI/grep 用途は: bash scripts/ai-audit.sh --quiet)
 	bash scripts/ai-audit.sh
 
 ai-repair: ## AI 周りのローカル drift を修復 (MCP registration / hooks / legacy 掃除)

@@ -2,7 +2,12 @@
 # ai-audit.sh — focused audit for local AI client configs and shared guidance
 #
 # Usage:
-#   ./scripts/ai-audit.sh
+#   ./scripts/ai-audit.sh [-q|--quiet]
+#
+# Flags:
+#   -q, --quiet   Suppress section / ok / info lines and the final summary.
+#                 Only attention items are printed, so CI / notification
+#                 pipelines can grep stdout (empty = clean).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,6 +15,32 @@ source "${SCRIPT_DIR}/lib/ui.sh"
 source "${SCRIPT_DIR}/lib/ai-config.sh"
 source "${SCRIPT_DIR}/lib/claude-plugins.sh"
 source "${SCRIPT_DIR}/lib/claude-checks.sh"
+
+QUIET=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -q|--quiet) QUIET=1; shift ;;
+    -h|--help)
+      # Print the leading comment block (lines 2..10), stripping the leading
+      # `#` / `# ` so it reads as plain help text. BSD sed (default on macOS)
+      # does not support `\?`, so use `[[:space:]]\{0,1\}` for portability.
+      sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^#[[:space:]]\{0,1\}//'
+      exit 0
+      ;;
+    *)
+      printf 'ai-audit: unknown option: %s\n' "$1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+# In quiet mode, silence the structural / success-path output. attention()
+# still calls warn() (defined in ui.sh) so problem lines stay visible.
+if [[ "${QUIET}" == "1" ]]; then
+  section() { :; }
+  ok()      { :; }
+  info()    { :; }
+fi
 
 ATTENTION_COUNT=0
 
@@ -59,8 +90,10 @@ report_optional_backups() {
   printf '%s\n' "${matches}" | sed 's/^/    /'
 }
 
-echo
-printf '\033[1m=== AI config audit ===\033[0m\n'
+if [[ "${QUIET}" != "1" ]]; then
+  echo
+  printf '\033[1m=== AI config audit ===\033[0m\n'
+fi
 
 section "Local Config Files"
 describe_file "Claude settings" "${HOME}/.claude/settings.json"
@@ -164,9 +197,11 @@ fi
 section "Backup Files"
 report_optional_backups "Claude settings backups" "${HOME}/.claude/settings.json.pre-unmanage-*"
 
-echo
-if [[ "${ATTENTION_COUNT}" -eq 0 ]]; then
-  printf '\033[1;32mAI config audit looks good.\033[0m\n'
-else
-  printf '\033[1;33mAI config audit needs attention: %s item(s).\033[0m\n' "${ATTENTION_COUNT}"
+if [[ "${QUIET}" != "1" ]]; then
+  echo
+  if [[ "${ATTENTION_COUNT}" -eq 0 ]]; then
+    printf '\033[1;32mAI config audit looks good.\033[0m\n'
+  else
+    printf '\033[1;33mAI config audit needs attention: %s item(s).\033[0m\n' "${ATTENTION_COUNT}"
+  fi
 fi

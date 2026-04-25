@@ -122,7 +122,14 @@ fi
 
 # ===========================================================================
 # OPTIONAL checks — warn only, never fail the script
+#
+# Grouped into three bands so the long output is easier to scan:
+#   1. Shell / system   — host shell hygiene, system-level toggles
+#   2. Dev tools        — generic CLI tools (node / pandoc / gcloud / ghq / ...)
+#   3. AI / Claude Code — Claude CLI, plugins, AI-adjacent skills
 # ===========================================================================
+
+# --- Shell / system ---------------------------------------------------------
 
 section "zsh compinit security (optional)"
 if command -v zsh &>/dev/null; then
@@ -138,6 +145,31 @@ if command -v zsh &>/dev/null; then
 else
   warn "zsh not found — skipping compaudit check"
 fi
+
+section "brew-autoupdate (optional)"
+if command -v launchctl >/dev/null 2>&1 && command -v plutil >/dev/null 2>&1; then
+  if brew_autoupdate_is_loaded || [[ -f "$(brew_autoupdate_plist_path)" ]]; then
+    warn "brew autoupdate: enabled, but dotfiles policy is disabled — run: ./scripts/post-setup.sh"
+  else
+    ok "brew autoupdate: disabled by dotfiles policy"
+  fi
+else
+  warn "brew autoupdate audit skipped — launchctl/plutil unavailable"
+fi
+
+section "Python SSL compat (optional)"
+_ssl_compat_file="${HOME}/.local/lib/python-ssl-compat/sitecustomize.py"
+if [[ -f "${_ssl_compat_file}" ]]; then
+  ok "VERIFY_X509_STRICT bypass: active (${_ssl_compat_file})"
+  ok "To disable after cert rotation: rm ${_ssl_compat_file/#${HOME}/\~}"
+else
+  warn "VERIFY_X509_STRICT bypass: not active"
+  warn "  Python 3.13+ may fail behind corporate CASB/proxies (Netskope, Zscaler)"
+  warn "  Restore with: chezmoi apply"
+fi
+unset _ssl_compat_file
+
+# --- Dev tools --------------------------------------------------------------
 
 section "node (optional)"
 if node --version &>/dev/null; then
@@ -192,17 +224,6 @@ else
   warn "uv not found — optional Python toolchain; no longer required after Serena retirement"
 fi
 
-section "brew-autoupdate (optional)"
-if command -v launchctl >/dev/null 2>&1 && command -v plutil >/dev/null 2>&1; then
-  if brew_autoupdate_is_loaded || [[ -f "$(brew_autoupdate_plist_path)" ]]; then
-    warn "brew autoupdate: enabled, but dotfiles policy is disabled — run: ./scripts/post-setup.sh"
-  else
-    ok "brew autoupdate: disabled by dotfiles policy"
-  fi
-else
-  warn "brew autoupdate audit skipped — launchctl/plutil unavailable"
-fi
-
 section "gcloud (optional)"
 if command -v gcloud &>/dev/null; then
   gcloud_version_line="$(gcloud version 2>&1 | head -1 || true)"
@@ -215,17 +236,12 @@ else
   warn "gcloud not found — install via Brewfile (cask \"gcloud-cli\")"
 fi
 
-section "Python SSL compat (optional)"
-_ssl_compat_file="${HOME}/.local/lib/python-ssl-compat/sitecustomize.py"
-if [[ -f "${_ssl_compat_file}" ]]; then
-  ok "VERIFY_X509_STRICT bypass: active (${_ssl_compat_file})"
-  ok "To disable after cert rotation: rm ${_ssl_compat_file/#${HOME}/\~}"
+section "clasp (optional)"
+if command -v clasp &>/dev/null; then
+  ok "clasp $(clasp --version 2>/dev/null | head -1 || true)"
 else
-  warn "VERIFY_X509_STRICT bypass: not active"
-  warn "  Python 3.13+ may fail behind corporate CASB/proxies (Netskope, Zscaler)"
-  warn "  Restore with: chezmoi apply"
+  warn "clasp not found — run: ./scripts/post-setup.sh"
 fi
-unset _ssl_compat_file
 
 section "Ghostty (optional)"
 # Ghostty CLI may not be in PATH when installed as a .app bundle.
@@ -289,6 +305,8 @@ else
   warn "navi not found — install via Brewfile (brew \"navi\")"
 fi
 
+# --- AI / Claude Code -------------------------------------------------------
+
 section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
   ok "$(claude --version 2>&1 | head -1)"
@@ -306,6 +324,11 @@ if command -v claude &>/dev/null; then
   # Plugins from claude-plugins-official are installed via post-setup.sh.
   # Expected lists live in scripts/lib/claude-plugins.sh; predicates in
   # scripts/lib/claude-checks.sh. Both are shared with ai-audit / post-setup.
+  #
+  # Output policy: report only the aggregate count when fully installed
+  # ("all N installed"). List individual plugin names only when one is
+  # missing — the list is the actionable signal, the green count is noise.
+  # Same shape used in ai-audit so the two scripts stay congruent.
   _lsp_missing="$(claude_lsp_plugins_missing | tr '\n' ' ')"
   if [[ -z "${_lsp_missing// /}" ]]; then
     ok "LSP plugins: all ${#CLAUDE_LSP_PLUGINS[@]} installed (via ${CLAUDE_PLUGIN_MARKETPLACE_NAME})"
@@ -332,21 +355,6 @@ if command -v claude &>/dev/null; then
   fi
 else
   warn "claude not found — run: ./scripts/post-setup.sh"
-fi
-
-section "clasp (optional)"
-if command -v clasp &>/dev/null; then
-  ok "clasp $(clasp --version 2>/dev/null | head -1 || true)"
-else
-  warn "clasp not found — run: ./scripts/post-setup.sh"
-fi
-
-section "find-skills (optional)"
-if [[ -f "${HOME}/.claude/skills/find-skills/SKILL.md" \
-   || -f "${HOME}/.agents/skills/find-skills/SKILL.md" ]]; then
-  ok "find-skills skill: present"
-else
-  warn "find-skills skill missing — run: ./scripts/post-setup.sh"
 fi
 
 # ===========================================================================

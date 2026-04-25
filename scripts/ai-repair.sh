@@ -177,6 +177,10 @@ fi
 
 # Hooks point at dotfiles-managed scripts (auto-save.sh / lsp-hint.sh), so the
 # block is owned end-to-end by dotfiles — replace wholesale rather than merge.
+# This does NOT clobber user-added hooks: Claude Code concatenates hooks across
+# settings.json and settings.local.json (append semantics, not override). Any
+# personal / per-machine hooks belong in ~/.claude/settings.local.json, which
+# dotfiles never touches. Source: https://code.claude.com/docs/en/hooks.md
 _claude_hooks_current="$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "json.dumps(d.get('hooks',{}),sort_keys=True)" 2>/dev/null || true)"
 _claude_hooks_expected="$(python3 -c "import json,sys; print(json.dumps(json.loads(sys.stdin.read()),sort_keys=True))" <<<"${CLAUDE_HOOKS_BLOCK}")"
 if [[ "${_claude_hooks_current}" == "${_claude_hooks_expected}" ]]; then

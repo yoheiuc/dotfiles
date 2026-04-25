@@ -85,7 +85,7 @@ make help
 | ターゲット | 内容 |
 |---|---|
 | `make status` | 日常確認に必要な状態を短く表示 |
-| `make ai-audit` | ローカル管理の AI 設定だけを詳しく確認 |
+| `make ai-audit` | ローカル管理の AI 設定だけを詳しく確認（CI / 通知用途は `bash scripts/ai-audit.sh --quiet`：attention 行のみ出力） |
 | `make ai-repair` | AI 周りの local drift を修復（MCP registration / hooks / legacy 掃除） |
 | `make ai-secrets` | Claude Code の MCP credential を Keychain に保存（現状 consumer なし、framework として残置） |
 | `make install` | Brew + `chezmoi apply` + `post-setup` |
