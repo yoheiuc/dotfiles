@@ -1,6 +1,9 @@
 # Claude Code local session permissions (machine-specific, not for tracking)
 .claude/settings.local.json
 
+# Claude Code hookify plugin rule files (machine-local trial / policy, not tracked)
+.claude/hookify.*.local.md
+
 # Claude Code project-local skills (installed by `playwright-cli install --skills`
 # when invoked outside $HOME). Dotfiles doesn't track project-local skills.
 .claude/skills/
