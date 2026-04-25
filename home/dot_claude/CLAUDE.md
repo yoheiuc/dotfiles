@@ -9,6 +9,10 @@
 - 前置き・要約・確認の繰り返しは省く。結論から入る
 - ツール呼び出し結果を全文引用しない。必要な部分だけ抜粋する
 - 設定キーやオプション名が正しいか自信がないときは、ユーザーに確認を取らず自分で公式ドキュメントやソースを fetch して裏取りしてから回答する
+- **編集後は実体で動作検証する**。typecheck / test / 実コマンド実行で「動いた」まで確認してから完了宣言する。文書 diff だけで OK としない
+- **テスト中の副作用を避ける**。投稿 / 送信 / 外部 API への実書き込みは事前に user 確認を取り、stub / dry-run / mock で代替できないかまず検討
+- **未インストール依存は最初に解決する**。workaround で進めず、まず install / config を提案して実行
+- **方向性が分かれる提案は A / B / C で並べてデフォルトを示す**。user が選択を redirect しやすい
 - 作業前に **skill を確認する**:
   1. `~/.claude/skills/` 配下に合致しそうな skill があれば使う
   2. 思い当たらなければ `find-skills` skill（`~/.claude/skills/find-skills/`）で英語キーワード検索 — `npx skills find "<keyword>"` / `npx skills list` / `npx skills check` も同等
@@ -62,3 +66,11 @@ Anthropic 公式 marketplace (`claude-plugins-official`) の per-language LSP pl
 - edit 前後の LSP diagnostics
 
 旧 `mcp__serena__*` tool は廃止されたので呼ばない（alias が残っているだけ）。
+
+## コミット規約（全リポ共通）
+
+- prefix style: `<topic>: <動詞句>`（topic は変更箇所のスコープ、git log の前例を踏襲する。スコープが広いときは repo 名）
+- subject は 1 行要約、詳細は body の bullet
+- HEREDOC で渡し、末尾に `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
+- `git push` は remote に visible になる action なので、必ず user に明示確認を取ってから実行
+- destructive な flag (`--force`, `--no-verify`, `reset --hard` 等) は user が明示要求しない限り使わない
