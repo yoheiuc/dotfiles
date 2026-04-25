@@ -22,12 +22,17 @@
       "Bash(playwright-cli screenshot *)",
       "Bash(playwright-cli goto *)",
       "Bash(playwright-cli open *)",
+      "Bash(playwright-cli eval *)",
+      "Bash(npx playwright *)",
+      "Bash(bash tests/*)",
+      "Bash(bash scripts/*)",
       "mcp__exa__web_search_exa",
       "mcp__exa__web_fetch_exa",
       "mcp__playwright__browser_take_screenshot",
       "mcp__playwright__browser_resize",
       "mcp__playwright__browser_close",
-      "mcp__playwright__browser_navigate"
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_evaluate"
     ]
   }
 }
