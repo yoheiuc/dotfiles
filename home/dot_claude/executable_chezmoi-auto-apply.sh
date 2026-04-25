@@ -7,15 +7,29 @@
 # is nothing to apply (the common case after a no-op turn).
 set -euo pipefail
 
+DOTFILES_REPO="${HOME}/dotfiles"
+
+# Always drain stdin so Claude Code's hook pipe does not stall, but defer the
+# `jq` parse until after the cheap PWD pre-check. Most assistant turns happen
+# outside ~/dotfiles and this saves one subprocess per fired hook.
 INPUT="$(cat || true)"
 
-WORKSPACE="$(printf '%s' "$INPUT" | jq -r '.workspace.current_dir // .cwd // ""' 2>/dev/null || true)"
-[[ -z "${WORKSPACE}" ]] && WORKSPACE="$PWD"
-
-DOTFILES_REPO="${HOME}/dotfiles"
-case "${WORKSPACE}" in
-  "${DOTFILES_REPO}"|"${DOTFILES_REPO}"/*) ;;
-  *) exit 0 ;;
+case "${PWD}" in
+  "${DOTFILES_REPO}"|"${DOTFILES_REPO}"/*)
+    WORKSPACE="${PWD}"
+    ;;
+  *)
+    # PWD is outside the repo, but Claude Code may still be reporting a
+    # dotfiles workspace via the hook payload — fall back to jq once.
+    if ! command -v jq >/dev/null 2>&1; then
+      exit 0
+    fi
+    WORKSPACE="$(printf '%s' "$INPUT" | jq -r '.workspace.current_dir // .cwd // ""' 2>/dev/null || true)"
+    case "${WORKSPACE}" in
+      "${DOTFILES_REPO}"|"${DOTFILES_REPO}"/*) ;;
+      *) exit 0 ;;
+    esac
+    ;;
 esac
 
 command -v chezmoi >/dev/null 2>&1 || exit 0

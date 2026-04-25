@@ -321,32 +321,19 @@ if command -v claude &>/dev/null; then
     ok "serena MCP: removed (native LSP plugins in use)"
   fi
 
-  # Plugins from claude-plugins-official are installed via post-setup.sh.
-  # Expected lists live in scripts/lib/claude-plugins.sh; predicates in
-  # scripts/lib/claude-checks.sh. Both are shared with ai-audit / post-setup.
-  #
-  # Output policy: report only the aggregate count when fully installed
-  # ("all N installed"). List individual plugin names only when one is
-  # missing — the list is the actionable signal, the green count is noise.
-  # Same shape used in ai-audit so the two scripts stay congruent.
-  _lsp_missing="$(claude_lsp_plugins_missing | tr '\n' ' ')"
-  if [[ -z "${_lsp_missing// /}" ]]; then
-    ok "LSP plugins: all ${#CLAUDE_LSP_PLUGINS[@]} installed (via ${CLAUDE_PLUGIN_MARKETPLACE_NAME})"
+  # Plugin install summary lives in scripts/lib/claude-plugins.sh so doctor
+  # and ai-audit cannot drift in message shape. Caller picks ok / warn here.
+  if _msg="$(claude_plugins_check_summary LSP claude_lsp_plugins_missing "${#CLAUDE_LSP_PLUGINS[@]}")"; then
+    ok "${_msg}"
   else
-    _lsp_count="$(claude_lsp_plugins_missing | wc -l | tr -d ' ')"
-    warn "LSP plugins missing (${_lsp_count}/${#CLAUDE_LSP_PLUGINS[@]}): ${_lsp_missing% } — run: ./scripts/post-setup.sh"
-    unset _lsp_count
+    warn "${_msg}"
   fi
-
-  _general_missing="$(claude_general_plugins_missing | tr '\n' ' ')"
-  if [[ -z "${_general_missing// /}" ]]; then
-    ok "general plugins: all ${#CLAUDE_GENERAL_PLUGINS[@]} installed (via ${CLAUDE_PLUGIN_MARKETPLACE_NAME})"
+  if _msg="$(claude_plugins_check_summary general claude_general_plugins_missing "${#CLAUDE_GENERAL_PLUGINS[@]}")"; then
+    ok "${_msg}"
   else
-    _general_count="$(claude_general_plugins_missing | wc -l | tr -d ' ')"
-    warn "general plugins missing (${_general_count}/${#CLAUDE_GENERAL_PLUGINS[@]}): ${_general_missing% } — run: ./scripts/post-setup.sh"
-    unset _general_count
+    warn "${_msg}"
   fi
-  unset _lsp_missing _general_missing
+  unset _msg
 
   if [[ -f "${HOME}/.claude/skills/find-skills/SKILL.md" ]]; then
     ok "find-skills skill: present"

@@ -187,22 +187,19 @@ else
 fi
 
 section "Claude Code Plugins"
-# Plugins from claude-plugins-official are installed via post-setup.sh.
-# Same predicates / output policy as scripts/doctor.sh — list names only on
-# missing, count only when fully installed.
-_lsp_missing="$(claude_lsp_plugins_missing | tr '\n' ' ')"
-if [[ -z "${_lsp_missing// /}" ]]; then
-  ok "LSP plugins: all ${#CLAUDE_LSP_PLUGINS[@]} installed (via ${CLAUDE_PLUGIN_MARKETPLACE_NAME})"
+# Plugin install summary lives in scripts/lib/claude-plugins.sh so doctor
+# and ai-audit cannot drift in message shape.
+if _msg="$(claude_plugins_check_summary LSP claude_lsp_plugins_missing "${#CLAUDE_LSP_PLUGINS[@]}")"; then
+  ok "${_msg}"
 else
-  attention "LSP plugins missing: ${_lsp_missing% } — run: ./scripts/post-setup.sh"
+  attention "${_msg}"
 fi
-_general_missing="$(claude_general_plugins_missing | tr '\n' ' ')"
-if [[ -z "${_general_missing// /}" ]]; then
-  ok "general plugins: all ${#CLAUDE_GENERAL_PLUGINS[@]} installed (via ${CLAUDE_PLUGIN_MARKETPLACE_NAME})"
+if _msg="$(claude_plugins_check_summary general claude_general_plugins_missing "${#CLAUDE_GENERAL_PLUGINS[@]}")"; then
+  ok "${_msg}"
 else
-  attention "general plugins missing: ${_general_missing% } — run: ./scripts/post-setup.sh"
+  attention "${_msg}"
 fi
-unset _lsp_missing _general_missing
+unset _msg
 
 section "Retired Serena state"
 # Serena MCP was retired in favor of Claude Code's native LSP tool plus the

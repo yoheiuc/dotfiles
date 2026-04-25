@@ -46,3 +46,32 @@ claude_plugin_is_installed() {
   jq -e --arg key "${name}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}" \
     '.plugins | has($key)' "${file}" >/dev/null 2>&1
 }
+
+# Render the install summary for one plugin group (LSP / general / ...) on
+# stdout, and return 0 if the group is fully installed, 1 if any plugin is
+# missing. Caller picks the UI wrapper (ok / warn / attention) per its tone.
+#
+# Usage:  claude_plugins_check_summary <label> <missing_predicate_fn> <total>
+#   if msg="$(claude_plugins_check_summary LSP claude_lsp_plugins_missing "${#CLAUDE_LSP_PLUGINS[@]}")"; then
+#     ok "$msg"
+#   else
+#     attention "$msg"
+#   fi
+#
+# Living in this lib so doctor.sh and ai-audit.sh can never drift in
+# message shape (which they did before this helper existed).
+claude_plugins_check_summary() {
+  local label="$1" predicate_fn="$2" total="$3"
+  local missing_list missing_count
+  missing_list="$("${predicate_fn}" | tr '\n' ' ')"
+  missing_list="${missing_list% }"
+  if [[ -z "${missing_list// /}" ]]; then
+    printf '%s plugins: all %s installed (via %s)\n' \
+      "${label}" "${total}" "${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
+    return 0
+  fi
+  missing_count="$("${predicate_fn}" | wc -l | tr -d ' ')"
+  printf '%s plugins missing (%s/%s): %s — run: ./scripts/post-setup.sh\n' \
+    "${label}" "${missing_count}" "${total}" "${missing_list}"
+  return 1
+}

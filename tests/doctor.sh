@@ -253,20 +253,10 @@ cat > "${home_ok}/.claude/settings.json" <<'EOF'
   "autoUpdatesChannel": "latest"
 }
 EOF
-# Pre-populate installed_plugins.json with the full expected LSP set so the
-# healthy scenario passes the LSP plugin check.
-mkdir -p "${home_ok}/.claude/plugins"
-source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
-{
-  printf '{\n  "plugins": {\n'
-  _sep=""
-  for _p in "${CLAUDE_LSP_PLUGINS[@]}" "${CLAUDE_GENERAL_PLUGINS[@]}"; do
-    printf '%s    "%s@%s": {}' "${_sep}" "${_p}" "${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
-    _sep=$',\n'
-  done
-  printf '\n  }\n}\n'
-} > "${home_ok}/.claude/plugins/installed_plugins.json"
-unset _p _sep
+# Pre-populate installed_plugins.json with the full expected LSP + general
+# set so the healthy scenario passes both plugin checks. Shared helper lives
+# in tests/lib/testlib.sh — keeps doctor.sh and ai-audit.sh fixtures in sync.
+write_installed_plugins_stub "${home_ok}"
 run_capture run_doctor "${home_ok}" \
   LAUNCHCTL_AUTUPDATE_LOADED=0 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \

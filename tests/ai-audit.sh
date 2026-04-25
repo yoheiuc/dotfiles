@@ -82,22 +82,8 @@ cp "${REPO_ROOT}/scripts/lib/claude-plugins.sh" "${tmpdir}/scripts/lib/claude-pl
 cp "${REPO_ROOT}/scripts/lib/claude-checks.sh" "${tmpdir}/scripts/lib/claude-checks.sh"
 chmod +x "${tmpdir}/scripts/ai-audit.sh" "${tmpdir}/scripts/lib/ai-config.sh"
 
-# Generate a stub ~/.claude/plugins/installed_plugins.json with every expected
-# plugin marked installed. ai-audit shares the same predicates as doctor, so
-# the test needs the same backing file shape. Re-callable to reset state
-# between scenarios.
 # shellcheck source=/dev/null
 source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
-write_installed_plugins_stub() {
-  mkdir -p "${HOME}/.claude/plugins"
-  python3 - <<PY > "${HOME}/.claude/plugins/installed_plugins.json"
-import json
-plugins = {}
-for name in "${CLAUDE_LSP_PLUGINS[*]} ${CLAUDE_GENERAL_PLUGINS[*]}".split():
-    plugins[f"{name}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"] = {}
-print(json.dumps({"plugins": plugins}, indent=2))
-PY
-}
 
 # ---- Scenario 1: clean case ----
 write_installed_plugins_stub

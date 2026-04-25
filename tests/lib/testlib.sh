@@ -51,3 +51,24 @@ run_capture() {
   RUN_STATUS=$?
   set -e
 }
+
+# Write a fixture ~/.claude/plugins/installed_plugins.json under $target_home
+# (or $HOME if omitted) listing every plugin in CLAUDE_LSP_PLUGINS +
+# CLAUDE_GENERAL_PLUGINS as installed. Sources scripts/lib/claude-plugins.sh
+# so the stub stays accurate as the expected lists evolve.
+#
+# Usage:  write_installed_plugins_stub [target_home]
+write_installed_plugins_stub() {
+  local target_home="${1:-${HOME}}"
+  local repo_root="${REPO_ROOT:?REPO_ROOT must be set by the test}"
+  # shellcheck source=/dev/null
+  source "${repo_root}/scripts/lib/claude-plugins.sh"
+  mkdir -p "${target_home}/.claude/plugins"
+  python3 - <<PY > "${target_home}/.claude/plugins/installed_plugins.json"
+import json
+plugins = {}
+for name in "${CLAUDE_LSP_PLUGINS[*]} ${CLAUDE_GENERAL_PLUGINS[*]}".split():
+    plugins[f"{name}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"] = {}
+print(json.dumps({"plugins": plugins}, indent=2))
+PY
+}
