@@ -137,7 +137,7 @@ if [[ -f "${HOME}/.claude/settings.json" ]]; then
 
   # Hooks are baseline-managed by dotfiles. Verify each expected command is
   # wired up; tolerate extra user-added hooks under other matchers.
-  for _expected_cmd in '$HOME/.claude/lsp-hint.sh' '$HOME/.claude/auto-save.sh'; do
+  for _expected_cmd in '$HOME/.claude/lsp-hint.sh' '$HOME/.claude/auto-save.sh' '$HOME/.claude/chezmoi-auto-apply.sh'; do
     if claude_hook_command_present "${_expected_cmd}"; then
       ok "Claude Code: hook registered (${_expected_cmd})"
     else

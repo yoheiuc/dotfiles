@@ -145,7 +145,8 @@ CLAUDE_HOOKS_BLOCK='{
     {
       "matcher": "",
       "hooks": [
-        { "type": "command", "command": "$HOME/.claude/auto-save.sh" }
+        { "type": "command", "command": "$HOME/.claude/auto-save.sh" },
+        { "type": "command", "command": "$HOME/.claude/chezmoi-auto-apply.sh" }
       ]
     }
   ],

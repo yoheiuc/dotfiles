@@ -110,7 +110,10 @@ cat > "${HOME}/.claude/settings.json" <<'EOF'
       {"matcher": "Grep", "hooks": [{"type": "command", "command": "$HOME/.claude/lsp-hint.sh"}]}
     ],
     "Stop": [
-      {"matcher": "", "hooks": [{"type": "command", "command": "$HOME/.claude/auto-save.sh"}]}
+      {"matcher": "", "hooks": [
+        {"type": "command", "command": "$HOME/.claude/auto-save.sh"},
+        {"type": "command", "command": "$HOME/.claude/chezmoi-auto-apply.sh"}
+      ]}
     ]
   }
 }
@@ -143,6 +146,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env is set" "ai-audit should validate ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/lsp-hint.sh)" "ai-audit should validate lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/auto-save.sh)" "ai-audit should validate auto-save hook"
+assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/chezmoi-auto-apply.sh)" "ai-audit should validate chezmoi-auto-apply hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: registered" "ai-audit should validate Claude vision MCP"
 assert_not_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should not expect retired Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
@@ -186,6 +190,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be late
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5" "ai-audit should detect missing ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/lsp-hint.sh)" "ai-audit should detect missing lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/auto-save.sh)" "ai-audit should detect missing auto-save hook"
+assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/chezmoi-auto-apply.sh)" "ai-audit should detect missing chezmoi-auto-apply hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: missing or drifted" "ai-audit should detect missing Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: missing or drifted" "ai-audit should detect missing Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: missing or drifted" "ai-audit should detect missing Claude Slack MCP"
@@ -242,7 +247,10 @@ cat > "${HOME}/.claude/settings.json" <<'EOF'
       {"matcher": "Grep", "hooks": [{"type": "command", "command": "$HOME/.claude/lsp-hint.sh"}]}
     ],
     "Stop": [
-      {"matcher": "", "hooks": [{"type": "command", "command": "$HOME/.claude/auto-save.sh"}]}
+      {"matcher": "", "hooks": [
+        {"type": "command", "command": "$HOME/.claude/auto-save.sh"},
+        {"type": "command", "command": "$HOME/.claude/chezmoi-auto-apply.sh"}
+      ]}
     ]
   }
 }
