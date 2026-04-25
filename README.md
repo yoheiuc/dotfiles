@@ -579,12 +579,31 @@ LSP ベースの symbol 解析は Anthropic 公式 marketplace (`claude-plugins-
 | `/research` | Exa MCP ベースの技術リサーチ |
 | `/ui-ux` | UI/UX デザイン（React / Next.js / Vue / SwiftUI / Flutter 等 10 スタック対応） |
 
+### Office 系の 2 系統（ローカル `.docx` / `.xlsx` / `.pptx` vs Google Workspace）
+
+Microsoft Office 形式と Google Workspace の両方を扱えるよう、2 系統並走で配置している。**ファイルがどこにあるか** で使い分ける。
+
+| 形式 | ローカル `.docx` / `.xlsx` / `.pptx` / `.pdf` | Google Workspace |
+|---|---|---|
+| Word | `doc` skill (`/doc`) — `python-docx` + LibreOffice rendering | `gws-docs` skill — `gws docs` CLI |
+| Excel | `spreadsheet` skill (`/spreadsheet`) — `openpyxl` + LibreOffice rendering | `gws-sheets` skill — `gws sheets` CLI |
+| PowerPoint | `presentation` skill (`/presentation`) — `python-pptx` + LibreOffice rendering | `gws-slides` skill — `gws slides` CLI |
+| PDF | `pdf` skill (`/pdf`) — `reportlab` / `pdfplumber` / `pypdf` | （Drive 経由で扱う場合は `gws-drive`） |
+
+使い分けの原則:
+
+- **ローカルファイルが対象** → 同梱 skill (`doc` / `spreadsheet` / `presentation` / `pdf`)。`python-*` で編集し、`soffice --headless --convert-to pdf` + `pdftoppm -png` で目視レビュー
+- **Google Workspace 上のドキュメントが対象** → `gws-*` skill。`gws` CLI 経由で API を叩く
+- **依存**: ローカル経路は `libreoffice` (cask) + `poppler` を Brewfile で管理、Python lib (`python-docx` / `openpyxl` / `python-pptx` / `pandas`) は各 SKILL.md の指示に従って `uv pip install` で on-demand 導入（global 化しない）
+
+`presentation` SKILL.md は upstream `anthropics/skills@pptx` の license（"retain copies outside the Services" / 派生物作成の禁止）を回避するため自作している。`doc` / `spreadsheet` は openai/skills の旧 curated set（Apache 2.0）由来。判断ログは `CLAUDE.md` 参照。
+
 ### CLI / skill / plugin の配布方針
 
 - **Claude Code CLI** は native install を正とし `post-setup.sh` が `latest` チャンネルで導入（Homebrew cask では管理しない、background 自動更新あり）
 - **clasp** は `post-setup.sh` が `npm install -g @google/clasp`。初回 `clasp login` が必要
 - **Sequential Thinking MCP** / **gws skills** / **find-skills**（`vercel-labs/skills`）は `post-setup.sh` が Claude Code に配置
-- **同梱 skill**（`home/dot_claude/skills/`）: `screenshot` / `doc` / `pdf` / `spreadsheet` / `jupyter-notebook` / `security-best-practices` / `ui-ux-pro-max`
+- **同梱 skill**（`home/dot_claude/skills/`）: `screenshot` / `doc` / `pdf` / `spreadsheet` / `presentation` / `jupyter-notebook` / `security-best-practices` / `ui-ux-pro-max`
 - **claude-plugins-official 経由の plugin**（`post-setup.sh` が `claude plugin install ...@claude-plugins-official` で配置）:
   - `*-lsp` 群（`clangd` / `csharp` / `gopls` / `jdtls` / `kotlin` / `lua` / `php` / `pyright` / `ruby` / `rust-analyzer` / `swift` / `typescript`）— Serena MCP の後継
   - General 群（`claude-md-management` / `claude-code-setup` / `feature-dev` / `explanatory-output-style`）— 既存の `/review` `/ultrareview` `simplify` skill 等と重複しないものだけ採用
@@ -614,7 +633,7 @@ dotfiles/
 │   │   ├── executable_{statusline,auto-save,lsp-hint}.sh  # hooks 配下
 │   │   ├── dot_mcp.json            # → ~/.claude/.mcp.json (HTTP MCP baseline)
 │   │   ├── commands/               # → ~/.claude/commands/*.md (18 slash commands, 下表参照)
-│   │   └── skills/                 # 同梱 skill 7 個（screenshot / doc / pdf / spreadsheet / jupyter-notebook / security-best-practices / ui-ux-pro-max）
+│   │   └── skills/                 # 同梱 skill 8 個（screenshot / doc / pdf / spreadsheet / presentation / jupyter-notebook / security-best-practices / ui-ux-pro-max）
 │   ├── dot_local/
 │   │   ├── bin/                    # ai-secrets / mcp-with-keychain-secret
 │   │   ├── lib/python-ssl-compat/  # Python 3.13 VERIFY_X509_STRICT 無効化（docs/setup-guides/gcloud-python-ssl.md）
