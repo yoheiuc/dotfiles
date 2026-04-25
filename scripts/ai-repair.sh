@@ -111,6 +111,14 @@ if [[ -d "${HOME}/.claude/skills/frontend-design" ]]; then
   rm -rf "${HOME}/.claude/skills/frontend-design"
   ok "Claude Code: removed retired vendored skill ~/.claude/skills/frontend-design"
 fi
+# Codex CLI was retired on 2026-04 alongside Gemini (see docs/notes/current-state.md).
+# `home/dot_codex/` source was removed but chezmoi doesn't auto-prune the target,
+# so ~/.codex/ persists on machines that synced before the source was deleted.
+# Drop it here so `make ai-repair` converges old machines and ai-audit goes green.
+if [[ -d "${HOME}/.codex" ]]; then
+  rm -rf "${HOME}/.codex"
+  ok "Codex: removed retired ~/.codex"
+fi
 unset _orphan
 
 # Strip legacy MCP registrations that have been retired.
