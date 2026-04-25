@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test)",
+      "Bash(chezmoi diff)",
+      "Bash(shellcheck *)",
+      "Bash(playwright-cli close)",
+      "Bash(playwright-cli resize *)",
+      "mcp__exa__web_search_exa",
+      "mcp__exa__web_fetch_exa",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_resize",
+      "mcp__playwright__browser_close"
+    ]
+  }
+}
