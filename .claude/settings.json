@@ -2,15 +2,24 @@
   "permissions": {
     "allow": [
       "Bash(make test)",
+      "Bash(make doctor)",
+      "Bash(make ai-audit)",
+      "Bash(make status)",
       "Bash(chezmoi diff)",
       "Bash(shellcheck *)",
+      "Bash(bash tests/ai-audit.sh)",
+      "Bash(bash scripts/ai-audit.sh)",
       "Bash(playwright-cli close)",
       "Bash(playwright-cli resize *)",
+      "Bash(playwright-cli screenshot *)",
+      "Bash(playwright-cli goto *)",
+      "Bash(playwright-cli open *)",
       "mcp__exa__web_search_exa",
       "mcp__exa__web_fetch_exa",
       "mcp__playwright__browser_take_screenshot",
       "mcp__playwright__browser_resize",
-      "mcp__playwright__browser_close"
+      "mcp__playwright__browser_close",
+      "mcp__playwright__browser_navigate"
     ]
   }
 }
