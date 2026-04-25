@@ -111,6 +111,10 @@ cat > "${HOME}/.claude.json" <<EOF
       "type": "http",
       "url": "https://mcp.exa.ai/mcp"
     },
+    "jamf-docs": {
+      "type": "http",
+      "url": "https://developer.jamf.com/mcp"
+    },
     "slack": {
       "type": "http",
       "url": "https://mcp.slack.com/mcp",
@@ -136,6 +140,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/ch
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: registered" "ai-audit should validate Claude vision MCP"
 assert_not_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should not expect retired Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code jamf-docs MCP: registered" "ai-audit should validate Claude Jamf docs MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: registered" "ai-audit should validate Claude Slack MCP"
 assert_not_contains "${RUN_OUTPUT}" "Claude Code serena MCP: legacy entry present" "ai-audit should not flag serena when absent"
 assert_not_contains "${RUN_OUTPUT}" "Retired Serena state still on disk" "ai-audit should not flag Serena state when absent"
@@ -179,6 +184,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/auto-
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/chezmoi-auto-apply.sh)" "ai-audit should detect missing chezmoi-auto-apply hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: missing or drifted" "ai-audit should detect missing Claude vision MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: missing or drifted" "ai-audit should detect missing Claude Exa MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code jamf-docs MCP: missing or drifted" "ai-audit should detect missing Claude Jamf docs MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: missing or drifted" "ai-audit should detect missing Claude Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.codex" "ai-audit should flag retired Codex state"
 assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.gemini" "ai-audit should flag retired Gemini state"

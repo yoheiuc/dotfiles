@@ -161,6 +161,11 @@ if [[ -f "${_claude_json}" ]]; then
   else
     attention "Claude Code exa MCP: missing or drifted — run make ai-repair"
   fi
+  if claude_mcp_http_matches "${_claude_json}" jamf-docs "https://developer.jamf.com/mcp"; then
+    ok "Claude Code jamf-docs MCP: registered"
+  else
+    attention "Claude Code jamf-docs MCP: missing or drifted — run make ai-repair"
+  fi
   if claude_mcp_http_matches "${_claude_json}" slack "https://mcp.slack.com/mcp"; then
     ok "Claude Code slack MCP: registered"
   else

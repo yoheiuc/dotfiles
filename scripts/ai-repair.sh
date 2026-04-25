@@ -32,6 +32,10 @@ restart_needed=0
 # ---- Claude Code MCP registration (JSON direct) -----------------------------
 log "Claude Code MCP registration..."
 EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
+# Jamf 公式 docs MCP (https://developer.jamf.com/mcp) — Jamf Pro API 仕様検索のみ。
+# Read-only / 無認証 / remote HTTP なので L2 「remote MCP > local stdio MCP」と完全 fit。
+# 端末 / ポリシーへの実書き込みは別 MCP (jamf-mcp-server) が必要、それは判断保留中。
+JAMF_DOCS_CLAUDE_ENTRY='{"type":"http","url":"https://developer.jamf.com/mcp"}'
 # Slack's clientId / callbackPort below are public values published in Slack's
 # official docs (https://docs.slack.dev/ai/slack-mcp-server/connect-to-claude/),
 # not secrets. OAuth tokens themselves are managed by Claude Code, not dotfiles.
@@ -44,6 +48,7 @@ VISION_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@tuannvm/visi
 claude_vision_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)"
 claude_vision_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
+claude_jamf_docs_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('jamf-docs',{}).get('url','')" 2>/dev/null || true)"
 claude_slack_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
 
 _vision_expected_args='-y|@tuannvm/vision-mcp-server'
@@ -64,6 +69,14 @@ else
   ok "Claude Code: exa MCP already registered"
 fi
 
+if [[ "${claude_jamf_docs_url}" != "https://developer.jamf.com/mcp" ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" jamf-docs "${JAMF_DOCS_CLAUDE_ENTRY}"
+  ok "Claude Code: jamf-docs MCP registered"
+  restart_needed=1
+else
+  ok "Claude Code: jamf-docs MCP already registered"
+fi
+
 if [[ "${claude_slack_url}" != "https://mcp.slack.com/mcp" ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" slack "${SLACK_CLAUDE_ENTRY}"
   ok "Claude Code: slack MCP registered"
@@ -72,7 +85,7 @@ else
   ok "Claude Code: slack MCP already registered"
 fi
 
-unset claude_vision_cmd claude_vision_args claude_exa_url claude_slack_url
+unset claude_vision_cmd claude_vision_args claude_exa_url claude_jamf_docs_url claude_slack_url
 
 # Strip retired hook artifacts. The hooks block itself is wholesale-rewritten
 # below (so orphan UserPromptSubmit entries for session-topic disappear from
