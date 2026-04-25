@@ -40,6 +40,13 @@ EOF
 make_stub claude 'case "${1:-}" in
   --version) echo "claude 1.0.0 (native)"; exit 0 ;;
   install) exit 0 ;;
+  plugin|plugins)
+    case "${2:-}" in
+      marketplace) exit 0 ;;
+      install) exit 0 ;;
+      *) exit 0 ;;
+    esac
+    ;;
   *) exit 0 ;;
 esac'
 
@@ -86,6 +93,29 @@ cat > "${HOME}/.claude.json" <<'EOF'
 }
 EOF
 
+# Pre-populate Claude Code plugin state so post-setup takes the "already
+# installed" branch for the marketplace + each LSP plugin (idempotent path).
+mkdir -p "${HOME}/.claude/plugins"
+cat > "${HOME}/.claude/plugins/known_marketplaces.json" <<'EOF'
+{
+  "claude-plugins-official": {
+    "source": {"source": "github", "repo": "anthropics/claude-plugins-official"}
+  }
+}
+EOF
+# Build installed_plugins.json from the same list doctor / post-setup use.
+source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
+{
+  printf '{\n  "plugins": {\n'
+  _sep=""
+  for _p in "${CLAUDE_LSP_PLUGINS[@]}" "${CLAUDE_GENERAL_PLUGINS[@]}"; do
+    printf '%s    "%s@%s": {}' "${_sep}" "${_p}" "${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
+    _sep=$',\n'
+  done
+  printf '\n  }\n}\n'
+} > "${HOME}/.claude/plugins/installed_plugins.json"
+unset _p _sep
+
 # brew-autoupdate: no plist exists, so the cleanup no-op is the expected path.
 
 # ai-repair.sh is called by post-setup.sh when uvx is present. Stub that too
@@ -117,6 +147,9 @@ assert_eq "0" "${RUN_STATUS}" "post-setup first run should succeed"
 assert_contains "${RUN_OUTPUT}" "Claude Code auto-update channel: latest" "post-setup should normalize Claude channel"
 assert_contains "${RUN_OUTPUT}" "sequential-thinking" "post-setup should touch sequential-thinking registration"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "post-setup should disable brew autoupdate"
+assert_contains "${RUN_OUTPUT}" "marketplace claude-plugins-official: already registered" "post-setup should skip marketplace add when present"
+assert_contains "${RUN_OUTPUT}" "plugin pyright-lsp: already installed" "post-setup should skip already-installed LSP plugin"
+assert_contains "${RUN_OUTPUT}" "plugin claude-md-management: already installed" "post-setup should skip already-installed general plugin"
 
 hash_settings_1="$(hash_file "${HOME}/.claude/settings.json")"
 hash_claudejson_1="$(hash_file "${HOME}/.claude.json")"

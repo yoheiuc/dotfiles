@@ -19,6 +19,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_ROOT}/scripts/lib/ui.sh"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
 source "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh"
+source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
 
 log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 
@@ -47,6 +48,43 @@ else
 fi
 ok "Claude Code auto-update channel: latest"
 unset CLAUDE_SETTINGS_JSON claude_path
+
+# ---- Claude Code marketplace + LSP plugins ---------------------------------
+# Per-language LSP plugins are distributed via anthropics/claude-plugins-official.
+# Register the marketplace once, then install each plugin idempotently. The list
+# of plugins lives in scripts/lib/claude-plugins.sh so doctor.sh verifies the
+# same set.
+log "Claude Code plugins (claude-plugins-official)..."
+
+if command -v claude &>/dev/null; then
+  if jq -e --arg name "${CLAUDE_PLUGIN_MARKETPLACE_NAME}" \
+      'has($name)' "${HOME}/.claude/plugins/known_marketplaces.json" >/dev/null 2>&1; then
+    ok "marketplace ${CLAUDE_PLUGIN_MARKETPLACE_NAME}: already registered"
+  else
+    log "Adding marketplace ${CLAUDE_PLUGIN_MARKETPLACE_SOURCE}..."
+    if claude plugin marketplace add "${CLAUDE_PLUGIN_MARKETPLACE_SOURCE}"; then
+      ok "marketplace ${CLAUDE_PLUGIN_MARKETPLACE_NAME}: registered"
+    else
+      warn "marketplace add failed — run manually: claude plugin marketplace add ${CLAUDE_PLUGIN_MARKETPLACE_SOURCE}"
+    fi
+  fi
+
+  for _plugin in "${CLAUDE_LSP_PLUGINS[@]}" "${CLAUDE_GENERAL_PLUGINS[@]}"; do
+    if claude_plugin_is_installed "${_plugin}"; then
+      ok "plugin ${_plugin}: already installed"
+    else
+      log "Installing plugin ${_plugin}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}..."
+      if claude plugin install "${_plugin}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"; then
+        ok "plugin ${_plugin}: installed"
+      else
+        warn "plugin ${_plugin} install failed — run manually: claude plugin install ${_plugin}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
+      fi
+    fi
+  done
+  unset _plugin
+else
+  warn "claude not found — skipping plugin install"
+fi
 
 # ---- clasp (Google Apps Script CLI) ----------------------------------------
 log "clasp..."

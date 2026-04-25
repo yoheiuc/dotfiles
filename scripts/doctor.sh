@@ -11,6 +11,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_ROOT}/scripts/lib/ui.sh"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
 source "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh"
+source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
+source "${REPO_ROOT}/scripts/lib/claude-checks.sh"
 
 fail() { printf '  \033[1;31m✗\033[0m  %s\n' "$*"; REQUIRED_FAILED=$((REQUIRED_FAILED + 1)); }
 
@@ -290,30 +292,38 @@ fi
 section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
   ok "$(claude --version 2>&1 | head -1)"
-  if [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('autoUpdatesChannel','')" 2>/dev/null || true)" == "latest" ]]; then
+  if claude_autoupdate_is_latest; then
     ok "auto-update channel: latest"
   else
     warn "auto-update channel should be latest — run: ./scripts/post-setup.sh"
   fi
-  _claude_json="${HOME}/.claude.json"
-  if [[ "$(ai_config_json_read "${_claude_json}" "'present' if 'serena' in d.get('mcpServers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
+  if claude_mcp_present "${HOME}/.claude.json" serena; then
     warn "serena MCP: legacy registration detected — run: make ai-repair (retired in favor of native LSP)"
   else
     ok "serena MCP: removed (native LSP plugins in use)"
   fi
-  unset _claude_json
 
-  # frontend-design moved from a vendored skill under ~/.claude/skills/ to the
-  # claude-plugins-official marketplace (2026-04-24). Claude Code stores the
-  # installed-plugin list at ~/.claude/plugins/installed_plugins.json under
-  # `plugins.<name>@<marketplace>`.
-  _claude_plugins="${HOME}/.claude/plugins/installed_plugins.json"
-  if [[ -f "${_claude_plugins}" ]] && jq -e '.plugins | has("frontend-design@claude-plugins-official")' "${_claude_plugins}" >/dev/null 2>&1; then
-    ok "frontend-design plugin: installed (via claude-plugins-official)"
+  # Plugins from claude-plugins-official are installed via post-setup.sh.
+  # Expected lists live in scripts/lib/claude-plugins.sh; predicates in
+  # scripts/lib/claude-checks.sh. Both are shared with ai-audit / post-setup.
+  _lsp_missing="$(claude_lsp_plugins_missing | tr '\n' ' ')"
+  if [[ -z "${_lsp_missing// /}" ]]; then
+    ok "LSP plugins: all ${#CLAUDE_LSP_PLUGINS[@]} installed (via ${CLAUDE_PLUGIN_MARKETPLACE_NAME})"
   else
-    warn "frontend-design plugin missing — run: claude plugin install frontend-design@claude-plugins-official"
+    _lsp_count="$(claude_lsp_plugins_missing | wc -l | tr -d ' ')"
+    warn "LSP plugins missing (${_lsp_count}/${#CLAUDE_LSP_PLUGINS[@]}): ${_lsp_missing% } — run: ./scripts/post-setup.sh"
+    unset _lsp_count
   fi
-  unset _claude_plugins
+
+  _general_missing="$(claude_general_plugins_missing | tr '\n' ' ')"
+  if [[ -z "${_general_missing// /}" ]]; then
+    ok "general plugins: all ${#CLAUDE_GENERAL_PLUGINS[@]} installed (via ${CLAUDE_PLUGIN_MARKETPLACE_NAME})"
+  else
+    _general_count="$(claude_general_plugins_missing | wc -l | tr -d ' ')"
+    warn "general plugins missing (${_general_count}/${#CLAUDE_GENERAL_PLUGINS[@]}): ${_general_missing% } — run: ./scripts/post-setup.sh"
+    unset _general_count
+  fi
+  unset _lsp_missing _general_missing
 
   if [[ -f "${HOME}/.claude/skills/find-skills/SKILL.md" ]]; then
     ok "find-skills skill: present"

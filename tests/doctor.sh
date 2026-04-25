@@ -253,6 +253,20 @@ cat > "${home_ok}/.claude/settings.json" <<'EOF'
   "autoUpdatesChannel": "latest"
 }
 EOF
+# Pre-populate installed_plugins.json with the full expected LSP set so the
+# healthy scenario passes the LSP plugin check.
+mkdir -p "${home_ok}/.claude/plugins"
+source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
+{
+  printf '{\n  "plugins": {\n'
+  _sep=""
+  for _p in "${CLAUDE_LSP_PLUGINS[@]}" "${CLAUDE_GENERAL_PLUGINS[@]}"; do
+    printf '%s    "%s@%s": {}' "${_sep}" "${_p}" "${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
+    _sep=$',\n'
+  done
+  printf '\n  }\n}\n'
+} > "${home_ok}/.claude/plugins/installed_plugins.json"
+unset _p _sep
 run_capture run_doctor "${home_ok}" \
   LAUNCHCTL_AUTUPDATE_LOADED=0 \
   BREW_FORMULAE=$'chezmoi\ngit\n' \
@@ -263,6 +277,8 @@ assert_contains "${RUN_OUTPUT}" "Brewfile: all packages present" "doctor should 
 assert_contains "${RUN_OUTPUT}" "auto-update channel: latest" "doctor should validate Claude channel"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "doctor should validate disabled brew autoupdate policy"
 assert_contains "${RUN_OUTPUT}" "serena MCP: removed (native LSP plugins in use)" "doctor should confirm Serena is retired"
+assert_contains "${RUN_OUTPUT}" "LSP plugins: all 12 installed" "doctor should confirm all LSP plugins are present"
+assert_contains "${RUN_OUTPUT}" "general plugins: all 4 installed" "doctor should confirm all general plugins are present"
 assert_contains "${RUN_OUTPUT}" "Google Cloud SDK" "doctor should detect gcloud version"
 assert_contains "${RUN_OUTPUT}" "VERIFY_X509_STRICT bypass: active" "doctor should confirm SSL compat is active"
 assert_contains "${RUN_OUTPUT}" "clasp 2.5.0" "doctor should detect clasp version"
@@ -317,6 +333,8 @@ assert_eq "0" "${RUN_STATUS}" "doctor should stay green when only optional drift
 assert_contains "${RUN_OUTPUT}" "auto-update channel should be latest" "doctor should warn on Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: enabled, but dotfiles policy is disabled" "doctor should warn when brew autoupdate is enabled"
 assert_contains "${RUN_OUTPUT}" "serena MCP: legacy registration detected" "doctor should warn when a legacy Serena MCP registration is still present"
+assert_contains "${RUN_OUTPUT}" "LSP plugins missing" "doctor should warn when LSP plugins are not installed"
+assert_contains "${RUN_OUTPUT}" "general plugins missing" "doctor should warn when general plugins are not installed"
 assert_contains "${RUN_OUTPUT}" "VERIFY_X509_STRICT bypass: not active" "doctor should warn when SSL compat is missing"
 assert_contains "${RUN_OUTPUT}" "clasp not found" "doctor should warn when clasp is missing"
 

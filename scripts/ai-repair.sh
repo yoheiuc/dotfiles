@@ -91,12 +91,12 @@ if [[ -d "${HOME}/.claude/session-topics" ]]; then
   rm -rf "${HOME}/.claude/session-topics"
   ok "Claude Code: removed retired session-topics cache"
 fi
-# frontend-design moved from a vendored skill to a claude-plugins-official
-# plugin (2026-04-24). chezmoi doesn't auto-drop previously managed dirs, so
-# prune the stale vendored copy here.
+# frontend-design was retired entirely on 2026-04-24 (commit c606583).
+# chezmoi doesn't auto-drop previously managed dirs, so prune the stale
+# vendored copy here so old machines converge on `make ai-repair`.
 if [[ -d "${HOME}/.claude/skills/frontend-design" ]]; then
   rm -rf "${HOME}/.claude/skills/frontend-design"
-  ok "Claude Code: removed retired vendored skill ~/.claude/skills/frontend-design (now a plugin)"
+  ok "Claude Code: removed retired vendored skill ~/.claude/skills/frontend-design"
 fi
 unset _orphan
 
