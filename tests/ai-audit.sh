@@ -82,7 +82,25 @@ cp "${REPO_ROOT}/scripts/lib/claude-plugins.sh" "${tmpdir}/scripts/lib/claude-pl
 cp "${REPO_ROOT}/scripts/lib/claude-checks.sh" "${tmpdir}/scripts/lib/claude-checks.sh"
 chmod +x "${tmpdir}/scripts/ai-audit.sh" "${tmpdir}/scripts/lib/ai-config.sh"
 
+# Generate a stub ~/.claude/plugins/installed_plugins.json with every expected
+# plugin marked installed. ai-audit shares the same predicates as doctor, so
+# the test needs the same backing file shape. Re-callable to reset state
+# between scenarios.
+# shellcheck source=/dev/null
+source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
+write_installed_plugins_stub() {
+  mkdir -p "${HOME}/.claude/plugins"
+  python3 - <<PY > "${HOME}/.claude/plugins/installed_plugins.json"
+import json
+plugins = {}
+for name in "${CLAUDE_LSP_PLUGINS[*]} ${CLAUDE_GENERAL_PLUGINS[*]}".split():
+    plugins[f"{name}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"] = {}
+print(json.dumps({"plugins": plugins}, indent=2))
+PY
+}
+
 # ---- Scenario 1: clean case ----
+write_installed_plugins_stub
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "latest",
@@ -133,7 +151,14 @@ assert_not_contains "${RUN_OUTPUT}" "Claude Code serena MCP: legacy entry presen
 assert_not_contains "${RUN_OUTPUT}" "Retired Serena state still on disk" "ai-audit should not flag Serena state when absent"
 assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.codex" "ai-audit should report absence of retired Codex state"
 assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.gemini" "ai-audit should report absence of retired Gemini state"
+assert_contains "${RUN_OUTPUT}" "LSP plugins: all ${#CLAUDE_LSP_PLUGINS[@]} installed" "ai-audit should validate LSP plugins are installed"
+assert_contains "${RUN_OUTPUT}" "general plugins: all ${#CLAUDE_GENERAL_PLUGINS[@]} installed" "ai-audit should validate general plugins are installed"
 assert_contains "${RUN_OUTPUT}" "AI config audit looks good." "ai-audit should report a clean result"
+
+# ---- Scenario 1b: --quiet on a clean tree ----
+run_capture bash "${tmpdir}/scripts/ai-audit.sh" --quiet
+assert_eq "0" "${RUN_STATUS}" "ai-audit --quiet should exit 0 when clean"
+assert_eq "" "${RUN_OUTPUT}" "ai-audit --quiet should print nothing when clean"
 
 # ---- Scenario 2: drift + registrations ----
 cat > "${HOME}/.claude/settings.json" <<'EOF'
@@ -168,6 +193,19 @@ assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.cod
 assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.gemini" "ai-audit should flag retired Gemini state"
 assert_contains "${RUN_OUTPUT}" "Claude settings backups: found backup files to review or delete" "ai-audit should report backup files"
 assert_contains "${RUN_OUTPUT}" "AI config audit needs attention:" "ai-audit should summarize warnings"
+
+# ---- Scenario 2b: --quiet on a dirty tree exits non-zero ----
+run_capture bash "${tmpdir}/scripts/ai-audit.sh" --quiet
+assert_eq "1" "${RUN_STATUS}" "ai-audit --quiet should exit 1 when attention items exist"
+assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk" "ai-audit --quiet should still print attention lines"
+assert_not_contains "${RUN_OUTPUT}" "AI config audit" "ai-audit --quiet should suppress the summary banner"
+
+# ---- Scenario 2c: missing plugins surface as attention ----
+rm -f "${HOME}/.claude/plugins/installed_plugins.json"
+run_capture bash "${tmpdir}/scripts/ai-audit.sh"
+assert_contains "${RUN_OUTPUT}" "LSP plugins missing" "ai-audit should flag missing LSP plugins"
+assert_contains "${RUN_OUTPUT}" "general plugins missing" "ai-audit should flag missing general plugins"
+write_installed_plugins_stub  # restore for following scenarios
 
 # Clean up retired-state dirs for next scenario
 rm -rf "${HOME}/.codex" "${HOME}/.gemini"

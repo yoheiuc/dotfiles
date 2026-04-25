@@ -8,6 +8,9 @@
 #   -q, --quiet   Suppress section / ok / info lines and the final summary.
 #                 Only attention items are printed, so CI / notification
 #                 pipelines can grep stdout (empty = clean).
+#                 Also makes the script exit non-zero (1) when at least one
+#                 attention item is found, so CI can fail the job directly.
+#                 Default mode always exits 0 (informational).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,10 +24,11 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     -q|--quiet) QUIET=1; shift ;;
     -h|--help)
-      # Print the leading comment block (lines 2..10), stripping the leading
-      # `#` / `# ` so it reads as plain help text. BSD sed (default on macOS)
-      # does not support `\?`, so use `[[:space:]]\{0,1\}` for portability.
-      sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^#[[:space:]]\{0,1\}//'
+      # Render the leading comment block as plain help text: skip the shebang,
+      # take consecutive `#`-prefixed lines, strip the leading `#` / `# `,
+      # and stop at the first non-comment line. Avoids line-number drift.
+      awk 'NR==1{next} /^#/{sub(/^#[[:space:]]?/,""); print; next} {exit}' \
+        "${BASH_SOURCE[0]}"
       exit 0
       ;;
     *)
@@ -182,6 +186,24 @@ else
   attention "Claude Code MCP config: missing (${_claude_json})"
 fi
 
+section "Claude Code Plugins"
+# Plugins from claude-plugins-official are installed via post-setup.sh.
+# Same predicates / output policy as scripts/doctor.sh — list names only on
+# missing, count only when fully installed.
+_lsp_missing="$(claude_lsp_plugins_missing | tr '\n' ' ')"
+if [[ -z "${_lsp_missing// /}" ]]; then
+  ok "LSP plugins: all ${#CLAUDE_LSP_PLUGINS[@]} installed (via ${CLAUDE_PLUGIN_MARKETPLACE_NAME})"
+else
+  attention "LSP plugins missing: ${_lsp_missing% } — run: ./scripts/post-setup.sh"
+fi
+_general_missing="$(claude_general_plugins_missing | tr '\n' ' ')"
+if [[ -z "${_general_missing// /}" ]]; then
+  ok "general plugins: all ${#CLAUDE_GENERAL_PLUGINS[@]} installed (via ${CLAUDE_PLUGIN_MARKETPLACE_NAME})"
+else
+  attention "general plugins missing: ${_general_missing% } — run: ./scripts/post-setup.sh"
+fi
+unset _lsp_missing _general_missing
+
 section "Retired Serena state"
 # Serena MCP was retired in favor of Claude Code's native LSP tool plus the
 # per-language plugins shipped via claude-plugins-official. Leftover state from
@@ -204,4 +226,8 @@ if [[ "${QUIET}" != "1" ]]; then
   else
     printf '\033[1;33mAI config audit needs attention: %s item(s).\033[0m\n' "${ATTENTION_COUNT}"
   fi
+elif [[ "${ATTENTION_COUNT}" -gt 0 ]]; then
+  # Quiet mode is for CI / scripted use — propagate the failure via exit code
+  # so callers can `if ! ai-audit -q; then ...` without grep'ing stdout.
+  exit 1
 fi
