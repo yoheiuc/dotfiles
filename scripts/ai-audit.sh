@@ -8,6 +8,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/ui.sh"
 source "${SCRIPT_DIR}/lib/ai-config.sh"
+source "${SCRIPT_DIR}/lib/claude-plugins.sh"
+source "${SCRIPT_DIR}/lib/claude-checks.sh"
 
 ATTENTION_COUNT=0
 
@@ -84,13 +86,13 @@ unset _retired_path
 
 section "Claude Code Baseline"
 if [[ -f "${HOME}/.claude/settings.json" ]]; then
-  if [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('autoUpdatesChannel','')" 2>/dev/null || true)" == "latest" ]]; then
+  if claude_autoupdate_is_latest; then
     ok "Claude Code: auto-update channel is latest"
   else
     attention "Claude Code: auto-update channel should be latest"
   fi
 
-  if [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('env',{}).get('ENABLE_TOOL_SEARCH','')" 2>/dev/null || true)" == "auto:5" ]]; then
+  if claude_enable_tool_search_is_set; then
     ok "Claude Code: ENABLE_TOOL_SEARCH env is set"
   else
     attention "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5 — run make ai-repair"
@@ -98,65 +100,35 @@ if [[ -f "${HOME}/.claude/settings.json" ]]; then
 
   # Hooks are baseline-managed by dotfiles. Verify each expected command is
   # wired up; tolerate extra user-added hooks under other matchers.
-  _claude_hooks_cmds="$(ai_config_json_read "${HOME}/.claude/settings.json" "sorted({h.get('command','') for events in d.get('hooks',{}).values() if isinstance(events,list) for entry in events if isinstance(entry,dict) for h in entry.get('hooks',[]) if isinstance(h,dict)})" 2>/dev/null || true)"
   for _expected_cmd in '$HOME/.claude/lsp-hint.sh' '$HOME/.claude/auto-save.sh'; do
-    if [[ "${_claude_hooks_cmds}" == *"${_expected_cmd}"* ]]; then
+    if claude_hook_command_present "${_expected_cmd}"; then
       ok "Claude Code: hook registered (${_expected_cmd})"
     else
       attention "Claude Code: hook missing (${_expected_cmd}) — run make ai-repair"
     fi
   done
-  unset _claude_hooks_cmds _expected_cmd
+  unset _expected_cmd
 else
   attention "Claude Code settings: missing (${HOME}/.claude/settings.json)"
 fi
 
-# Check a Claude Code stdio MCP by command + args.
-# Usage: check_claude_stdio_mcp <json_file> <server_name> <expected_cmd> <expected_args_pipe_joined>
-check_claude_stdio_mcp() {
-  local file="$1" name="$2" expected_cmd="$3" expected_args="$4"
-  local actual_cmd actual_args
-  actual_cmd="$(ai_config_json_read "${file}" "d.get('mcpServers',{}).get('${name}',{}).get('command','')" 2>/dev/null || true)"
-  actual_args="$(ai_config_json_read "${file}" "'|'.join(d.get('mcpServers',{}).get('${name}',{}).get('args',[]))" 2>/dev/null || true)"
-  if [[ "${actual_cmd}" == "${expected_cmd}" && "${actual_args}" == "${expected_args}" ]]; then
-    ok "Claude Code ${name} MCP: registered"
-  else
-    attention "Claude Code ${name} MCP: missing or drifted — run make ai-repair"
-  fi
-}
-
-# Check a Claude Code HTTP MCP by url (and optionally type).
-# Usage: check_claude_http_mcp <json_file> <server_name> <expected_url>
-check_claude_http_mcp() {
-  local file="$1" name="$2" expected_url="$3"
-  local actual_url actual_type
-  actual_url="$(ai_config_json_read "${file}" "d.get('mcpServers',{}).get('${name}',{}).get('url','')" 2>/dev/null || true)"
-  actual_type="$(ai_config_json_read "${file}" "d.get('mcpServers',{}).get('${name}',{}).get('type','')" 2>/dev/null || true)"
-  if [[ "${actual_url}" == "${expected_url}" && "${actual_type}" == "http" ]]; then
-    ok "Claude Code ${name} MCP: registered"
-  else
-    attention "Claude Code ${name} MCP: missing or drifted — run make ai-repair"
-  fi
-}
-
-# Check a Claude Code MCP by command only (ignoring args).
-# Usage: check_claude_cmd_mcp <json_file> <server_name> <expected_cmd>
-check_claude_cmd_mcp() {
-  local file="$1" name="$2" expected_cmd="$3"
-  local actual_cmd
-  actual_cmd="$(ai_config_json_read "${file}" "d.get('mcpServers',{}).get('${name}',{}).get('command','')" 2>/dev/null || true)"
-  if [[ "${actual_cmd}" == "${expected_cmd}" ]]; then
-    ok "Claude Code ${name} MCP: registered"
-  else
-    attention "Claude Code ${name} MCP: missing or drifted — run make ai-repair"
-  fi
-}
-
 _claude_json="${HOME}/.claude.json"
 if [[ -f "${_claude_json}" ]]; then
-  check_claude_stdio_mcp "${_claude_json}" vision "npx" '-y|@tuannvm/vision-mcp-server'
-  check_claude_http_mcp  "${_claude_json}" exa "https://mcp.exa.ai/mcp"
-  check_claude_http_mcp  "${_claude_json}" slack "https://mcp.slack.com/mcp"
+  if claude_mcp_stdio_matches "${_claude_json}" vision "npx" '-y|@tuannvm/vision-mcp-server'; then
+    ok "Claude Code vision MCP: registered"
+  else
+    attention "Claude Code vision MCP: missing or drifted — run make ai-repair"
+  fi
+  if claude_mcp_http_matches "${_claude_json}" exa "https://mcp.exa.ai/mcp"; then
+    ok "Claude Code exa MCP: registered"
+  else
+    attention "Claude Code exa MCP: missing or drifted — run make ai-repair"
+  fi
+  if claude_mcp_http_matches "${_claude_json}" slack "https://mcp.slack.com/mcp"; then
+    ok "Claude Code slack MCP: registered"
+  else
+    attention "Claude Code slack MCP: missing or drifted — run make ai-repair"
+  fi
 
   # Warn on legacy MCP entries that have been retired.
   #   playwright       → @playwright/cli + skill
@@ -167,9 +139,8 @@ if [[ -f "${_claude_json}" ]]; then
   #   owlocr           → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
   #   chrome-devtools  → playwright-cli attach --cdp=chrome (pwattach helper)
   #   brave-search     → Exa MCP alone covers web search
-  # Match on key presence so HTTP-type entries without `command` are still caught.
   for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search serena; do
-    if [[ "$(ai_config_json_read "${_claude_json}" "'present' if '${_legacy}' in d.get('mcpServers',{}) else ''" 2>/dev/null || true)" == "present" ]]; then
+    if claude_mcp_present "${_claude_json}" "${_legacy}"; then
       attention "Claude Code ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi
   done
