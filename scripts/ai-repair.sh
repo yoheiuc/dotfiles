@@ -149,10 +149,10 @@ done
 unset _legacy
 
 # ---- Claude Code local settings baseline -----------------------------------
-# settings.json is local-managed (permissions / model / effortLevel etc. are
-# written by Claude Code itself). We only upsert the baseline keys dotfiles
-# owns — env toggles, hooks wired to dotfiles-managed scripts, and the
-# auto-update channel. Sibling keys stay untouched.
+# settings.json is partly local-managed (permissions / model / statusLine are
+# written by Claude Code itself). We upsert the baseline keys dotfiles owns —
+# auto-update channel, the ENABLE_TOOL_SEARCH env toggle, effortLevel, and
+# hooks wired to dotfiles-managed scripts. Sibling keys stay untouched.
 CLAUDE_HOOKS_BLOCK='{
   "PreToolUse": [
     {
