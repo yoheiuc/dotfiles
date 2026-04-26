@@ -506,8 +506,8 @@ Claude Code は `settings.json` を自身で頻繁に書き換えるため、dot
 
 | 項目 | 管理 |
 |---|---|
-| `~/.claude/settings.json` の baseline キー（`autoUpdatesChannel` / `env.ENABLE_TOOL_SEARCH` / `hooks`） | dotfiles（ai-repair が upsert） |
-| `~/.claude/settings.json` のそれ以外（`permissions` / `model` / `effortLevel` / `statusLine`） | ローカル |
+| `~/.claude/settings.json` の baseline キー（`autoUpdatesChannel` / `env.ENABLE_TOOL_SEARCH` / `hooks` / `effortLevel`） | dotfiles（ai-repair が upsert） |
+| `~/.claude/settings.json` のそれ以外（`permissions` / `model` / `statusLine`） | ローカル |
 | `~/.claude/settings.local.json` | ローカル（マシン固有 override） |
 | `~/.claude/CLAUDE.md` / `statusline.sh` / `auto-save.sh` / `lsp-hint.sh` / `commands/` / `.mcp.json` | dotfiles |
 | `~/.claude/plugins/*`（`*-lsp` 群） | `post-setup.sh` が `claude plugin install` で配置（per-user、dotfiles には vendor しない） |
@@ -522,6 +522,7 @@ Claude Code は `settings.json` を自身で頻繁に書き換えるため、dot
 
 - `autoUpdatesChannel: "latest"`
 - `env.ENABLE_TOOL_SEARCH: "auto:5"`
+- `effortLevel: "xhigh"`（Opus 4.7 公式推奨デフォルト。`/effort` で local 上書き可、次の `make ai-repair` で snap back）
 - `hooks.PreToolUse` Grep → `lsp-hint.sh`（native LSP tool 推奨を stderr で提示、block はしない）
 - `hooks.Stop` → `auto-save.sh`（コンテキスト使用率が高ければメモリ保存）
 - `hooks.Notification` → macOS 通知（osascript）
