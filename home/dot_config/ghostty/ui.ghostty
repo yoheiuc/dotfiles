@@ -4,10 +4,11 @@ font-family = "JetBrainsMono Nerd Font"
 # weight 500 — Regular だと Meslo と視覚差が小さく「細い」印象が抜けないため
 # 1 段上げる。Bold (700) / SemiBold (600) は terminal だと chunky になりがち
 font-style  = "Medium"
-# Japanese fallback. Latin-first fonts lack JP glyphs, so OS auto-fallback
-# shapes NFD sequences (e.g. ハ + U+3099) as separate cells and 濁点 / 半濁点
-# visibly detach. Hiragino Sans ships with macOS and shapes kana correctly.
-font-family = "Hiragino Sans"
+# Japanese fallback. Hiragino Sans は proportional sans で monospace cell に
+# 押し込まれ baseline / 字幅が microscopic にズレる (の が「浮く」)。UDEV Gothic
+# は BIZ UDゴシック JP を JBM の monospace grid に合わせて design されており、
+# JBM Latin primary と cell 幅が一致するので JP も整列する。
+font-family = "UDEV Gothic NF"
 font-size    = 14
 
 # Catppuccin Mocha 固定。macOS Light mode でも端末は黒で使う。
