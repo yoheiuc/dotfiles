@@ -270,6 +270,41 @@ else
   unset _dir
 fi
 
+# ---- security-best-practices skill (tech-leads-club/agent-skills) ---------
+# Per-language security review references (Go, Python, JavaScript/TypeScript).
+# Previously vendored under home/dot_claude/skills/security-best-practices/
+# (~8K lines). Migrated 2026-04-26 to upstream npx-skills install — the
+# upstream is `npx skills add` compatible, putting it on the L2 "upstream
+# CLI skill distribution" tier above vendoring (which is the last resort).
+# ai-repair.sh actively rms the stale vendored copy first so this re-install
+# step on existing machines doesn't get short-circuited by the existence check.
+log "security-best-practices skill..."
+
+if ! command -v npx &>/dev/null; then
+  warn "npx not found — security-best-practices skipped (run \`make install\` first)"
+else
+  _dir="${HOME}/.claude/skills"
+  mkdir -p "${_dir}"
+  # Marker `.upstream-installed` distinguishes upstream-installed copies from
+  # legacy vendored ones; ai-repair.sh uses this to know whether to rm.
+  if [[ -f "${_dir}/security-best-practices/.upstream-installed" ]]; then
+    ok "security-best-practices skill already installed from upstream under ${_dir/#${HOME}/\~}"
+  else
+    log "Installing security-best-practices skill for claude-code into ${_dir/#${HOME}/\~} ..."
+    if npx -y skills add https://github.com/tech-leads-club/agent-skills -a claude-code -g -y --skill security-best-practices; then
+      # mkdir -p before touch: real installs create the dir, but test stubs
+      # may not — defensive so the marker write never errors out and breaks
+      # the install chain.
+      mkdir -p "${_dir}/security-best-practices"
+      touch "${_dir}/security-best-practices/.upstream-installed"
+      ok "security-best-practices skill installed"
+    else
+      warn "npx skills add failed — re-run or install manually"
+    fi
+  fi
+  unset _dir
+fi
+
 # ---- Homebrew share perms (zsh compinit) ----------------------------------
 # Homebrew installs /opt/homebrew/share as group-writable (drwxrwxr-x), which
 # zsh's compinit flags as "insecure" and prompts on every shell start. Drop

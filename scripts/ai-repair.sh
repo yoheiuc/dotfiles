@@ -114,6 +114,20 @@ if [[ -d "${HOME}/.claude/skills/frontend-design" ]]; then
   rm -rf "${HOME}/.claude/skills/frontend-design"
   ok "Claude Code: removed retired vendored skill ~/.claude/skills/frontend-design"
 fi
+# security-best-practices: vendor → upstream-install transition (2026-04-26).
+# The skill is now installed by post-setup.sh via `npx skills add` from
+# tech-leads-club/agent-skills (L2 "upstream CLI skill distribution" tier).
+# Drop the stale vendored copy so post-setup's existence check sees no files
+# and re-installs the upstream version on the next `make sync` / post-setup.
+# A SKILL.md hash check is overkill — the upstream re-install is idempotent.
+if [[ -d "${HOME}/.claude/skills/security-best-practices" ]] && \
+   [[ ! -f "${HOME}/.claude/skills/security-best-practices/.upstream-installed" ]]; then
+  # Use a marker file to distinguish vendored copies from upstream-installed
+  # ones. Vendored copies (pre-2026-04-26) don't have the marker; upstream
+  # installs by post-setup.sh write it on success.
+  rm -rf "${HOME}/.claude/skills/security-best-practices"
+  ok "Claude Code: removed legacy vendored skill ~/.claude/skills/security-best-practices (will be re-installed from upstream)"
+fi
 # Codex CLI was retired on 2026-04 alongside Gemini (see docs/notes/current-state.md).
 # `home/dot_codex/` source was removed but chezmoi doesn't auto-prune the target,
 # so ~/.codex/ persists on machines that synced before the source was deleted.
