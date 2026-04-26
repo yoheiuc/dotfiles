@@ -10,8 +10,8 @@ font-style  = "Medium"
 font-family = "Hiragino Sans"
 font-size    = 14
 
-# Catppuccin: auto-switch with system appearance.
-theme = light:Catppuccin Latte,dark:Catppuccin Mocha
+# Catppuccin Mocha 固定。macOS Light mode でも端末は黒で使う。
+theme = Catppuccin Mocha
 
 # Window — opaque (transparency was distracting).
 background-opacity   = 1.0
