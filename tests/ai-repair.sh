@@ -114,7 +114,7 @@ assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "my-statusl
 assert_not_contains "$(cat "${HOME}/.claude.json")" '"serena"' "ai-repair should not register retired Serena MCP for Claude Code"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '"github"' "ai-repair should not register removed GitHub MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-repair should register Exa MCP for Claude Code"
-assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.exa.ai/mcp"' "ai-repair should set Exa MCP URL for Claude Code"
+assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa"' "ai-repair should set Exa MCP URL with all 3 tools enabled"
 assert_contains "$(cat "${HOME}/.claude.json")" '"jamf-docs"' "ai-repair should register Jamf docs MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://developer.jamf.com/mcp"' "ai-repair should set Jamf docs MCP URL for Claude Code"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'mcp.notion.com' "ai-repair should not register retired Notion MCP for Claude Code"

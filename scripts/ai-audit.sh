@@ -162,7 +162,7 @@ if [[ -f "${_claude_json}" ]]; then
   else
     attention "Claude Code vision MCP: missing or drifted — run make ai-repair"
   fi
-  if claude_mcp_http_matches "${_claude_json}" exa "https://mcp.exa.ai/mcp"; then
+  if claude_mcp_http_matches "${_claude_json}" exa "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa"; then
     ok "Claude Code exa MCP: registered"
   else
     attention "Claude Code exa MCP: missing or drifted — run make ai-repair"

@@ -31,7 +31,10 @@ restart_needed=0
 
 # ---- Claude Code MCP registration (JSON direct) -----------------------------
 log "Claude Code MCP registration..."
-EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp"}'
+# Exa MCP `?tools=` is a filter parameter (per https://exa.ai/docs/reference/exa-mcp).
+# Listing all 3 tools enables web_search_exa + web_fetch_exa (defaults) plus
+# web_search_advanced_exa (domain / date / category filter for technical queries).
+EXA_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa"}'
 # Jamf 公式 docs MCP (https://developer.jamf.com/mcp) — Jamf Pro API 仕様検索のみ。
 # Read-only / 無認証 / remote HTTP なので L2 「remote MCP > local stdio MCP」と完全 fit。
 # 端末 / ポリシーへの実書き込みは別 MCP (jamf-mcp-server) が必要、それは判断保留中。
@@ -61,7 +64,7 @@ else
 fi
 unset _vision_expected_args
 
-if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp" ]]; then
+if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa" ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" exa "${EXA_CLAUDE_ENTRY}"
   ok "Claude Code: exa MCP registered"
   restart_needed=1

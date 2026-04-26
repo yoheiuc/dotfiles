@@ -110,7 +110,7 @@ cat > "${HOME}/.claude.json" <<EOF
   "mcpServers": {
     "exa": {
       "type": "http",
-      "url": "https://mcp.exa.ai/mcp"
+      "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa"
     },
     "jamf-docs": {
       "type": "http",
@@ -214,7 +214,7 @@ rm -rf "${HOME}/.codex" "${HOME}/.gemini"
 cat > "${HOME}/.claude.json" <<EOF
 {
   "mcpServers": {
-    "exa": {"type":"http","url":"https://mcp.exa.ai/mcp"},
+    "exa": {"type":"http","url":"https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa"},
     "chrome-devtools": {"type":"stdio","command":"npx","args":["-y","chrome-devtools-mcp@latest"]},
     "brave-search": {"type":"stdio","command":"${HOME}/.local/bin/mcp-with-keychain-secret","args":["BRAVE_API_KEY","dotfiles.ai.mcp","brave-api-key","npx","-y","@modelcontextprotocol/server-brave-search"]},
     "playwright": {"type":"stdio","command":"npx","args":["-y","@playwright/mcp@latest"]},
