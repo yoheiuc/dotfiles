@@ -19,6 +19,7 @@
   1. `~/.claude/skills/` 配下に合致しそうな skill があれば使う
   2. 思い当たらなければ `find-skills` skill（`~/.claude/skills/find-skills/`）で英語キーワード検索 — `npx skills find "<keyword>"` / `npx skills list` / `npx skills check` も同等
   3. 見つかったら SKILL.md の手順に従う
+- 新しい hook / script / 自動化 / 抽象化を入れたくなったら、まず **Claude Code 標準機能**（hooks / slash commands / skills / plugins / built-in tools / native LSP）で同等のことができないか先に確認する。標準にあれば custom 実装は入れない（dotfiles 肥大化と drift 源を避ける）
 
 ## ツール選択ルール
 
