@@ -135,6 +135,12 @@ if [[ -f "${HOME}/.claude/settings.json" ]]; then
     attention "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5 — run make ai-repair"
   fi
 
+  if claude_effort_is_xhigh; then
+    ok "Claude Code: effortLevel is xhigh"
+  else
+    attention "Claude Code: effortLevel should be xhigh (Opus 4.7 default) — run make ai-repair"
+  fi
+
   # Hooks are baseline-managed by dotfiles. Verify each expected command is
   # wired up; tolerate extra user-added hooks under other matchers.
   for _expected_cmd in '$HOME/.claude/lsp-hint.sh' '$HOME/.claude/auto-save.sh' '$HOME/.claude/chezmoi-auto-apply.sh'; do

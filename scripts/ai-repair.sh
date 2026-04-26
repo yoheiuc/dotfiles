@@ -197,6 +197,17 @@ else
   ok "Claude Code: ENABLE_TOOL_SEARCH env set"
 fi
 
+# effortLevel: xhigh is the Opus 4.7 official recommended default ("ほぼ全タスクで
+# xhigh、最難関だけ max"). Treated as a team-shareable baseline like
+# autoUpdatesChannel — local `/effort` overrides persist until the next
+# `make ai-repair` snaps it back. See L2 judgment log (2026-04-26).
+if [[ "$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "d.get('effortLevel','')" 2>/dev/null || true)" == "xhigh" ]]; then
+  ok "Claude Code: effortLevel already xhigh"
+else
+  ai_config_json_upsert_key "${CLAUDE_SETTINGS_JSON}" effortLevel '"xhigh"'
+  ok "Claude Code: effortLevel set to xhigh"
+fi
+
 # Hooks point at dotfiles-managed scripts (auto-save.sh / lsp-hint.sh), so the
 # block is owned end-to-end by dotfiles — replace wholesale rather than merge.
 # This does NOT clobber user-added hooks: Claude Code concatenates hooks across
