@@ -70,3 +70,19 @@ fi
 
 # bat — syntax highlighter (also drives `delta` syntax theme via `delta.syntax-theme`).
 command -v bat >/dev/null 2>&1 && export BAT_THEME="Catppuccin Mocha"
+
+# yazi — TUI file manager. `y` wraps yazi so quitting on a directory leaves the
+# parent shell `cd`'d there (official --cwd-file pattern). Image preview is
+# auto-enabled via `viu`; fd / ripgrep / bat / poppler are picked up by yazi's
+# preview plugins from PATH without further config.
+if command -v yazi >/dev/null 2>&1; then
+  y() {
+    local tmp cwd
+    tmp="$(mktemp -t yazi-cwd.XXXXXX)" || return 1
+    yazi "$@" --cwd-file="$tmp"
+    if cwd="$(command cat -- "$tmp" 2>/dev/null)" && [[ -n "$cwd" && "$cwd" != "$PWD" ]]; then
+      builtin cd -- "$cwd" || return
+    fi
+    command rm -f -- "$tmp"
+  }
+fi

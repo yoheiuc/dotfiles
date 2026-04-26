@@ -37,6 +37,7 @@ brew "yazi"               # TUI file manager
 brew "difftastic"         # structural diff (complements git-delta)
 brew "poppler"            # PDF utilities (pdftoppm, pdfinfo, etc.)
 brew "mermaid-cli"        # Mermaid → PNG/SVG/PDF (mmdc)
+brew "viu"                # Inline image viewer (Kitty graphics protocol; works in Ghostty / yazi preview)
 brew "pandoc"             # Universal document converter (md ↔ docx / pdf / tex / etc.)
 cask "basictex"           # Minimal LaTeX for Pandoc PDF output (~100MB vs 4GB mactex)
 brew "vim"
