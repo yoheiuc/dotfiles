@@ -31,6 +31,8 @@ CLAUDE_GENERAL_PLUGINS=(
   claude-code-setup         # propose hooks / skills / MCP / subagents from a codebase
   feature-dev               # subagent workflow: explore → design → review
   explanatory-output-style  # opt-in output style with implementation rationale
+  frontend-design           # aesthetic guideline for Web frontend (complements ui-ux-pro-max DB)
+  microsoft-docs            # MS Learn search / fetch + code reference for Azure / .NET / M365
 )
 
 CLAUDE_PLUGIN_MARKETPLACE_NAME="claude-plugins-official"
