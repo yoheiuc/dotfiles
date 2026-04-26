@@ -189,7 +189,7 @@ unset _retired_command _retired_path
 #                      whole point of driving the user's logged-in session
 #   brave-search     → Exa MCP covers the same web-search surface; brave required
 #                      a Keychain-backed API key whose value stopped justifying the
-#                      extra wrapper + ai-secrets flow
+#                      extra wrapper plumbing
 #   serena           → Claude Code native LSP tool + official per-language LSP
 #                      plugins (claude-plugins-official: pyright-lsp / typescript-lsp /
 #                      gopls-lsp / rust-analyzer-lsp / clangd-lsp / csharp-lsp /

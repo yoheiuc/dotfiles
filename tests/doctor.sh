@@ -4,6 +4,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_ROOT}/tests/lib/testlib.sh"
+source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
 
 tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-doctor-test.XXXXXX")"
 trap 'rm -rf "${tmpdir}"' EXIT
@@ -270,7 +271,7 @@ assert_contains "${RUN_OUTPUT}" "claude version >= 2.1.111" "doctor should confi
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "doctor should validate disabled brew autoupdate policy"
 assert_contains "${RUN_OUTPUT}" "serena MCP: removed (native LSP plugins in use)" "doctor should confirm Serena is retired"
 assert_contains "${RUN_OUTPUT}" "LSP plugins: all 12 installed" "doctor should confirm all LSP plugins are present"
-assert_contains "${RUN_OUTPUT}" "general plugins: all 4 installed" "doctor should confirm all general plugins are present"
+assert_contains "${RUN_OUTPUT}" "general plugins: all ${#CLAUDE_GENERAL_PLUGINS[@]} installed" "doctor should confirm all general plugins are present"
 assert_contains "${RUN_OUTPUT}" "Google Cloud SDK" "doctor should detect gcloud version"
 assert_contains "${RUN_OUTPUT}" "VERIFY_X509_STRICT bypass: active" "doctor should confirm SSL compat is active"
 assert_contains "${RUN_OUTPUT}" "clasp 2.5.0" "doctor should detect clasp version"

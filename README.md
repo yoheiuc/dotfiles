@@ -39,7 +39,6 @@ make preview         # 以降の変更は apply 前に必ず diff 確認
 | `make status` | 日常 sanity check |
 | `make ai-audit` | AI 設定 drift 検出（CI 用は `bash scripts/ai-audit.sh --quiet`） |
 | `make ai-repair` | AI 設定 drift 修復（baseline 寄せ + legacy 削除） |
-| `make ai-secrets` | Claude MCP credential を Keychain 保存（現状 consumer なし、framework として残置） |
 | `make install` | brew bundle + `chezmoi apply` + post-setup |
 | `make preview` | `chezmoi diff` + brew preview |
 | `make sync` | `chezmoi apply` + brew sync (cleanup あり) + post-setup |
@@ -137,7 +136,7 @@ dotfiles/
 │   │   ├── dot_mcp.json            # → ~/.claude/.mcp.json (HTTP MCP baseline)
 │   │   └── skills/                 # 同梱 skill (screenshot / doc / pdf / spreadsheet / presentation / jupyter-notebook)
 │   ├── dot_local/
-│   │   ├── bin/                    # ai-secrets / mcp-with-keychain-secret
+│   │   ├── bin/                    # mcp-with-keychain-secret
 │   │   ├── lib/python-ssl-compat/  # Python 3.13 VERIFY_X509_STRICT 無効化
 │   │   └── share/navi/cheats/dotfiles/
 │   └── dot_config/
@@ -148,7 +147,7 @@ dotfiles/
 │   ├── bootstrap.sh                # SSL compat + brew + chezmoi + apply
 │   ├── post-setup.sh               # CLI / skill / stdio MCP 登録、brew-autoupdate 無効化
 │   ├── doctor.sh / status.sh / preview.sh / uninstall.sh / dotfiles-help.sh
-│   ├── ai-audit.sh / ai-repair.sh / ai-secrets.sh / brew-bundle.sh
+│   ├── ai-audit.sh / ai-repair.sh / brew-bundle.sh
 │   └── lib/{ai-config,brew-autoupdate,claude-checks,claude-plugins,ui}.sh
 ├── tests/                          # shell ベースの回帰テスト
 └── docs/
