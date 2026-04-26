@@ -214,6 +214,13 @@ chmod +x "${HOME}/.local/bin/serena-mcp"
 # Leftover vendored frontend-design skill should also be cleaned.
 mkdir -p "${HOME}/.claude/skills/frontend-design"
 : > "${HOME}/.claude/skills/frontend-design/SKILL.md"
+# Retired slash commands (E refactor 2026-04-26) — simulate machines that
+# synced before the source files were deleted; ai-repair should rm them.
+mkdir -p "${HOME}/.claude/commands"
+for _retired in api-design ci debug diagram doc docker notebook pdf presentation refactor screenshot security-review spreadsheet test ui-ux; do
+  : > "${HOME}/.claude/commands/${_retired}.md"
+done
+unset _retired
 python3 -c "
 import json
 p = '${HOME}/.claude/settings.json'
@@ -235,5 +242,12 @@ assert_not_contains "$(cat "${HOME}/.claude/settings.json")" 'UserPromptSubmit' 
 [[ ! -e "${HOME}/.local/bin/serena-mcp" ]] || fail_test "retired serena-mcp wrapper should be removed"
 [[ ! -d "${HOME}/.claude/skills/frontend-design" ]] || fail_test "retired vendored frontend-design skill should be removed"
 assert_contains "${RUN_OUTPUT}" "removed retired vendored skill" "ai-repair should announce frontend-design cleanup"
+
+# Retired slash commands should all be gone, with at least one announcement.
+assert_contains "${RUN_OUTPUT}" "removed retired slash command" "ai-repair should announce retired slash command cleanup"
+for _retired in api-design ci debug diagram doc docker notebook pdf presentation refactor screenshot security-review spreadsheet test ui-ux; do
+  [[ ! -e "${HOME}/.claude/commands/${_retired}.md" ]] || fail_test "retired slash command ${_retired}.md should be removed"
+done
+unset _retired
 
 pass_test "tests/ai-repair.sh"

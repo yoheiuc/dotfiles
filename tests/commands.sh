@@ -4,6 +4,13 @@
 # Each file under home/dot_claude/commands/ becomes `/<name>` in Claude Code
 # after chezmoi apply. Keep them substantive, non-empty, and listed in the
 # README so forks can tell at a glance what's bundled.
+#
+# Floor is intentionally low (3): the E refactor on 2026-04-26 trimmed the
+# bundle to only commands that carry dotfiles-specific helpers (`pwattach` /
+# Exa MCP tool names / etc). Generic methodology / built-in shadows / skill
+# duplicates are gone. If this list grows past 5, re-check whether the
+# additions are actually dotfiles-specific or could be left to skills /
+# built-ins (L1 "Claude Code 標準機能で代替できないか先に確認" rule).
 
 set -euo pipefail
 
@@ -17,8 +24,8 @@ shopt -s nullglob
 commands=( "${COMMANDS_DIR}"/*.md )
 shopt -u nullglob
 
-if (( ${#commands[@]} < 10 )); then
-  fail_test "expected >=10 slash commands, found ${#commands[@]}"
+if (( ${#commands[@]} < 3 )); then
+  fail_test "expected >=3 slash commands, found ${#commands[@]}"
 fi
 
 readme="$(cat "${REPO_ROOT}/README.md")"

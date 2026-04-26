@@ -121,6 +121,27 @@ if [[ -d "${HOME}/.codex" ]]; then
 fi
 unset _orphan
 
+# Slash commands removed in 2026-04 cleanup ("Claude Code 標準機能で代替できる
+# ものは custom 化しない" L1 rule). Two reasons per file:
+#   debug / security-review     → shadow Claude Code built-in /debug, /security-review
+#   doc / notebook / pdf /
+#   presentation / screenshot /
+#   spreadsheet / ui-ux         → duplicate same-domain skill in ~/.claude/skills/
+#                                 (skill auto-trigger covers explicit invocation)
+#   api-design / ci / diagram /
+#   docker / refactor / test    → generic engineering methodology Claude already
+#                                 carries natively; cheat sheet was redundant
+# chezmoi does not prune orphaned target files when the source disappears,
+# so explicitly rm them here on every machine. Safe to re-run.
+for _retired_command in api-design ci debug diagram doc docker notebook pdf presentation refactor screenshot security-review spreadsheet test ui-ux; do
+  _retired_path="${HOME}/.claude/commands/${_retired_command}.md"
+  if [[ -e "${_retired_path}" ]]; then
+    rm -f "${_retired_path}"
+    ok "Claude Code: removed retired slash command ${_retired_path/#${HOME}/\~}"
+  fi
+done
+unset _retired_command _retired_path
+
 # Strip legacy MCP registrations that have been retired.
 #   playwright       → @playwright/cli + skill (see post-setup.sh)
 #   filesystem       → native Claude Code Read/Write/Edit/Grep/Glob tools
