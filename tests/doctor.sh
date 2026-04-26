@@ -153,7 +153,8 @@ set -euo pipefail
 
 case "${1:-}" in
   --version)
-    printf '2.1.84 (Claude Code)\n'
+    # >= 2.1.111 (Opus 4.7 minimum). Bump if doctor's required floor changes.
+    printf '2.1.111 (Claude Code)\n'
     ;;
   *)
     exit 1
@@ -265,6 +266,7 @@ assert_eq "0" "${RUN_STATUS}" "doctor should pass in the healthy case"
 assert_contains "${RUN_OUTPUT}" "Daily checks live in: make status / make ai-audit" "doctor should point to the lighter commands"
 assert_contains "${RUN_OUTPUT}" "Brewfile: all packages present" "doctor should report Brewfile health"
 assert_contains "${RUN_OUTPUT}" "auto-update channel: latest" "doctor should validate Claude channel"
+assert_contains "${RUN_OUTPUT}" "claude version >= 2.1.111" "doctor should confirm Claude meets Opus 4.7 minimum"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "doctor should validate disabled brew autoupdate policy"
 assert_contains "${RUN_OUTPUT}" "serena MCP: removed (native LSP plugins in use)" "doctor should confirm Serena is retired"
 assert_contains "${RUN_OUTPUT}" "LSP plugins: all 12 installed" "doctor should confirm all LSP plugins are present"

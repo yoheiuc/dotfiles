@@ -309,7 +309,20 @@ fi
 
 section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
-  ok "$(claude --version 2>&1 | head -1)"
+  _claude_ver_line="$(claude --version 2>&1 | head -1)"
+  ok "${_claude_ver_line}"
+  # Enforce minimum 2.1.111 — Opus 4.7 cannot be selected on older builds.
+  # `claude --version` prints "<semver> (Claude Code)"; awk picks the first token.
+  # Comparison via `sort -V`: if min sorts first, current >= min.
+  _claude_ver="$(printf '%s\n' "${_claude_ver_line}" | awk '{print $1}')"
+  _claude_min="2.1.111"
+  if [[ -n "${_claude_ver}" ]] && \
+     [[ "$(printf '%s\n%s\n' "${_claude_min}" "${_claude_ver}" | sort -V | head -1)" == "${_claude_min}" ]]; then
+    ok "claude version >= ${_claude_min} (Opus 4.7 ready)"
+  else
+    warn "claude ${_claude_ver:-<unknown>} is below ${_claude_min} — Opus 4.7 needs >= 2.1.111. Run: claude update"
+  fi
+  unset _claude_ver _claude_ver_line _claude_min
   if claude_autoupdate_is_latest; then
     ok "auto-update channel: latest"
   else
