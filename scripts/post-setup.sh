@@ -382,5 +382,5 @@ if command -v playwright-cli >/dev/null 2>&1; then
   printf '    pwattach   (exports PLAYWRIGHT_CLI_SESSION=chrome)\n'
   printf '    → launch Claude Code from that shell\n'
   printf '    pwdetach   (close CDP session; Chrome stays open)\n'
-  printf '  rationale + risks: see README.md "pwattach のセキュリティ"\n'
+  printf '  rationale + risks: see ~/.claude/CLAUDE.md "ブラウザ自動化のセキュリティ規則 (CDP attach 時)"\n'
 fi
