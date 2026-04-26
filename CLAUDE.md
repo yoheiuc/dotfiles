@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # dotfiles — Claude Code Notes
 
 このリポジトリで作業する Claude / 自分が読むためのルール集。会話中の振る舞いルール（簡潔に答える、日本語で返す等）と subagent の運用ルール（呼ぶ / 呼ばない判断とモデル振り分け）は `~/.claude/CLAUDE.md`（L1）側にある。
@@ -9,8 +13,8 @@
 macOS 開発環境（chezmoi で `~/` 以下を管理 + Brewfile + Claude Code 設定）。`home/` 以下が single source of truth。
 
 - 状態確認: `make status` → `make ai-audit` → `make doctor`（深さの順）
-- 修復: `make ai-repair`（AI 設定 drift） / `make sync`（実体寄せ + post-setup）
-- 全テスト: `make test`
+- 修復: `make ai-repair`（AI 設定 drift） / `make sync`（実体寄せ + post-setup、`PULL=1` で `git pull origin main` 同梱）
+- 全テスト: `make test`、単体テスト 1 本だけは `bash tests/<name>.sh`（例: `bash tests/ai-repair.sh`）
 
 詳細・セットアップ手順は `README.md`。
 
