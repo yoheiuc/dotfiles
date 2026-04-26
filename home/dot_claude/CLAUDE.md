@@ -23,7 +23,7 @@
 
 ## ツール選択ルール
 
-テキストで説明するだけで終わらせず、ツールで実行する。
+テキストで説明するだけで終わらせず、ツールで実行する。下表のものは **Brewfile / post-setup で install 済み**＝そのまま Bash から呼んでよい（`which` で都度確認しない）。
 
 | やりたいこと | 使うツール |
 |---|---|
@@ -31,8 +31,13 @@
 | Notion 操作 | `ntn` CLI（`~/.claude/skills/notion-cli/`） |
 | Slack 操作 | `mcp__slack__*` |
 | 図 | Mermaid（`.md` 直埋め）。PNG/SVG は `mmdc` |
+| Markdown スライド | `marp` CLI（`marp deck.md -o deck.pdf` 等） |
+| Markdown ⇔ docx / PDF / HTML 変換 | `pandoc`（PDF は `basictex` 経由） |
+| JSON / YAML / TOML 整形・抽出 | `jq` / `yq`（`gh api ... \| jq` の pipe 連鎖を優先） |
 | ブラウザ操作 | `playwright-cli`。`PLAYWRIGHT_CLI_SESSION=chrome` なら detach しない |
 | GitHub | `gh` CLI |
+| 動画 / 音声変換・メディア処理 | `ffmpeg` |
+| 高速 grep を Bash 経由で叩きたい時 | `rg`（複雑な flag や pipe 連鎖向け。普段は Claude 内蔵 Grep tool が裏で ripgrep を使う） |
 | OCR（日本語含む） | `mcp__vision__ocr_extract_text` |
 | コード構造の理解・リファクタ | Claude Code native LSP tool（下記） |
 

@@ -40,6 +40,8 @@ brew "mermaid-cli"        # Mermaid → PNG/SVG/PDF (mmdc)
 brew "viu"                # Inline image viewer (Kitty graphics protocol; works in Ghostty / yazi preview)
 brew "pandoc"             # Universal document converter (md ↔ docx / pdf / tex / etc.)
 cask "basictex"           # Minimal LaTeX for Pandoc PDF output (~100MB vs 4GB mactex)
+brew "marp-cli"           # Markdown → slide deck (HTML/PDF/PPTX)
+brew "ffmpeg"             # Audio/video transcode and media processing
 brew "vim"
 brew "micro"              # simple terminal text editor
 
