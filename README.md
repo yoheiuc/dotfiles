@@ -57,7 +57,6 @@ make preview         # 以降の変更は apply 前に必ず diff 確認
 「MCP を足すか CLI を足すか何もしないか」「source と実体のどちらを正とするか」「credential をどこに置くか」を、後から迷わないようマトリクスとルールで凍結している。詳細は [`CLAUDE.md`](./CLAUDE.md)。要点だけ:
 
 - **single source of truth は `home/`**（`~/` だけ変えても次の `chezmoi apply` で巻き戻る）
-- **credential は Keychain にだけ置く**（`mcp-with-keychain-secret` wrapper 経由で stdio MCP に注入、設定ファイルには参照だけ）
 - **drift は `make ai-repair` で baseline に snap back**（Claude `~/.claude.json` / hooks / channel / legacy MCP 削除）
 - **AI に見せるアカウントは最小権限**（`pwattach` は AI 専用 Chrome プロファイル強制、Slack/Notion/Workspace の admin アカウントは持ち込まない）
 - **迷ったら削除**（dotfiles 肥大化と drift 源を避ける、標準機能で代替できるなら custom 実装しない）
@@ -117,7 +116,6 @@ chezmoi apply
 
 - [gcloud と企業プロキシ（Python 3.13 問題）](docs/setup-guides/gcloud-python-ssl.md) — Netskope / Zscaler 経由で `VERIFY_X509_STRICT` に弾かれる場合の `sitecustomize.py` workaround
 - [Ghostty 設定](docs/setup-guides/ghostty.md) — `~/.config/ghostty/` の分割構成、GUI 変更の取り込み
-- [仕事用 MCP の setup](docs/work-mcp-setup.md) — Netskope / Microsoft MCP / Jamf 実 tenant / Intune など tenant 固有の MCP（dotfiles 管理外）
 
 ---
 
@@ -136,7 +134,6 @@ dotfiles/
 │   │   ├── dot_mcp.json            # → ~/.claude/.mcp.json (HTTP MCP baseline)
 │   │   └── skills/                 # 同梱 skill (screenshot / doc / pdf / spreadsheet / presentation / jupyter-notebook)
 │   ├── dot_local/
-│   │   ├── bin/                    # mcp-with-keychain-secret
 │   │   ├── lib/python-ssl-compat/  # Python 3.13 VERIFY_X509_STRICT 無効化
 │   │   └── share/navi/cheats/dotfiles/
 │   └── dot_config/
@@ -153,8 +150,7 @@ dotfiles/
 └── docs/
     ├── notes/current-state.md
     ├── examples/                   # chezmoidata.yaml / envrc.playwright.example
-    ├── setup-guides/               # gcloud-python-ssl.md / ghostty.md
-    └── work-mcp-setup.md
+    └── setup-guides/               # gcloud-python-ssl.md / ghostty.md
 ```
 
 ---

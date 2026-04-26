@@ -6,7 +6,6 @@
 
 - ローカルマシンの dotfiles 適用によって生じる脆弱性（credential 漏洩、symlink attack、TOCTOU、privilege escalation など）
 - AI agent（Claude Code）に予期せぬ権限を与える設定不備
-- `mcp-with-keychain-secret` wrapper の credential 取り扱い
 - `pwattach` による実 Chrome 経由のブラウザ操作に関連する blast radius の逸脱
 - chezmoi templating の injection
 
