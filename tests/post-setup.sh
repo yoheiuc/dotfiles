@@ -145,7 +145,9 @@ run_capture env HOME="${HOME}" PATH="${PATH}" HOMEBREW_PREFIX="${HOMEBREW_PREFIX
   bash "${REPO_ROOT}/scripts/post-setup.sh"
 assert_eq "0" "${RUN_STATUS}" "post-setup first run should succeed"
 assert_contains "${RUN_OUTPUT}" "Claude Code auto-update channel: latest" "post-setup should normalize Claude channel"
-assert_contains "${RUN_OUTPUT}" "sequential-thinking" "post-setup should touch sequential-thinking registration"
+# sequential-thinking is now registered by ai-repair.sh (post-setup calls it),
+# so the message comes through that subscript: "sequential-thinking MCP registered"
+assert_contains "${RUN_OUTPUT}" "sequential-thinking MCP" "post-setup should register sequential-thinking via ai-repair"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "post-setup should disable brew autoupdate"
 assert_contains "${RUN_OUTPUT}" "marketplace claude-plugins-official: already registered" "post-setup should skip marketplace add when present"
 assert_contains "${RUN_OUTPUT}" "plugin pyright-lsp: already installed" "post-setup should skip already-installed LSP plugin"
@@ -158,7 +160,7 @@ hash_claudejson_1="$(hash_file "${HOME}/.claude.json")"
 run_capture env HOME="${HOME}" PATH="${PATH}" HOMEBREW_PREFIX="${HOMEBREW_PREFIX}" \
   bash "${REPO_ROOT}/scripts/post-setup.sh"
 assert_eq "0" "${RUN_STATUS}" "post-setup second run (idempotent) should succeed"
-assert_contains "${RUN_OUTPUT}" "sequential-thinking already registered" "second run should skip re-registering sequential-thinking"
+assert_contains "${RUN_OUTPUT}" "sequential-thinking MCP already registered" "second run should skip re-registering sequential-thinking"
 
 hash_settings_2="$(hash_file "${HOME}/.claude/settings.json")"
 hash_claudejson_2="$(hash_file "${HOME}/.claude.json")"

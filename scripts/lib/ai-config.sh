@@ -72,23 +72,3 @@ ai_config_json_upsert_nested_key() {
   python3 "${_AI_CONFIG_PY}" json-upsert-nested-key "$1" "$2" "$3"
 }
 
-# Check MCP registration state in a JSON file.
-# Usage: ai_config_mcp_registration_state <file> <server_name> <expected_command>
-# Prints one of: ok, wrong-command, missing
-ai_config_mcp_registration_state() {
-  local file="$1"
-  local name="$2"
-  local expected_command="$3"
-
-  local actual_command
-  if actual_command="$(ai_config_json_read "${file}" "d.get('mcpServers',{}).get('${name}',{}).get('command','')")"; then
-    if [[ "${actual_command}" == "${expected_command}" ]]; then
-      printf 'ok\n'
-    else
-      printf 'wrong-command\n'
-    fi
-  else
-    printf 'missing\n'
-  fi
-}
-

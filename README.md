@@ -131,7 +131,6 @@ dotfiles/
 │   ├── dot_claude/
 │   │   ├── CLAUDE.md               # → ~/.claude/CLAUDE.md (毎ターン読まれる L1)
 │   │   ├── executable_*.sh         # statusline / auto-save / lsp-hint / chezmoi-auto-apply
-│   │   ├── dot_mcp.json            # → ~/.claude/.mcp.json (HTTP MCP baseline)
 │   │   └── skills/                 # 同梱 skill (screenshot / doc / pdf / spreadsheet / presentation / jupyter-notebook)
 │   ├── dot_local/
 │   │   ├── lib/python-ssl-compat/  # Python 3.13 VERIFY_X509_STRICT 無効化
@@ -200,7 +199,7 @@ fork して自分のマシンに合わせる前提。apply 前に以下を自分
 1. **git identity**: `cp docs/examples/chezmoidata.yaml .chezmoidata.yaml` → `gitIdentity.{name,email}` を差し替え。global config もこの値に合わせる
 2. **Brewfile**: `home/dot_Brewfile` は IT 業務 + AI agent 運用前提（IME / password manager / clipboard manager / 2FA / Chrome / 文書変換）。不要 cask は削除
 3. **AI agent の取捨**: Claude Code を使わないなら `home/dot_claude/` / `scripts/ai-{repair,audit}.sh` / `post-setup.sh` の対応ブロックを落とす。`make test` が通れば consistent
-4. **MCP セット**: 不要 MCP は `home/dot_claude/dot_mcp.json` から削除し、`ai-repair.sh` の baseline と legacy 削除対象を対応させる。新規追加は [`CLAUDE.md`](./CLAUDE.md) のマトリクスを先に通す
+4. **MCP セット**: baseline は `scripts/ai-repair.sh` の 5 本（exa / slack / vision / sequential-thinking / jamf-docs）。不要なら該当 upsert ブロックを削り、`scripts/ai-audit.sh` と `tests/` の対応 assertion / fixture も同時に消す。新規追加は [`CLAUDE.md`](./CLAUDE.md) のマトリクスを先に通す
 5. **terminal / multiplexer / shell**: `home/dot_config/{ghostty,zellij,zsh}` は嗜好が強い領域。fork 先で書き換える前提
 6. **routing table**: `home/dot_claude/CLAUDE.md` は agent が毎回読む指示書。自分の運用に書き換える
 7. **CI**: `.github/workflows/` は外してある。fork 先で `make test` を叩く 1 行 workflow を追加すれば済む

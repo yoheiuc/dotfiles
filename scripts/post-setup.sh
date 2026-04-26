@@ -160,24 +160,10 @@ fi
 
 # ---- ai-repair (Claude Code local drift) ----------------------------------
 # ai-repair は Claude Code 設定ベースラインの補正と legacy MCP 掃除を担当。
+# 5 baseline MCP (vision / sequential-thinking / exa / jamf-docs / slack) と
+# settings.json の baseline 4 key、retired artifact の能動削除まで全部やる。
 # post-setup の一環として必ず走らせる（冪等）。
 bash "${REPO_ROOT}/scripts/ai-repair.sh"
-
-# ---- Sequential Thinking MCP (Claude Code) --------------------------------
-log "Sequential Thinking MCP..."
-
-CLAUDE_JSON="${HOME}/.claude.json"
-SEQ_THINK_ENTRY='{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-sequential-thinking"],"env":{}}'
-
-case "$(ai_config_mcp_registration_state "${CLAUDE_JSON}" sequential-thinking npx)" in
-  ok)
-    ok "Claude Code: sequential-thinking already registered"
-    ;;
-  *)
-    ai_config_json_upsert_mcp "${CLAUDE_JSON}" sequential-thinking "${SEQ_THINK_ENTRY}"
-    ok "Claude Code: sequential-thinking registered"
-    ;;
-esac
 
 # ---- Google Workspace CLI skills (Claude Code) ----------------------------
 log "Google Workspace CLI skills..."

@@ -125,6 +125,11 @@ cat > "${HOME}/.claude.json" <<EOF
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@tuannvm/vision-mcp-server"]
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
     }
   }
 }
@@ -140,6 +145,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/ls
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/auto-save.sh)" "ai-audit should validate auto-save hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/chezmoi-auto-apply.sh)" "ai-audit should validate chezmoi-auto-apply hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: registered" "ai-audit should validate Claude vision MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code sequential-thinking MCP: registered" "ai-audit should validate Claude sequential-thinking MCP"
 assert_not_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "ai-audit should not expect retired Claude Brave Search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code jamf-docs MCP: registered" "ai-audit should validate Claude Jamf docs MCP"
@@ -186,6 +192,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/lsp-h
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/auto-save.sh)" "ai-audit should detect missing auto-save hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/chezmoi-auto-apply.sh)" "ai-audit should detect missing chezmoi-auto-apply hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code vision MCP: missing or drifted" "ai-audit should detect missing Claude vision MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code sequential-thinking MCP: missing or drifted" "ai-audit should detect missing Claude sequential-thinking MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: missing or drifted" "ai-audit should detect missing Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code jamf-docs MCP: missing or drifted" "ai-audit should detect missing Claude Jamf docs MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: missing or drifted" "ai-audit should detect missing Claude Slack MCP"

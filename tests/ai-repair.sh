@@ -127,6 +127,8 @@ assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should not register retired chrome-devtools MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"vision"' "ai-repair should register vision MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '@tuannvm/vision-mcp-server' "ai-repair should set Claude vision MCP args"
+assert_contains "$(cat "${HOME}/.claude.json")" '"sequential-thinking"' "ai-repair should register sequential-thinking MCP for Claude Code"
+assert_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-sequential-thinking' "ai-repair should set Claude sequential-thinking MCP args"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-repair should not register retired Brave Search MCP for Claude Code"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should not set retired Claude Brave Search MCP args"
 
@@ -207,6 +209,9 @@ touch "${HOME}/.claude/session-topic.sh"
 chmod +x "${HOME}/.claude/session-topic.sh"
 mkdir -p "${HOME}/.claude/session-topics"
 touch "${HOME}/.claude/session-topics/abc123.count"
+# Dead ~/.claude/.mcp.json (Claude Code never loaded it; chezmoi source removed
+# 2026-04-26). ai-repair should rm it on existing machines.
+printf '{"mcpServers":{}}\n' > "${HOME}/.claude/.mcp.json"
 # Leftover Serena wrapper should be cleaned by the same retired-helper loop.
 mkdir -p "${HOME}/.local/bin"
 touch "${HOME}/.local/bin/serena-mcp"
@@ -239,6 +244,8 @@ assert_not_contains "$(cat "${HOME}/.claude/settings.json")" 'session-topic.sh' 
 assert_not_contains "$(cat "${HOME}/.claude/settings.json")" 'UserPromptSubmit' "ai-repair should leave no UserPromptSubmit hook entry in settings.json"
 [[ ! -e "${HOME}/.claude/session-topic.sh" ]] || fail_test "session-topic.sh should be removed"
 [[ ! -d "${HOME}/.claude/session-topics" ]] || fail_test "session-topics cache dir should be removed"
+[[ ! -e "${HOME}/.claude/.mcp.json" ]] || fail_test "dead ~/.claude/.mcp.json should be removed"
+assert_contains "${RUN_OUTPUT}" "removed dead ~/.claude/.mcp.json" "ai-repair should announce dead .mcp.json removal"
 [[ ! -e "${HOME}/.local/bin/serena-mcp" ]] || fail_test "retired serena-mcp wrapper should be removed"
 [[ ! -d "${HOME}/.claude/skills/frontend-design" ]] || fail_test "retired vendored frontend-design skill should be removed"
 assert_contains "${RUN_OUTPUT}" "removed retired vendored skill" "ai-repair should announce frontend-design cleanup"

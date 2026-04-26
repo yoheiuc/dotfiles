@@ -48,8 +48,15 @@ SLACK_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.slack.com/mcp","oauth":{"c
 # toolchain. Requires macOS 13+ and Node.js 18+. If MCP connect fails,
 # verify with: npx -y @tuannvm/vision-mcp-server --help
 VISION_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@tuannvm/vision-mcp-server"]}'
+# sequential-thinking MCP (@modelcontextprotocol/server-sequential-thinking) —
+# tight CoT scaffolding integration that loses value as a CLI (per L2 matrix).
+# Moved from post-setup.sh to here on 2026-04-26 so drift detection is uniform
+# with the other 4 baseline MCPs (vision / exa / jamf-docs / slack).
+SEQ_THINK_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-sequential-thinking"],"env":{}}'
 claude_vision_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)"
 claude_vision_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
+claude_seq_think_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('sequential-thinking',{}).get('command','')" 2>/dev/null || true)"
+claude_seq_think_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('sequential-thinking',{}).get('args',[]))" 2>/dev/null || true)"
 claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
 claude_jamf_docs_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('jamf-docs',{}).get('url','')" 2>/dev/null || true)"
 claude_slack_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
@@ -63,6 +70,16 @@ else
   ok "Claude Code: vision MCP already registered"
 fi
 unset _vision_expected_args
+
+_seq_think_expected_args='-y|@modelcontextprotocol/server-sequential-thinking'
+if [[ "${claude_seq_think_cmd}" != "npx" || "${claude_seq_think_args}" != "${_seq_think_expected_args}" ]]; then
+  ai_config_json_upsert_mcp "${CLAUDE_JSON}" sequential-thinking "${SEQ_THINK_CLAUDE_ENTRY}"
+  ok "Claude Code: sequential-thinking MCP registered"
+  restart_needed=1
+else
+  ok "Claude Code: sequential-thinking MCP already registered"
+fi
+unset _seq_think_expected_args
 
 if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa" ]]; then
   ai_config_json_upsert_mcp "${CLAUDE_JSON}" exa "${EXA_CLAUDE_ENTRY}"
@@ -88,7 +105,7 @@ else
   ok "Claude Code: slack MCP already registered"
 fi
 
-unset claude_vision_cmd claude_vision_args claude_exa_url claude_jamf_docs_url claude_slack_url
+unset claude_vision_cmd claude_vision_args claude_seq_think_cmd claude_seq_think_args claude_exa_url claude_jamf_docs_url claude_slack_url
 
 # Strip retired hook artifacts. The hooks block itself is wholesale-rewritten
 # below (so orphan UserPromptSubmit entries for session-topic disappear from
@@ -143,6 +160,15 @@ fi
 if [[ -d "${HOME}/.codex" ]]; then
   rm -rf "${HOME}/.codex"
   ok "Codex: removed retired ~/.codex"
+fi
+# ~/.claude/.mcp.json was never loaded by Claude Code — none of the 3 valid MCP
+# scopes (local / project / user) read that path. The chezmoi source
+# `home/dot_claude/dot_mcp.json` was removed; drop the orphan target on existing
+# machines so the dead-config drift source disappears. Real MCP registrations
+# live in ~/.claude.json (managed by the upsert blocks above).
+if [[ -e "${HOME}/.claude/.mcp.json" ]]; then
+  rm -f "${HOME}/.claude/.mcp.json"
+  ok "Claude Code: removed dead ~/.claude/.mcp.json (Claude never read it)"
 fi
 unset _orphan
 
