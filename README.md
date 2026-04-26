@@ -509,7 +509,7 @@ Claude Code は `settings.json` を自身で頻繁に書き換えるため、dot
 | `~/.claude/settings.json` の baseline キー（`autoUpdatesChannel` / `env.ENABLE_TOOL_SEARCH` / `hooks` / `effortLevel`） | dotfiles（ai-repair が upsert） |
 | `~/.claude/settings.json` のそれ以外（`permissions` / `model` / `statusLine`） | ローカル |
 | `~/.claude/settings.local.json` | ローカル（マシン固有 override） |
-| `~/.claude/CLAUDE.md` / `statusline.sh` / `auto-save.sh` / `lsp-hint.sh` / `commands/` / `.mcp.json` | dotfiles |
+| `~/.claude/CLAUDE.md` / `statusline.sh` / `auto-save.sh` / `lsp-hint.sh` / `.mcp.json` | dotfiles |
 | `~/.claude/plugins/*`（`*-lsp` 群） | `post-setup.sh` が `claude plugin install` で配置（per-user、dotfiles には vendor しない） |
 | `~/.claude/skills/*` | `post-setup.sh` が外部 CLI 経由で配置 |
 | `~/.claude/history.jsonl` / `projects/` / `sessions/` / `cache/` / `plugins/` | 管理しない |
@@ -555,15 +555,9 @@ LSP ベースの symbol 解析は Anthropic 公式 marketplace (`claude-plugins-
 - 旧 dotfiles から移行して legacy MCP が残る → `make ai-repair` が自動削除、`ai-audit` が warning で知らせる
 - `ai-secrets` が古い wrapper を掴んで失敗 → `chezmoi apply ~/.local/bin/ai-secrets`
 
-### Slash commands（`~/.claude/commands/`）
+### Slash commands
 
-`home/dot_claude/commands/` に同梱するのは **dotfiles 固有の helper を語る 3 本だけ**。汎用的な engineering methodology / Office 系ワークフロー / `/security-review` `/debug` のような Claude Code 標準機能で代替できるものは custom 化しない（L1「Claude Code 標準機能で代替できないか先に確認する」原則）。Office 系は skill の auto-trigger に委ねる。
-
-| コマンド | 用途 |
-|---|---|
-| `/perf` | パフォーマンス監査（Lighthouse / `pwattach` 経由の Chrome trace 等、dotfiles 固有 helper を呼ぶ手順） |
-| `/playwright` | ブラウザ自動化（`PLAYWRIGHT_CLI_SESSION=chrome` / `pwattach` を活用する dotfiles 固有運用） |
-| `/research` | Exa MCP（`mcp__exa__web_search_exa` / `web_fetch_exa`）ベースの技術リサーチ |
+**同梱しない**。2026-04-26 の整理で全削除しました（詳細は [`CLAUDE.md`](./CLAUDE.md) の判断ログ）。理由は (1) slash command は user が `/<name>` を invoke するまで Claude が読まないので dead code 化しやすい、(2) 毎ターン守らせたい rule は `~/.claude/CLAUDE.md`（L1）にインライン化する方が確実、(3) 汎用 methodology は Claude が一般知識として持つ、(4) Office 系等は skill の auto-trigger に委ねる。CDP attach 時のブラウザ操作セキュリティ rule は L1 に移動済み。
 
 ### Office 系の 2 系統（ローカル `.docx` / `.xlsx` / `.pptx` vs Google Workspace）
 
@@ -618,7 +612,6 @@ dotfiles/
 │   │   ├── CLAUDE.md               # → ~/.claude/CLAUDE.md (ツール採用・native LSP plugin 運用)
 │   │   ├── executable_{statusline,auto-save,lsp-hint}.sh  # hooks 配下
 │   │   ├── dot_mcp.json            # → ~/.claude/.mcp.json (HTTP MCP baseline)
-│   │   ├── commands/               # → ~/.claude/commands/*.md (18 slash commands, 下表参照)
 │   │   └── skills/                 # 同梱 skill 8 個（screenshot / doc / pdf / spreadsheet / presentation / jupyter-notebook / security-best-practices / ui-ux-pro-max）
 │   ├── dot_local/
 │   │   ├── bin/                    # ai-secrets / mcp-with-keychain-secret

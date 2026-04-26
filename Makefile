@@ -58,7 +58,6 @@ test: ## 回帰テストを実行
 	bash tests/skill-verify.sh
 	bash tests/post-setup.sh
 	bash tests/uninstall.sh
-	bash tests/commands.sh
 
 uninstall: ## dotfiles をアンインストール
 	bash scripts/uninstall.sh

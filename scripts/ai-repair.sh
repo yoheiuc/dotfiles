@@ -121,19 +121,29 @@ if [[ -d "${HOME}/.codex" ]]; then
 fi
 unset _orphan
 
-# Slash commands removed in 2026-04 cleanup ("Claude Code 標準機能で代替できる
-# ものは custom 化しない" L1 rule). Two reasons per file:
-#   debug / security-review     → shadow Claude Code built-in /debug, /security-review
+# Slash commands fully removed in 2026-04-26 cleanup. The L1 rule "Claude Code
+# 標準機能で代替できないか先に確認" plus user signal "コマンド系使ったことない"
+# made it clear the whole bundle was dead code (slash commands only load when
+# the user types /<name>; if that never happens, the file content might as
+# well not exist for Claude). Categories that were removed:
+#   debug / security-review     → shadow Claude Code built-in commands
 #   doc / notebook / pdf /
 #   presentation / screenshot /
 #   spreadsheet / ui-ux         → duplicate same-domain skill in ~/.claude/skills/
-#                                 (skill auto-trigger covers explicit invocation)
+#                                 (skill auto-trigger covers invocation)
 #   api-design / ci / diagram /
 #   docker / refactor / test    → generic engineering methodology Claude already
-#                                 carries natively; cheat sheet was redundant
+#                                 carries natively
+#   research                    → workflow scaffolding around Exa MCP, but L1
+#                                 already directs Exa via the tool table
+#   perf                        → Lighthouse + pwattach orchestration; rare
+#                                 enough to leave to general knowledge + L1
+#   playwright                  → CDP-attach security guardrails were the only
+#                                 truly critical content; moved to L1 inline
+#                                 (read every turn, not gated on user invoke)
 # chezmoi does not prune orphaned target files when the source disappears,
 # so explicitly rm them here on every machine. Safe to re-run.
-for _retired_command in api-design ci debug diagram doc docker notebook pdf presentation refactor screenshot security-review spreadsheet test ui-ux; do
+for _retired_command in api-design ci debug diagram doc docker notebook pdf perf playwright presentation refactor research screenshot security-review spreadsheet test ui-ux; do
   _retired_path="${HOME}/.claude/commands/${_retired_command}.md"
   if [[ -e "${_retired_path}" ]]; then
     rm -f "${_retired_path}"

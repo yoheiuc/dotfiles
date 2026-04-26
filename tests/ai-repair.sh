@@ -217,7 +217,7 @@ mkdir -p "${HOME}/.claude/skills/frontend-design"
 # Retired slash commands (E refactor 2026-04-26) — simulate machines that
 # synced before the source files were deleted; ai-repair should rm them.
 mkdir -p "${HOME}/.claude/commands"
-for _retired in api-design ci debug diagram doc docker notebook pdf presentation refactor screenshot security-review spreadsheet test ui-ux; do
+for _retired in api-design ci debug diagram doc docker notebook pdf perf playwright presentation refactor research screenshot security-review spreadsheet test ui-ux; do
   : > "${HOME}/.claude/commands/${_retired}.md"
 done
 unset _retired
@@ -245,7 +245,7 @@ assert_contains "${RUN_OUTPUT}" "removed retired vendored skill" "ai-repair shou
 
 # Retired slash commands should all be gone, with at least one announcement.
 assert_contains "${RUN_OUTPUT}" "removed retired slash command" "ai-repair should announce retired slash command cleanup"
-for _retired in api-design ci debug diagram doc docker notebook pdf presentation refactor screenshot security-review spreadsheet test ui-ux; do
+for _retired in api-design ci debug diagram doc docker notebook pdf perf playwright presentation refactor research screenshot security-review spreadsheet test ui-ux; do
   [[ ! -e "${HOME}/.claude/commands/${_retired}.md" ]] || fail_test "retired slash command ${_retired}.md should be removed"
 done
 unset _retired
