@@ -29,7 +29,11 @@
       "Bash(playwright-cli goto *)",
       "Bash(playwright-cli open *)",
       "Bash(playwright-cli eval *)",
+      "Bash(playwright-cli *)",
       "Bash(npx playwright *)",
+      "Bash(npm run dev)",
+      "Bash(npm test)",
+      "Bash(gitleaks *)",
       "Bash(bash tests/*)",
       "Bash(bash scripts/*)",
       "mcp__exa__web_search_exa",
@@ -38,7 +42,9 @@
       "mcp__playwright__browser_resize",
       "mcp__playwright__browser_close",
       "mcp__playwright__browser_navigate",
-      "mcp__playwright__browser_evaluate"
+      "mcp__playwright__browser_evaluate",
+      "mcp__claude_ai_Gmail__search_threads",
+      "mcp__claude_ai_Gmail__get_thread"
     ]
   }
 }
