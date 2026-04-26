@@ -114,6 +114,14 @@ if [[ -d "${HOME}/.claude/skills/frontend-design" ]]; then
   rm -rf "${HOME}/.claude/skills/frontend-design"
   ok "Claude Code: removed retired vendored skill ~/.claude/skills/frontend-design"
 fi
+# ui-ux-pro-max: vendor → upstream-install transition (2026-04-26). Same
+# pattern as security-best-practices below — marker file `.upstream-installed`
+# distinguishes upstream-installed copies from legacy vendored ones.
+if [[ -d "${HOME}/.claude/skills/ui-ux-pro-max" ]] && \
+   [[ ! -f "${HOME}/.claude/skills/ui-ux-pro-max/.upstream-installed" ]]; then
+  rm -rf "${HOME}/.claude/skills/ui-ux-pro-max"
+  ok "Claude Code: removed legacy vendored skill ~/.claude/skills/ui-ux-pro-max (will be re-installed from upstream)"
+fi
 # security-best-practices: vendor → upstream-install transition (2026-04-26).
 # The skill is now installed by post-setup.sh via `npx skills add` from
 # tech-leads-club/agent-skills (L2 "upstream CLI skill distribution" tier).

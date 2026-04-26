@@ -270,6 +270,34 @@ else
   unset _dir
 fi
 
+# ---- ui-ux-pro-max skill (nextlevelbuilder/ui-ux-pro-max-skill) -----------
+# UI/UX design intelligence (50+ styles, 161 color palettes, 57 font pairings,
+# 161 product types, 99 UX guidelines, 25 chart types across 10 stacks).
+# Previously vendored under home/dot_claude/skills/ui-ux-pro-max/ (~1500 lines
+# incl. 16 CSV data files and 3 Python scripts). Migrated 2026-04-26 to
+# upstream npx-skills install — same tier-2 pattern as security-best-practices.
+log "ui-ux-pro-max skill..."
+
+if ! command -v npx &>/dev/null; then
+  warn "npx not found — ui-ux-pro-max skipped (run \`make install\` first)"
+else
+  _dir="${HOME}/.claude/skills"
+  mkdir -p "${_dir}"
+  if [[ -f "${_dir}/ui-ux-pro-max/.upstream-installed" ]]; then
+    ok "ui-ux-pro-max skill already installed from upstream under ${_dir/#${HOME}/\~}"
+  else
+    log "Installing ui-ux-pro-max skill for claude-code into ${_dir/#${HOME}/\~} ..."
+    if npx -y skills add https://github.com/nextlevelbuilder/ui-ux-pro-max-skill -a claude-code -g -y --skill ui-ux-pro-max; then
+      mkdir -p "${_dir}/ui-ux-pro-max"
+      touch "${_dir}/ui-ux-pro-max/.upstream-installed"
+      ok "ui-ux-pro-max skill installed"
+    else
+      warn "npx skills add failed — re-run or install manually"
+    fi
+  fi
+  unset _dir
+fi
+
 # ---- security-best-practices skill (tech-leads-club/agent-skills) ---------
 # Per-language security review references (Go, Python, JavaScript/TypeScript).
 # Previously vendored under home/dot_claude/skills/security-best-practices/
