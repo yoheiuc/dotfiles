@@ -43,29 +43,46 @@ pwlogin() {
   fi
 }
 
-# pwedge [url] — AI 用 Microsoft Edge を headed / persistent / 専用プロファイルで開始。
+# pwopen <tag> [url] — AI 用 Microsoft Edge を tag 別の persistent profile / session で起動。
 # L1 (~/.claude/CLAUDE.md) の「ブラウザ自動化の運用デフォルト」節を tooling で再現。
-# プロファイル先は PLAYWRIGHT_AI_EDGE_PROFILE で override 可（デフォルト ~/.ai-edge）。
+# プロファイル先は $HOME/.ai-<tag>（env PLAYWRIGHT_AI_<TAG_UPPER>_PROFILE で override 可、
+# tag の `-` は env 名上 `_` に置換される。例: tag=saas-acme → PLAYWRIGHT_AI_SAAS_ACME_PROFILE）。
 # 失敗時は PLAYWRIGHT_CLI_SESSION を汚染しない（成功後にだけ export する）。
-# 起動成功後に tab-list を 1 度叩き、AI 専用 profile らしくないタブが見えたら warning。
-pwedge() {
-  local profile="${PLAYWRIGHT_AI_EDGE_PROFILE:-$HOME/.ai-edge}"
+# 起動成功後の tab-list 汚染 guard は tag=edge のときだけ発火する（テナント profile では
+# Stripe / Salesforce 等が正常状態なので false-positive 回避）。
+pwopen() {
+  if (( $# < 1 )); then
+    echo "usage: pwopen <tag> [url]" >&2
+    return 1
+  fi
+  local tag="$1"; shift
+  local tag_upper="${(U)tag//-/_}"
+  local env_name="PLAYWRIGHT_AI_${tag_upper}_PROFILE"
+  local profile="${(P)env_name:-$HOME/.ai-${tag}}"
   mkdir -p "${profile}"
-  if playwright-cli --session=edge open --browser=msedge --headed --persistent --profile="${profile}" "$@"; then
-    export PLAYWRIGHT_CLI_SESSION=edge
+  if playwright-cli --session="${tag}" open --browser=msedge --headed --persistent --profile="${profile}" "$@"; then
+    export PLAYWRIGHT_CLI_SESSION="${tag}"
     osascript -e 'tell application "Microsoft Edge" to activate' >/dev/null 2>&1 || true
-    echo "PLAYWRIGHT_CLI_SESSION=edge (Microsoft Edge, headed, profile=${profile})"
-    local tabs
-    if tabs="$(command playwright-cli --session=edge tab-list 2>/dev/null)"; then
-      if printf '%s' "${tabs}" | grep -iEq 'gmail|mail\.google|admin\.google|accounts\.google|chase|stripe.*dashboard|aws.*console|console\.aws|github\.com/settings|banking|salesforce'; then
-        printf '[pwedge guard] tab-list contains URLs that suggest a non-AI profile is loaded. Verify --profile=%s isolation before continuing.\n' "${profile}" >&2
+    echo "PLAYWRIGHT_CLI_SESSION=${tag} (Microsoft Edge, headed, profile=${profile})"
+    if [[ "${tag}" == "edge" ]]; then
+      local tabs
+      if tabs="$(command playwright-cli --session="${tag}" tab-list 2>/dev/null)"; then
+        if printf '%s' "${tabs}" | grep -iEq 'gmail|mail\.google|admin\.google|accounts\.google|chase|stripe.*dashboard|aws.*console|console\.aws|github\.com/settings|banking|salesforce'; then
+          printf '[pwopen guard] tab-list contains URLs that suggest a non-AI profile is loaded. Verify --profile=%s isolation before continuing.\n' "${profile}" >&2
+        fi
       fi
     fi
   else
     local rc=$?
-    echo "pwedge: playwright-cli exited ${rc}; PLAYWRIGHT_CLI_SESSION left unchanged" >&2
+    echo "pwopen: playwright-cli exited ${rc}; PLAYWRIGHT_CLI_SESSION left unchanged" >&2
     return "${rc}"
   fi
+}
+
+# pwedge [url] — back-compat shim. tag=edge 固定で pwopen を呼ぶ。
+# 既存 PLAYWRIGHT_AI_EDGE_PROFILE override は pwopen 側の env_name 解決と一致するためそのまま透過。
+pwedge() {
+  pwopen edge "$@"
 }
 
 # pwlist — 既存セッションの一覧表示。

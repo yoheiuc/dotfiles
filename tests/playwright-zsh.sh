@@ -58,7 +58,7 @@ exit "\${PW_STUB_EXIT:-0}"
 EOF
 chmod +x "${tmpdir}/playwright-cli"
 
-for fn in pwsession pwedge pwlogin pwlist pwshow pwkill pwkillall; do
+for fn in pwsession pwopen pwedge pwlogin pwlist pwshow pwkill pwkillall; do
   run_capture zsh -c "PATH='${tmpdir}:${PATH}' source '${MODULE}'; typeset -f ${fn} >/dev/null && echo ok"
   assert_eq "0" "${RUN_STATUS}" "${fn} lookup should not error"
   assert_contains "${RUN_OUTPUT}" "ok" "${fn} should be defined when playwright-cli is present"
@@ -214,6 +214,58 @@ done
 : > "${stub_log}"
 run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; command playwright-cli eval \"document.cookie = 'x=y'\" >/dev/null 2>&1; echo rc=\$?"
 assert_contains "${RUN_OUTPUT}" "rc=0" "command bypass should skip guard B"
+
+# 17. pwopen <tag> [url] — must invoke `playwright-cli --session=<tag> open
+#     --browser=msedge --headed --persistent --profile=$HOME/.ai-<tag> ...` and
+#     export PLAYWRIGHT_CLI_SESSION=<tag>. Default profile path follows the
+#     ~/.ai-<tag> sibling convention (no env override).
+: > "${stub_log}"
+fake_home="${tmpdir}/home17"
+mkdir -p "${fake_home}"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" HOME="${fake_home}" zsh -c "source '${MODULE}'; pwopen acme https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "pwopen should propagate stub exit 0"
+assert_contains "${RUN_OUTPUT}" "session=acme" "pwopen should export PLAYWRIGHT_CLI_SESSION=<tag> on success"
+stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
+assert_contains "${stub_invocation}" "--session=acme" "pwopen should use --session=<tag> form"
+assert_contains "${stub_invocation}" "--browser=msedge" "pwopen should target msedge"
+assert_contains "${stub_invocation}" "--headed" "pwopen should pass --headed"
+assert_contains "${stub_invocation}" "--persistent" "pwopen should pass --persistent"
+assert_contains "${stub_invocation}" "--profile=${fake_home}/.ai-acme" "pwopen should default profile to \$HOME/.ai-<tag>"
+assert_contains "${stub_invocation}" "https://example.com" "pwopen should pass through positional URL"
+[[ -d "${fake_home}/.ai-acme" ]] || fail_test "pwopen should create the default profile directory"
+
+# 18. pwopen with hyphenated tag must convert hyphens to underscores in the
+#     env-var name lookup (saas-acme → PLAYWRIGHT_AI_SAAS_ACME_PROFILE).
+: > "${stub_log}"
+custom_profile="${tmpdir}/saas-acme-profile"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_AI_SAAS_ACME_PROFILE="${custom_profile}" zsh -c "source '${MODULE}'; pwopen saas-acme >/dev/null 2>&1; echo \"rc=\$?\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "pwopen with hyphen tag should propagate stub exit 0"
+stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
+assert_contains "${stub_invocation}" "--session=saas-acme" "pwopen should pass hyphenated tag through to --session"
+assert_contains "${stub_invocation}" "--profile=${custom_profile}" "pwopen should resolve PLAYWRIGHT_AI_SAAS_ACME_PROFILE for tag=saas-acme"
+[[ -d "${custom_profile}" ]] || fail_test "pwopen should create the env-overridden profile directory"
+
+# 19. pwopen with non-edge tag must NOT call `tab-list` (guard is edge-only,
+#     to avoid false positives on SaaS tenant profiles where Stripe / Salesforce
+#     are normal state). pwopen edge SHOULD call tab-list.
+: > "${stub_log}"
+fake_home="${tmpdir}/home19a"
+mkdir -p "${fake_home}"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" HOME="${fake_home}" zsh -c "source '${MODULE}'; pwopen acme >/dev/null 2>&1"
+stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
+assert_not_contains "${stub_invocation}" "tab-list" "pwopen with non-edge tag should NOT call tab-list (guard is edge-only)"
+
+: > "${stub_log}"
+fake_home="${tmpdir}/home19b"
+mkdir -p "${fake_home}"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" HOME="${fake_home}" zsh -c "source '${MODULE}'; pwopen edge >/dev/null 2>&1"
+stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
+assert_contains "${stub_invocation}" "tab-list" "pwopen with edge tag should call tab-list (contamination guard)"
+
+# 20. pwopen with no args must print usage and exit 1.
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" zsh -c "source '${MODULE}'; pwopen"
+assert_eq "1" "${RUN_STATUS}" "pwopen without args should fail"
+assert_contains "${RUN_OUTPUT}" "usage: pwopen" "pwopen should print usage on misuse"
 
 # 16. rebrowser-patches runtime fix — module must export
 #     REBROWSER_PATCHES_RUNTIME_FIX_MODE=addBinding by default and respect

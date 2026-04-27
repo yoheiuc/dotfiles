@@ -58,14 +58,14 @@ make preview         # 以降の変更は apply 前に必ず diff 確認
 
 - **single source of truth は `home/`**（`~/` だけ変えても次の `chezmoi apply` で巻き戻る）
 - **drift は `make ai-repair` で baseline に snap back**（Claude `~/.claude.json` / hooks / channel / legacy MCP 削除）
-- **AI に見せるアカウントは最小権限**（AI 用 Edge プロファイル (`~/.ai-edge`) を main Chrome から完全分離、Slack/Notion/Workspace の admin アカウントは持ち込まない）
+- **AI に見せるアカウントは最小権限**（AI 用 Edge プロファイル (`~/.ai-<tag>`、default tag = `edge`、SaaS マルチテナントは `~/.ai-acme` 等を `pwopen <tag>` で並走) を main Chrome から完全分離、Slack/Notion/Workspace の admin アカウントは持ち込まない）
 - **迷ったら削除**（dotfiles 肥大化と drift 源を避ける、標準機能で代替できるなら custom 実装しない）
 
 ---
 
 ## ブラウザ自動化（Edge 専用 binary）
 
-`@playwright/cli` を `pwedge` zsh helper でラップ済み。**main Chrome は AI に渡さない**運用に統一していて、AI 用 Edge プロファイル (`~/.ai-edge`) を別 binary で立てる。bundled Chromium が Cloudflare に弾かれる / Chrome 136+ 系が `--remote-debugging-port` を拒否する制約も Edge 側で回避される。
+`@playwright/cli` を `pwopen <tag>` / `pwedge` zsh helper でラップ済み。**main Chrome は AI に渡さない**運用に統一していて、AI 用 Edge プロファイル (`~/.ai-<tag>`、default tag = `edge`) を別 binary で立てる。`pwopen <tag>` は tag 駆動 launcher で、SaaS マルチテナント等で `pwopen acme` / `pwopen tenant-foo` 並走可（profile / session ともに tag 別に隔離）。bundled Chromium が Cloudflare に弾かれる / Chrome 136+ 系が `--remote-debugging-port` を拒否する制約も Edge 側で回避される。
 
 bot 判定回避は `~/.playwright/cli.config.json` (chezmoi 管理、`home/dot_playwright/cli.config.json` source) が `launchOptions.args=["--disable-blink-features=AutomationControlled"]` と `ignoreDefaultArgs=["--enable-automation"]` を global config として注入する。playwright-cli が起動毎に auto load → `chromium.launchPersistentContext` に spread される。`navigator.webdriver === false` を `bot.sannysoft.com` で確認済み。Runtime.Enable leak まで塞ぐ rebrowser-patches Phase 1 は Anthropic bundle 構造と非互換で見送り（詳細は [`docs/notes/decisions-archive.md`](docs/notes/decisions-archive.md) 2026-04-28）。
 
@@ -75,7 +75,8 @@ zsh helper（`home/dot_config/zsh/playwright.zsh`）:
 
 | コマンド | 用途 |
 |---|---|
-| `pwedge [url]` | Edge を `--browser=msedge --headed --persistent --profile=$HOME/.ai-edge` で開く（プロファイル先は `PLAYWRIGHT_AI_EDGE_PROFILE` で override 可） |
+| `pwopen <tag> [url]` | tag 駆動 launcher。Edge を `--browser=msedge --headed --persistent --profile=$HOME/.ai-<tag> --session=<tag>` で開く。SaaS マルチテナント等で `pwopen acme` / `pwopen tenant-foo` 並走可（env override は `PLAYWRIGHT_AI_<TAG_UPPER>_PROFILE`、hyphen は underscore に変換） |
+| `pwedge [url]` | `pwopen edge` の back-compat shim（default tag = `edge`、profile=`$HOME/.ai-edge`、`PLAYWRIGHT_AI_EDGE_PROFILE` で override 可） |
 | `pwlogin <name> <url>` | 任意 session 名で `--headed --persistent` 起動（手動ログイン用） |
 | `pwsession <name>` | `PLAYWRIGHT_CLI_SESSION` を切替 |
 | `pwlist` / `pwshow` / `pwkill <name>` / `pwkillall` | 永続セッション管理 |
