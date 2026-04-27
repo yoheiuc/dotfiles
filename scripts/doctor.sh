@@ -68,13 +68,20 @@ if chezmoi --version &>/dev/null; then
     warn "chezmoi doctor: reported failed checks above"
   fi
 
-  # Pending diff (warn only — user may intentionally defer apply)
-  diff_out=$(chezmoi diff 2>&1 || true)
-  if [[ -z "$diff_out" ]]; then
-    ok "chezmoi diff: clean (no pending changes)"
+  # Pending diff (warn only — user may intentionally defer apply).
+  # `chezmoi diff` exits 0 even when output is non-empty, so we distinguish
+  # "real failure" (non-zero exit) from "has pending changes" (zero exit,
+  # non-empty stdout) by capturing the exit code instead of swallowing it.
+  if diff_out=$(chezmoi diff 2>&1); then
+    if [[ -z "$diff_out" ]]; then
+      ok "chezmoi diff: clean (no pending changes)"
+    else
+      warn "chezmoi diff: unapplied changes detected"
+      warn "  Preview: chezmoi apply -n -v"
+    fi
   else
-    warn "chezmoi diff: unapplied changes detected"
-    warn "  Preview: chezmoi apply -n -v"
+    fail "chezmoi diff: command failed"
+    printf '%s\n' "$diff_out" | sed 's/^/    /'
   fi
 else
   fail "chezmoi not found — run: brew install chezmoi"

@@ -29,6 +29,40 @@ CLAUDE_SETTINGS_JSON="${HOME}/.claude/settings.json"
 
 restart_needed=0
 
+# Private helpers for the 5 baseline MCP upsert blocks below. Identity fields
+# (url for HTTP, command+args for stdio) are compared partially — Claude Code
+# may add fields like sessionId at runtime, so a deep-equality check would
+# trigger endless re-upserts. Helpers stay local; lib/ai-config.sh keeps its
+# pure-mutation surface.
+_upsert_http_mcp() {
+  # _upsert_http_mcp <name> <entry_json> <expected_url>
+  local name="$1" entry_json="$2" expected_url="$3"
+  local current
+  current="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('${name}',{}).get('url','')" 2>/dev/null || true)"
+  if [[ "${current}" == "${expected_url}" ]]; then
+    ok "Claude Code: ${name} MCP already registered"
+  else
+    ai_config_json_upsert_mcp "${CLAUDE_JSON}" "${name}" "${entry_json}"
+    ok "Claude Code: ${name} MCP registered"
+    restart_needed=1
+  fi
+}
+
+_upsert_stdio_mcp() {
+  # _upsert_stdio_mcp <name> <entry_json> <expected_command> <expected_args_pipe>
+  local name="$1" entry_json="$2" expected_command="$3" expected_args_pipe="$4"
+  local current_cmd current_args
+  current_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('${name}',{}).get('command','')" 2>/dev/null || true)"
+  current_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('${name}',{}).get('args',[]))" 2>/dev/null || true)"
+  if [[ "${current_cmd}" == "${expected_command}" && "${current_args}" == "${expected_args_pipe}" ]]; then
+    ok "Claude Code: ${name} MCP already registered"
+  else
+    ai_config_json_upsert_mcp "${CLAUDE_JSON}" "${name}" "${entry_json}"
+    ok "Claude Code: ${name} MCP registered"
+    restart_needed=1
+  fi
+}
+
 # ---- Claude Code MCP registration (JSON direct) -----------------------------
 log "Claude Code MCP registration..."
 # Exa MCP `?tools=` is a filter parameter (per https://exa.ai/docs/reference/exa-mcp).
@@ -53,59 +87,12 @@ VISION_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@tuannvm/visi
 # Moved from post-setup.sh to here on 2026-04-26 so drift detection is uniform
 # with the other 4 baseline MCPs (vision / exa / jamf-docs / slack).
 SEQ_THINK_CLAUDE_ENTRY='{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-sequential-thinking"],"env":{}}'
-claude_vision_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('vision',{}).get('command','')" 2>/dev/null || true)"
-claude_vision_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('vision',{}).get('args',[]))" 2>/dev/null || true)"
-claude_seq_think_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('sequential-thinking',{}).get('command','')" 2>/dev/null || true)"
-claude_seq_think_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('sequential-thinking',{}).get('args',[]))" 2>/dev/null || true)"
-claude_exa_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('exa',{}).get('url','')" 2>/dev/null || true)"
-claude_jamf_docs_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('jamf-docs',{}).get('url','')" 2>/dev/null || true)"
-claude_slack_url="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('slack',{}).get('url','')" 2>/dev/null || true)"
 
-_vision_expected_args='-y|@tuannvm/vision-mcp-server'
-if [[ "${claude_vision_cmd}" != "npx" || "${claude_vision_args}" != "${_vision_expected_args}" ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" vision "${VISION_CLAUDE_ENTRY}"
-  ok "Claude Code: vision MCP registered"
-  restart_needed=1
-else
-  ok "Claude Code: vision MCP already registered"
-fi
-unset _vision_expected_args
-
-_seq_think_expected_args='-y|@modelcontextprotocol/server-sequential-thinking'
-if [[ "${claude_seq_think_cmd}" != "npx" || "${claude_seq_think_args}" != "${_seq_think_expected_args}" ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" sequential-thinking "${SEQ_THINK_CLAUDE_ENTRY}"
-  ok "Claude Code: sequential-thinking MCP registered"
-  restart_needed=1
-else
-  ok "Claude Code: sequential-thinking MCP already registered"
-fi
-unset _seq_think_expected_args
-
-if [[ "${claude_exa_url}" != "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa" ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" exa "${EXA_CLAUDE_ENTRY}"
-  ok "Claude Code: exa MCP registered"
-  restart_needed=1
-else
-  ok "Claude Code: exa MCP already registered"
-fi
-
-if [[ "${claude_jamf_docs_url}" != "https://developer.jamf.com/mcp" ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" jamf-docs "${JAMF_DOCS_CLAUDE_ENTRY}"
-  ok "Claude Code: jamf-docs MCP registered"
-  restart_needed=1
-else
-  ok "Claude Code: jamf-docs MCP already registered"
-fi
-
-if [[ "${claude_slack_url}" != "https://mcp.slack.com/mcp" ]]; then
-  ai_config_json_upsert_mcp "${CLAUDE_JSON}" slack "${SLACK_CLAUDE_ENTRY}"
-  ok "Claude Code: slack MCP registered"
-  restart_needed=1
-else
-  ok "Claude Code: slack MCP already registered"
-fi
-
-unset claude_vision_cmd claude_vision_args claude_seq_think_cmd claude_seq_think_args claude_exa_url claude_jamf_docs_url claude_slack_url
+_upsert_stdio_mcp vision "${VISION_CLAUDE_ENTRY}" npx '-y|@tuannvm/vision-mcp-server'
+_upsert_stdio_mcp sequential-thinking "${SEQ_THINK_CLAUDE_ENTRY}" npx '-y|@modelcontextprotocol/server-sequential-thinking'
+_upsert_http_mcp exa "${EXA_CLAUDE_ENTRY}" 'https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa'
+_upsert_http_mcp jamf-docs "${JAMF_DOCS_CLAUDE_ENTRY}" 'https://developer.jamf.com/mcp'
+_upsert_http_mcp slack "${SLACK_CLAUDE_ENTRY}" 'https://mcp.slack.com/mcp'
 
 # Strip retired hook artifacts. The hooks block itself is wholesale-rewritten
 # below (so orphan UserPromptSubmit entries for session-topic disappear from
