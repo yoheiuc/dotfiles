@@ -24,6 +24,10 @@ assert_eq "0" "${RUN_STATUS}" "playwright.zsh should parse without syntax errors
 # 2. With playwright-cli absent, module should early-return and define no functions.
 tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-pwzsh-test.XXXXXX")"
 trap 'rm -rf "${tmpdir}"' EXIT
+
+# Sandbox the playwright-cli wrapper's log directory so tests don't write to
+# the user's real ~/.cache/playwright-cli/actions.log.
+export XDG_CACHE_HOME="${tmpdir}/cache"
 run_capture zsh -c "PATH='${tmpdir}' source '${MODULE}'; typeset -f pwsession >/dev/null && echo defined || echo absent"
 assert_eq "0" "${RUN_STATUS}" "sourcing module with no playwright-cli should not error"
 assert_contains "${RUN_OUTPUT}" "absent" "module should not define pwsession when playwright-cli is missing"
@@ -40,7 +44,7 @@ exit "\${PW_STUB_EXIT:-0}"
 EOF
 chmod +x "${tmpdir}/playwright-cli"
 
-for fn in pwsession pwattach pwdetach pwlogin pwlist pwshow pwkill pwkillall; do
+for fn in pwsession pwedge pwlogin pwlist pwshow pwkill pwkillall; do
   run_capture zsh -c "PATH='${tmpdir}:${PATH}' source '${MODULE}'; typeset -f ${fn} >/dev/null && echo ok"
   assert_eq "0" "${RUN_STATUS}" "${fn} lookup should not error"
   assert_contains "${RUN_OUTPUT}" "ok" "${fn} should be defined when playwright-cli is present"
@@ -98,51 +102,44 @@ assert_contains "${stub_invocation}" "list" "pwlist should call list"
 assert_contains "${stub_invocation}" "show" "pwshow should call show"
 assert_contains "${stub_invocation}" "kill-all" "pwkillall should call kill-all"
 
-# 10a. pwattach must REFUSE when PLAYWRIGHT_AI_CHROME_READY is unset (policy:
-#      force the user through the AI-dedicated Chrome profile setup so the
-#      attach can't accidentally land on an everyday profile).
+# 10. pwedge must invoke `playwright-cli --session=edge open --browser=msedge
+#     --headed --persistent --profile=<profile> ...` and export
+#     PLAYWRIGHT_CLI_SESSION=edge on success. PLAYWRIGHT_AI_EDGE_PROFILE
+#     overrides the default profile path.
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" zsh -c "unset PLAYWRIGHT_AI_CHROME_READY; source '${MODULE}'; pwattach 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
-assert_contains "${RUN_OUTPUT}" "rc=2" "pwattach should exit 2 when PLAYWRIGHT_AI_CHROME_READY is unset"
-assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwattach should NOT export PLAYWRIGHT_CLI_SESSION when refusing"
-assert_contains "${RUN_OUTPUT}" "PLAYWRIGHT_AI_CHROME_READY" "pwattach should surface the env var name in its refusal message"
-assert_contains "${RUN_OUTPUT}" "AI-dedicated Chrome profile" "pwattach refusal should mention the AI-dedicated profile policy"
-# And the stub must not have been invoked.
+edge_profile="${tmpdir}/edge-profile"
+run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_AI_EDGE_PROFILE="${edge_profile}" zsh -c "source '${MODULE}'; pwedge https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "pwedge should propagate stub exit 0"
+assert_contains "${RUN_OUTPUT}" "session=edge" "pwedge should export PLAYWRIGHT_CLI_SESSION=edge on success"
 stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
-assert_eq "" "${stub_invocation}" "pwattach should not invoke playwright-cli when refusing"
+assert_contains "${stub_invocation}" "--session=edge" "pwedge should use --session=edge form"
+assert_contains "${stub_invocation}" "open" "pwedge should invoke the open subcommand"
+assert_contains "${stub_invocation}" "--browser=msedge" "pwedge should target msedge"
+assert_contains "${stub_invocation}" "--headed" "pwedge should pass --headed"
+assert_contains "${stub_invocation}" "--persistent" "pwedge should pass --persistent"
+assert_contains "${stub_invocation}" "--profile=${edge_profile}" "pwedge should honor PLAYWRIGHT_AI_EDGE_PROFILE override"
+assert_contains "${stub_invocation}" "https://example.com" "pwedge should pass through positional URL"
+[[ -d "${edge_profile}" ]] || fail_test "pwedge should create the profile directory"
 
-# 10b. pwattach must call `playwright-cli --session=chrome attach --cdp=chrome`
-#      and export PLAYWRIGHT_CLI_SESSION=chrome on success when the env var is set.
+# 11. pwedge must NOT export PLAYWRIGHT_CLI_SESSION if playwright-cli fails.
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_AI_CHROME_READY=1 zsh -c "source '${MODULE}'; pwattach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
-assert_contains "${RUN_OUTPUT}" "rc=0" "pwattach should propagate stub exit 0 when env var is set"
-assert_contains "${RUN_OUTPUT}" "session=chrome" "pwattach should export PLAYWRIGHT_CLI_SESSION=chrome on success"
-stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
-assert_contains "${stub_invocation}" "--session=chrome" "pwattach should use --session=chrome form"
-assert_contains "${stub_invocation}" "attach" "pwattach should invoke the attach subcommand"
-assert_contains "${stub_invocation}" "--cdp=chrome" "pwattach should pass --cdp=chrome"
+run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_AI_EDGE_PROFILE="${edge_profile}" PW_STUB_EXIT=4 zsh -c "source '${MODULE}'; pwedge https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+assert_contains "${RUN_OUTPUT}" "rc=4" "pwedge should propagate stub exit 4"
+assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwedge should NOT export PLAYWRIGHT_CLI_SESSION on failure"
 
-# 11. pwattach must NOT export PLAYWRIGHT_CLI_SESSION if playwright-cli fails.
+# 12. playwright-cli wrapper — state-changing commands write to actions.log,
+#     read-only commands do not, and `command playwright-cli` bypasses logging.
+log_file="${XDG_CACHE_HOME}/playwright-cli/actions.log"
+rm -f "${log_file}"
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_AI_CHROME_READY=1 PW_STUB_EXIT=3 zsh -c "source '${MODULE}'; pwattach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
-assert_contains "${RUN_OUTPUT}" "rc=3" "pwattach should propagate stub exit 3"
-assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwattach should NOT export PLAYWRIGHT_CLI_SESSION on failure"
-
-# 12. pwdetach must call `playwright-cli --session=chrome close` and unset
-#     PLAYWRIGHT_CLI_SESSION. It should succeed even if close reports an error
-#     (e.g. nothing was attached).
-: > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; export PLAYWRIGHT_CLI_SESSION=chrome; pwdetach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
-assert_contains "${RUN_OUTPUT}" "rc=0" "pwdetach should exit 0"
-assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwdetach should unset PLAYWRIGHT_CLI_SESSION"
-stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
-assert_contains "${stub_invocation}" "--session=chrome" "pwdetach should target --session=chrome"
-assert_contains "${stub_invocation}" "close" "pwdetach should call close"
-
-# 13. pwdetach should still unset PLAYWRIGHT_CLI_SESSION even if close fails.
-: > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PW_STUB_EXIT=1 zsh -c "source '${MODULE}'; export PLAYWRIGHT_CLI_SESSION=chrome; pwdetach >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
-assert_contains "${RUN_OUTPUT}" "rc=0" "pwdetach should swallow close errors"
-assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwdetach should unset PLAYWRIGHT_CLI_SESSION even on close error"
+run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; playwright-cli click foo >/dev/null 2>&1; playwright-cli snapshot >/dev/null 2>&1; command playwright-cli click bar >/dev/null 2>&1"
+[[ -f "${log_file}" ]] || fail_test "wrapper should create actions.log when state-changing command runs"
+log_contents="$(cat "${log_file}")"
+assert_contains "${log_contents}" "click foo" "wrapper should log click invocations"
+log_lines="$(wc -l < "${log_file}" | tr -d ' ')"
+assert_eq "1" "${log_lines}" "wrapper should log state-changing commands only (no snapshot, no command-bypass)"
+# All three invocations must still reach the stub binary (function-only logging).
+stub_lines="$(grep -c . "${stub_log}" || true)"
+assert_eq "3" "${stub_lines}" "wrapper should still call the underlying playwright-cli stub"
 
 pass_test "tests/playwright-zsh.sh"

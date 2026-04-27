@@ -190,7 +190,7 @@ if [[ -f "${_claude_json}" ]]; then
   #   notion           → ntn CLI + makenotion/skills
   #   github           → gh CLI
   #   owlocr           → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
-  #   chrome-devtools  → playwright-cli attach --cdp=chrome (pwattach helper)
+  #   chrome-devtools  → @playwright/cli (pwedge zsh helper for AI-dedicated Edge)
   #   brave-search     → Exa MCP alone covers web search
   for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search serena; do
     if claude_mcp_present "${_claude_json}" "${_legacy}"; then

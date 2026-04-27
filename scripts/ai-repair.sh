@@ -205,10 +205,10 @@ unset _orphan
 #                                 carries natively
 #   research                    → workflow scaffolding around Exa MCP, but L1
 #                                 already directs Exa via the tool table
-#   perf                        → Lighthouse + pwattach orchestration; rare
-#                                 enough to leave to general knowledge + L1
-#   playwright                  → CDP-attach security guardrails were the only
-#                                 truly critical content; moved to L1 inline
+#   perf                        → Lighthouse orchestration; rare enough to
+#                                 leave to general knowledge + L1
+#   playwright                  → security guardrails were the only truly
+#                                 critical content; moved to L1 inline
 #                                 (read every turn, not gated on user invoke)
 # chezmoi does not prune orphaned target files when the source disappears,
 # so explicitly rm them here on every machine. Safe to re-run.
@@ -245,9 +245,9 @@ unset _legacy_doc_skill
 #   notion           → ntn CLI + makenotion/skills (see post-setup.sh)
 #   github           → gh CLI (gh pr, gh issue, gh api …)
 #   owlocr           → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
-#   chrome-devtools  → playwright-cli attach --cdp=chrome (see pwattach zsh helper);
-#                      MCP kept spawning its own throwaway Chrome which defeats the
-#                      whole point of driving the user's logged-in session
+#   chrome-devtools  → @playwright/cli (pwedge zsh helper for AI-dedicated Edge);
+#                      MCP kept spawning its own throwaway Chromium which defeats
+#                      the whole point of using a persistent isolated profile
 #   brave-search     → Exa MCP covers the same web-search surface; brave required
 #                      a Keychain-backed API key whose value stopped justifying the
 #                      extra wrapper plumbing

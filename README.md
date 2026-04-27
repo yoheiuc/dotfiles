@@ -58,25 +58,27 @@ make preview         # 以降の変更は apply 前に必ず diff 確認
 
 - **single source of truth は `home/`**（`~/` だけ変えても次の `chezmoi apply` で巻き戻る）
 - **drift は `make ai-repair` で baseline に snap back**（Claude `~/.claude.json` / hooks / channel / legacy MCP 削除）
-- **AI に見せるアカウントは最小権限**（`pwattach` は AI 専用 Chrome プロファイル強制、Slack/Notion/Workspace の admin アカウントは持ち込まない）
+- **AI に見せるアカウントは最小権限**（AI 用 Edge プロファイル (`~/.ai-edge`) を main Chrome から完全分離、Slack/Notion/Workspace の admin アカウントは持ち込まない）
 - **迷ったら削除**（dotfiles 肥大化と drift 源を避ける、標準機能で代替できるなら custom 実装しない）
 
 ---
 
-## ブラウザ自動化（pwattach のセキュリティ）
+## ブラウザ自動化（Edge 専用 binary）
 
-`@playwright/cli` の `attach --cdp=chrome` を `pwattach` zsh helper でラップしてある。実 Chrome に CDP 接続してログイン状態のまま AI に操作させる用途。**普段使い Chrome に attach すると Gmail / 銀行 / 業務 admin の全セッションが agent の操作対象になる**ため、dotfiles では AI 専用プロファイルを env var (`PLAYWRIGHT_AI_CHROME_READY=1`) で強制する。
+`@playwright/cli` を `pwedge` zsh helper でラップ済み。**main Chrome は AI に渡さない**運用に統一していて、AI 用 Edge プロファイル (`~/.ai-edge`) を別 binary で立てる。bundled Chromium が Cloudflare に弾かれる / Chrome 136+ 系が `--remote-debugging-port` を拒否する制約も Edge 側で回避される。
 
-詳細な脅威モデル・運用ルール・初回セットアップ手順は `~/.claude/CLAUDE.md` の「ブラウザ自動化のセキュリティ規則（CDP attach 時）」節（毎ターン Claude が読む context）。`make install` の onboarding メッセージにも 4 ステップが出る。
+脅威モデルと禁止操作の詳細は `~/.claude/CLAUDE.md` の「ブラウザ自動化のセキュリティ規則」「ブラウザ自動化の運用デフォルト」節（毎ターン Claude が読む context）。
 
 zsh helper（`home/dot_config/zsh/playwright.zsh`）:
 
 | コマンド | 用途 |
 |---|---|
-| `pwattach` | 起動中の実 Chrome に CDP attach（`PLAYWRIGHT_CLI_SESSION=chrome` を export） |
-| `pwdetach` | attach を切る（Chrome 本体は殺さない） |
-| `pwlogin <name> <url>` | `--headed --persistent` で別プロファイル起動（手動ログイン用） |
+| `pwedge [url]` | Edge を `--browser=msedge --headed --persistent --profile=$HOME/.ai-edge` で開く（プロファイル先は `PLAYWRIGHT_AI_EDGE_PROFILE` で override 可） |
+| `pwlogin <name> <url>` | 任意 session 名で `--headed --persistent` 起動（手動ログイン用） |
+| `pwsession <name>` | `PLAYWRIGHT_CLI_SESSION` を切替 |
 | `pwlist` / `pwshow` / `pwkill <name>` / `pwkillall` | 永続セッション管理 |
+
+`playwright-cli` 自体も shell wrapper でラップしていて、状態変更系コマンド（`click` / `fill` / `goto` / `cookie-set` 等）は `~/.cache/playwright-cli/actions.log` に TSV で自動追記される。bypass したいときは `command playwright-cli ...`。
 
 ---
 
@@ -165,9 +167,9 @@ hash -r
 exec zsh
 ```
 
-### `pwattach` が `PLAYWRIGHT_AI_CHROME_READY=1 が必要` で止まる
+### `pwedge` で Edge が立ち上がらない
 
-意図的な安全策。AI 専用 Chrome プロファイルの初期セットアップを終えてから `~/.zshenv` に `export PLAYWRIGHT_AI_CHROME_READY=1` を追加する。手順は `make install` の onboarding メッセージか `~/.claude/CLAUDE.md` の「ブラウザ自動化のセキュリティ規則」節を参照。
+`brew bundle check --file=~/.Brewfile` で `microsoft-edge` cask が install 済みか確認。未 install なら `make install` で再実行。プロファイル位置を変えたい場合は `~/.zshenv` に `export PLAYWRIGHT_AI_EDGE_PROFILE=...` を追加。
 
 ### `gcloud` が `CERTIFICATE_VERIFY_FAILED` で動かない
 

@@ -71,6 +71,7 @@ cask "aws-vault-binary", args: { appdir: "/Applications" }
 
 # ---------- Casks: browser / accounts ----------
 cask "google-chrome"
+cask "microsoft-edge"            # AI 専用ブラウザ binary（playwright-cli --browser=msedge 用、main Chrome と分離）
 cask "bitwarden", args: { appdir: "/Applications" }  # password manager
 
 # ---------- Casks: productivity / system ----------

@@ -6,7 +6,7 @@
 
 - ローカルマシンの dotfiles 適用によって生じる脆弱性（credential 漏洩、symlink attack、TOCTOU、privilege escalation など）
 - AI agent（Claude Code）に予期せぬ権限を与える設定不備
-- `pwattach` による実 Chrome 経由のブラウザ操作に関連する blast radius の逸脱
+- `pwedge` 等 playwright-cli helper 経由のブラウザ操作で AI 用 Edge プロファイルの隔離が壊れる類の blast radius 逸脱
 - chezmoi templating の injection
 
 スコープ外:
