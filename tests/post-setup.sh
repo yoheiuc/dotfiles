@@ -100,6 +100,9 @@ cat > "${HOME}/.claude/plugins/known_marketplaces.json" <<'EOF'
 {
   "claude-plugins-official": {
     "source": {"source": "github", "repo": "anthropics/claude-plugins-official"}
+  },
+  "anthropic-agent-skills": {
+    "source": {"source": "github", "repo": "anthropics/skills"}
   }
 }
 EOF
@@ -110,6 +113,10 @@ source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
   _sep=""
   for _p in "${CLAUDE_LSP_PLUGINS[@]}" "${CLAUDE_GENERAL_PLUGINS[@]}"; do
     printf '%s    "%s@%s": {}' "${_sep}" "${_p}" "${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
+    _sep=$',\n'
+  done
+  for _p in "${CLAUDE_DOCUMENT_PLUGINS[@]}"; do
+    printf '%s    "%s@%s": {}' "${_sep}" "${_p}" "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}"
     _sep=$',\n'
   done
   printf '\n  }\n}\n'
@@ -150,8 +157,10 @@ assert_contains "${RUN_OUTPUT}" "Claude Code auto-update channel: latest" "post-
 assert_contains "${RUN_OUTPUT}" "sequential-thinking MCP" "post-setup should register sequential-thinking via ai-repair"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "post-setup should disable brew autoupdate"
 assert_contains "${RUN_OUTPUT}" "marketplace claude-plugins-official: already registered" "post-setup should skip marketplace add when present"
-assert_contains "${RUN_OUTPUT}" "plugin pyright-lsp: already installed" "post-setup should skip already-installed LSP plugin"
-assert_contains "${RUN_OUTPUT}" "plugin claude-md-management: already installed" "post-setup should skip already-installed general plugin"
+assert_contains "${RUN_OUTPUT}" "marketplace anthropic-agent-skills: already registered" "post-setup should skip anthropic-agent-skills marketplace add when present"
+assert_contains "${RUN_OUTPUT}" "plugin pyright-lsp@claude-plugins-official: already installed" "post-setup should skip already-installed LSP plugin"
+assert_contains "${RUN_OUTPUT}" "plugin claude-md-management@claude-plugins-official: already installed" "post-setup should skip already-installed general plugin"
+assert_contains "${RUN_OUTPUT}" "plugin document-skills@anthropic-agent-skills: already installed" "post-setup should skip already-installed document plugin"
 
 hash_settings_1="$(hash_file "${HOME}/.claude/settings.json")"
 hash_claudejson_1="$(hash_file "${HOME}/.claude.json")"

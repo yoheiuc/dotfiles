@@ -38,38 +38,57 @@ CLAUDE_GENERAL_PLUGINS=(
 CLAUDE_PLUGIN_MARKETPLACE_NAME="claude-plugins-official"
 CLAUDE_PLUGIN_MARKETPLACE_SOURCE="anthropics/claude-plugins-official"
 
-# Returns 0 if `<name>@claude-plugins-official` is recorded as installed in
+# Document skills (xlsx/docx/pptx/pdf) bundled by the document-skills plugin in
+# Anthropic's anthropic-agent-skills marketplace (anthropics/skills). Replaced
+# the legacy vendored ~/.claude/skills/{doc,pdf,presentation,spreadsheet}
+# copies. Lives under a separate marketplace from claude-plugins-official, so
+# all consumers (post-setup install, doctor / ai-audit verify) thread the
+# marketplace name explicitly.
+CLAUDE_DOCUMENT_PLUGINS=(
+  document-skills
+)
+
+CLAUDE_DOCUMENT_MARKETPLACE_NAME="anthropic-agent-skills"
+CLAUDE_DOCUMENT_MARKETPLACE_SOURCE="anthropics/skills"
+
+# Returns 0 if `<name>@<marketplace>` is recorded as installed in
 # ~/.claude/plugins/installed_plugins.json. The file is missing entirely until
 # the first `claude plugin install` runs, so non-existence == not installed.
+# Marketplace defaults to claude-plugins-official for backward compat.
 claude_plugin_is_installed() {
   local name="$1"
+  local marketplace="${2:-${CLAUDE_PLUGIN_MARKETPLACE_NAME}}"
   local file="${HOME}/.claude/plugins/installed_plugins.json"
   [[ -f "${file}" ]] || return 1
-  jq -e --arg key "${name}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}" \
+  jq -e --arg key "${name}@${marketplace}" \
     '.plugins | has($key)' "${file}" >/dev/null 2>&1
 }
 
-# Render the install summary for one plugin group (LSP / general / ...) on
+# Render the install summary for one plugin group (LSP / general / document) on
 # stdout, and return 0 if the group is fully installed, 1 if any plugin is
 # missing. Caller picks the UI wrapper (ok / warn / attention) per its tone.
 #
-# Usage:  claude_plugins_check_summary <label> <missing_predicate_fn> <total>
+# Usage:  claude_plugins_check_summary <label> <missing_predicate_fn> <total> [marketplace]
 #   if msg="$(claude_plugins_check_summary LSP claude_lsp_plugins_missing "${#CLAUDE_LSP_PLUGINS[@]}")"; then
 #     ok "$msg"
 #   else
 #     attention "$msg"
 #   fi
 #
+# `marketplace` defaults to CLAUDE_PLUGIN_MARKETPLACE_NAME for backward compat.
+# Pass CLAUDE_DOCUMENT_MARKETPLACE_NAME (etc.) for groups distributed elsewhere.
+#
 # Living in this lib so doctor.sh and ai-audit.sh can never drift in
 # message shape (which they did before this helper existed).
 claude_plugins_check_summary() {
   local label="$1" predicate_fn="$2" total="$3"
+  local marketplace="${4:-${CLAUDE_PLUGIN_MARKETPLACE_NAME}}"
   local missing_list missing_count
   missing_list="$("${predicate_fn}" | tr '\n' ' ')"
   missing_list="${missing_list% }"
   if [[ -z "${missing_list// /}" ]]; then
     printf '%s plugins: all %s installed (via %s)\n' \
-      "${label}" "${total}" "${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
+      "${label}" "${total}" "${marketplace}"
     return 0
   fi
   missing_count="$("${predicate_fn}" | wc -l | tr -d ' ')"

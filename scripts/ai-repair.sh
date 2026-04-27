@@ -220,6 +220,23 @@ for _retired_command in api-design ci debug diagram doc docker notebook pdf perf
 done
 unset _retired_command _retired_path
 
+# Document skills migration: vendored ~/.claude/skills/{doc,pdf,presentation,
+# spreadsheet} are replaced by the document-skills plugin in the
+# anthropic-agent-skills marketplace (xlsx/docx/pptx/pdf), installed by
+# post-setup.sh. The plugin lives under
+# ~/.claude/plugins/marketplaces/anthropic-agent-skills/skills/ — different
+# parent dir from the vendored copies, so removing the legacy paths cannot
+# clobber the plugin install. Mirrors the security-best-practices /
+# ui-ux-pro-max migration, but routed through `claude plugin` (tier-1
+# marketplace) rather than `npx skills add` (tier-2).
+for _legacy_doc_skill in doc pdf presentation spreadsheet; do
+  if [[ -d "${HOME}/.claude/skills/${_legacy_doc_skill}" ]]; then
+    rm -rf "${HOME}/.claude/skills/${_legacy_doc_skill}"
+    ok "Document skills: removed legacy vendored ~/.claude/skills/${_legacy_doc_skill}"
+  fi
+done
+unset _legacy_doc_skill
+
 # Strip legacy MCP registrations that have been retired.
 #   playwright       → @playwright/cli + skill (see post-setup.sh)
 #   filesystem       → native Claude Code Read/Write/Edit/Grep/Glob tools

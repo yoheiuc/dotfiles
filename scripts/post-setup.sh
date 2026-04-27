@@ -49,39 +49,58 @@ fi
 ok "Claude Code auto-update channel: latest"
 unset CLAUDE_SETTINGS_JSON claude_path
 
-# ---- Claude Code marketplace + LSP plugins ---------------------------------
-# Per-language LSP plugins are distributed via anthropics/claude-plugins-official.
-# Register the marketplace once, then install each plugin idempotently. The list
-# of plugins lives in scripts/lib/claude-plugins.sh so doctor.sh verifies the
-# same set.
-log "Claude Code plugins (claude-plugins-official)..."
+# ---- Claude Code marketplace + plugins -------------------------------------
+# Plugins live in two marketplaces:
+#   * claude-plugins-official (LSP + general):  anthropics/claude-plugins-official
+#   * anthropic-agent-skills  (document skills): anthropics/skills
+# Both register-once + install-many; consolidated into one helper so adding a
+# third marketplace later doesn't grow the duplication tax.
+_install_claude_marketplace_plugins() {
+  local marketplace_name="$1" marketplace_source="$2"
+  shift 2
+  local plugins=("$@")
 
-if command -v claude &>/dev/null; then
-  if jq -e --arg name "${CLAUDE_PLUGIN_MARKETPLACE_NAME}" \
+  if jq -e --arg name "${marketplace_name}" \
       'has($name)' "${HOME}/.claude/plugins/known_marketplaces.json" >/dev/null 2>&1; then
-    ok "marketplace ${CLAUDE_PLUGIN_MARKETPLACE_NAME}: already registered"
+    ok "marketplace ${marketplace_name}: already registered"
   else
-    log "Adding marketplace ${CLAUDE_PLUGIN_MARKETPLACE_SOURCE}..."
-    if claude plugin marketplace add "${CLAUDE_PLUGIN_MARKETPLACE_SOURCE}"; then
-      ok "marketplace ${CLAUDE_PLUGIN_MARKETPLACE_NAME}: registered"
+    log "Adding marketplace ${marketplace_source}..."
+    if claude plugin marketplace add "${marketplace_source}"; then
+      ok "marketplace ${marketplace_name}: registered"
     else
-      warn "marketplace add failed — run manually: claude plugin marketplace add ${CLAUDE_PLUGIN_MARKETPLACE_SOURCE}"
+      warn "marketplace add failed — run manually: claude plugin marketplace add ${marketplace_source}"
     fi
   fi
 
-  for _plugin in "${CLAUDE_LSP_PLUGINS[@]}" "${CLAUDE_GENERAL_PLUGINS[@]}"; do
-    if claude_plugin_is_installed "${_plugin}"; then
-      ok "plugin ${_plugin}: already installed"
+  local _plugin
+  for _plugin in "${plugins[@]}"; do
+    if claude_plugin_is_installed "${_plugin}" "${marketplace_name}"; then
+      ok "plugin ${_plugin}@${marketplace_name}: already installed"
     else
-      log "Installing plugin ${_plugin}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}..."
-      if claude plugin install "${_plugin}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"; then
-        ok "plugin ${_plugin}: installed"
+      log "Installing plugin ${_plugin}@${marketplace_name}..."
+      if claude plugin install "${_plugin}@${marketplace_name}"; then
+        ok "plugin ${_plugin}@${marketplace_name}: installed"
       else
-        warn "plugin ${_plugin} install failed — run manually: claude plugin install ${_plugin}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
+        warn "plugin ${_plugin} install failed — run manually: claude plugin install ${_plugin}@${marketplace_name}"
       fi
     fi
   done
-  unset _plugin
+}
+
+log "Claude Code plugins (claude-plugins-official)..."
+
+if command -v claude &>/dev/null; then
+  _install_claude_marketplace_plugins \
+    "${CLAUDE_PLUGIN_MARKETPLACE_NAME}" \
+    "${CLAUDE_PLUGIN_MARKETPLACE_SOURCE}" \
+    "${CLAUDE_LSP_PLUGINS[@]}" \
+    "${CLAUDE_GENERAL_PLUGINS[@]}"
+
+  log "Claude Code plugins (anthropic-agent-skills)..."
+  _install_claude_marketplace_plugins \
+    "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}" \
+    "${CLAUDE_DOCUMENT_MARKETPLACE_SOURCE}" \
+    "${CLAUDE_DOCUMENT_PLUGINS[@]}"
 else
   warn "claude not found — skipping plugin install"
 fi

@@ -85,12 +85,26 @@ export SECURITY_BIN="${tmpdir}/security"
 mkdir -p "${HOME}/.serena/cache"
 mkdir -p "${REPO_ROOT}/.serena/cache"
 
+# Fixtures: legacy vendored document skills (replaced by document-skills plugin
+# in the anthropic-agent-skills marketplace). ai-repair should rm them so the
+# plugin's skills become the single source.
+for _legacy_doc in doc pdf presentation spreadsheet; do
+  mkdir -p "${HOME}/.claude/skills/${_legacy_doc}"
+  printf 'stub vendored SKILL\n' > "${HOME}/.claude/skills/${_legacy_doc}/SKILL.md"
+done
+unset _legacy_doc
+
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on first run"
 assert_contains "${RUN_OUTPUT}" "Serena: removed retired ~/.serena" "ai-repair should remove ~/.serena residue"
 assert_contains "${RUN_OUTPUT}" "Serena: removed retired" "ai-repair should announce repo-local .serena removal"
 [[ ! -e "${HOME}/.serena" ]] || fail_test "ai-repair should physically remove ~/.serena directory"
 [[ ! -e "${REPO_ROOT}/.serena" ]] || fail_test "ai-repair should physically remove ${REPO_ROOT}/.serena directory"
+for _legacy_doc in doc pdf presentation spreadsheet; do
+  assert_contains "${RUN_OUTPUT}" "Document skills: removed legacy vendored ~/.claude/skills/${_legacy_doc}" "ai-repair should announce removal of vendored ${_legacy_doc} skill"
+  [[ ! -e "${HOME}/.claude/skills/${_legacy_doc}" ]] || fail_test "ai-repair should physically remove vendored ${_legacy_doc} skill"
+done
+unset _legacy_doc
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel set to latest" "ai-repair should normalize Claude Code channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env set" "ai-repair should set ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to high" "ai-repair should set effortLevel to high (dotfiles baseline)"

@@ -71,3 +71,12 @@ claude_general_plugins_missing() {
     claude_plugin_is_installed "${p}" || echo "${p}"
   done
 }
+
+# Same for CLAUDE_DOCUMENT_PLUGINS, but checked against the
+# anthropic-agent-skills marketplace (different from the other two groups).
+claude_document_plugins_missing() {
+  local p
+  for p in "${CLAUDE_DOCUMENT_PLUGINS[@]}"; do
+    claude_plugin_is_installed "${p}" "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}" || echo "${p}"
+  done
+}

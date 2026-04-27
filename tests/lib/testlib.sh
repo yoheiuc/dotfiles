@@ -54,7 +54,8 @@ run_capture() {
 
 # Write a fixture ~/.claude/plugins/installed_plugins.json under $target_home
 # (or $HOME if omitted) listing every plugin in CLAUDE_LSP_PLUGINS +
-# CLAUDE_GENERAL_PLUGINS as installed. Sources scripts/lib/claude-plugins.sh
+# CLAUDE_GENERAL_PLUGINS (claude-plugins-official) and CLAUDE_DOCUMENT_PLUGINS
+# (anthropic-agent-skills) as installed. Sources scripts/lib/claude-plugins.sh
 # so the stub stays accurate as the expected lists evolve.
 #
 # Usage:  write_installed_plugins_stub [target_home]
@@ -69,6 +70,8 @@ import json
 plugins = {}
 for name in "${CLAUDE_LSP_PLUGINS[*]} ${CLAUDE_GENERAL_PLUGINS[*]}".split():
     plugins[f"{name}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"] = {}
+for name in "${CLAUDE_DOCUMENT_PLUGINS[*]}".split():
+    plugins[f"{name}@${CLAUDE_DOCUMENT_MARKETPLACE_NAME}"] = {}
 print(json.dumps({"plugins": plugins}, indent=2))
 PY
 }

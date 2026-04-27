@@ -215,6 +215,11 @@ if _msg="$(claude_plugins_check_summary general claude_general_plugins_missing "
 else
   attention "${_msg}"
 fi
+if _msg="$(claude_plugins_check_summary document claude_document_plugins_missing "${#CLAUDE_DOCUMENT_PLUGINS[@]}" "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}")"; then
+  ok "${_msg}"
+else
+  attention "${_msg}"
+fi
 unset _msg
 
 section "Retired Serena state"
