@@ -132,6 +132,8 @@ CLI を新規導入する時は、Brewfile / npm install に加えて:
 - `home/dot_local/share/navi/cheats/dotfiles/` の cheat（よく叩くフラグ組み合わせ）
 - `tests/` 配下の回帰テスト（zsh helper を足したなら必須）
 
+wrapper が L1 セキュリティルール（例: `home/dot_config/zsh/playwright.zsh` の禁止 click / 禁止 eval / session 未設定 guard）を機械 enforce する場合は、対応 `tests/<tool>-zsh.sh` に **禁止 pattern が exit 1 / 読み取り系が素通し / `command <tool>` で bypass 可** の 3 系統を回帰必須。L1 文面と wrapper 実装の乖離はテスト無しでは検知できない。
+
 ### Claude Code の skill / plugin
 
 - **公式 CLI で配布される** skill（gws / playwright / notion 等）: `scripts/post-setup.sh` が `~/.claude/skills/` に install。dotfiles source には vendor しない
