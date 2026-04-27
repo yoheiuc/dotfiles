@@ -193,6 +193,11 @@ if command -v playwright-cli &>/dev/null; then
   else
     warn "Microsoft Edge.app not found — run: brew bundle --file ~/.Brewfile"
   fi
+  if playwright_is_stealth_patched; then
+    ok "playwright stealth: ~/.playwright/cli.config.json applies launchOptions.args / ignoreDefaultArgs"
+  else
+    warn "playwright stealth: ~/.playwright/cli.config.json missing or incomplete — run: chezmoi apply"
+  fi
 else
   warn "playwright-cli not found — run: ./scripts/post-setup.sh"
 fi

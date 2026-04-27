@@ -69,9 +69,11 @@ setup・採用基準・依存マップは `~/dotfiles/CLAUDE.md` (L2) と `READM
 - **AI 用ブラウザは Microsoft Edge**（main Chrome と分離するため別 binary）。`--browser=msedge --headed --persistent --profile=$HOME/.ai-edge` をセット
   - 同 binary（Chrome）だと macOS が同一アプリ扱いで Dock / Cmd+Tab が混乱する
   - bundled Chromium は Cloudflare 弾き、Chrome 136+ 系はデフォルト user-data-dir で `--remote-debugging-port` 拒否（CSRF 対策）→ 専用 user-data-dir 必須
+- **stealth**: `~/.playwright/cli.config.json` (chezmoi 管理) が `launchOptions.args=["--disable-blink-features=AutomationControlled"]` と `ignoreDefaultArgs=["--enable-automation"]` を毎起動で注入し、`navigator.webdriver` を `false` に固定（bot.sannysoft.com の `WebDriver(New)` 行が `missing (passed)` になる）。検証: `command playwright-cli --session=edge eval 'navigator.webdriver'`。Runtime.Enable leak まで塞ぐ patchright drop-in は Phase 2（archive 2026-04-28、bot 判定が業務影響レベルに来てから着手）
 - navigation 直後に `osascript -e 'tell application "Microsoft Edge" to activate'` で前面化（user が画面で追えるように）
 - 状態変更系（`click` / `fill` / `cookie-set` / `localstorage-set` 等）は **chat に事前 1 行ナレーションしてから実行**。読み取り系（`goto` / `eval` 取得 / `snapshot` / `tab-list`）は narration 省略可
 - 状態変更系コマンドは shell wrapper が `~/.cache/playwright-cli/actions.log` に TSV で自動記録（`command playwright-cli` で bypass 可）
+- **Claude in Chrome 拡張は採用しない**（遅さ + main Chrome profile 同居前提が L1 の AI 専用 profile 隔離と衝突。archive 2026-04-28 参照）
 
 ### user が起動 / Claude が attach する二段運用
 

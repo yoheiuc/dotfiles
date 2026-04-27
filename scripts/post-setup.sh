@@ -148,6 +148,15 @@ else
   fi
 fi
 
+# Stealth は `~/.playwright/cli.config.json` 経由で `launchOptions.args` に
+# `--disable-blink-features=AutomationControlled` を、`ignoreDefaultArgs` に
+# `--enable-automation` を入れて `navigator.webdriver` を消す方式。設定ファイル
+# 自体は chezmoi が `home/dot_playwright/cli.config.json` から配置するので
+# post-setup 側では何もしない（doctor が適用を verify する）。
+# 当初 rebrowser-patches で `playwright` を patch する Phase 1 を計画したが、
+# Anthropic 配布の `@playwright/cli` が bundle 化した `playwright-core` の
+# `lib/coreBundle.js` 一本化レイアウトと非互換で見送り（archive 2026-04-28）。
+
 # Install Chromium browser (idempotent — CLI detects existing binaries).
 # Don't silence output: Chromium download can take minutes on slow networks and
 # the user should see progress.
@@ -374,6 +383,9 @@ if command -v playwright-cli >/dev/null 2>&1; then
   printf '\n\033[1mTo let agents drive an AI-dedicated browser (Microsoft Edge):\033[0m\n'
   printf '  policy: AI-driven browsing happens in a dedicated Edge profile,\n'
   printf '          isolated from your main Chrome (no Gmail / banking / admin).\n'
+  printf '  stealth: ~/.playwright/cli.config.json (chezmoi 管理) が\n'
+  printf '           --disable-blink-features=AutomationControlled / ignoreDefaultArgs:[--enable-automation]\n'
+  printf '           を入れて navigator.webdriver を抑える。verify: pwedge https://bot.sannysoft.com/\n'
   printf '  one-time setup (per machine):\n'
   printf '    1. ensure microsoft-edge cask is installed: brew bundle --file ~/.Brewfile\n'
   printf '    2. (optional) override the profile dir in ~/.zshenv:\n'

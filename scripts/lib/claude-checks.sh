@@ -80,3 +80,26 @@ claude_document_plugins_missing() {
     claude_plugin_is_installed "${p}" "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}" || echo "${p}"
   done
 }
+
+# True when ~/.playwright/cli.config.json carries the dotfiles stealth keys.
+# `playwright-cli` auto-loads this global config on every invocation and feeds
+# `launchOptions.args` / `launchOptions.ignoreDefaultArgs` straight into
+# `chromium.launchPersistentContext`, so `--disable-blink-features=AutomationControlled`
+# and dropping `--enable-automation` is what flips `navigator.webdriver` to false.
+# rebrowser-patches Phase 1 was found incompatible with Anthropic's bundled
+# playwright-core (archive 2026-04-28), so this config file is the active path.
+playwright_is_stealth_patched() {
+  local cfg="${HOME}/.playwright/cli.config.json"
+  [[ -f "${cfg}" ]] || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+  local has_disable_blink has_ignore_automation
+  has_disable_blink="$(jq -r '
+    (.browser.launchOptions.args // [])
+    | map(select(. == "--disable-blink-features=AutomationControlled"))
+    | length' "${cfg}" 2>/dev/null || echo 0)"
+  has_ignore_automation="$(jq -r '
+    (.browser.launchOptions.ignoreDefaultArgs // [])
+    | map(select(. == "--enable-automation"))
+    | length' "${cfg}" 2>/dev/null || echo 0)"
+  [[ "${has_disable_blink}" -ge 1 && "${has_ignore_automation}" -ge 1 ]]
+}

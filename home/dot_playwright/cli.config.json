@@ -1,0 +1,8 @@
+{
+  "browser": {
+    "launchOptions": {
+      "args": ["--disable-blink-features=AutomationControlled"],
+      "ignoreDefaultArgs": ["--enable-automation"]
+    }
+  }
+}

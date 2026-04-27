@@ -6,6 +6,12 @@ if ! command -v playwright-cli >/dev/null 2>&1; then
   return 0
 fi
 
+# Stealth の本体は `~/.playwright/cli.config.json`（chezmoi 配置）が global config
+# として playwright-cli に load される。`navigator.webdriver` 抑止の確認:
+#   command playwright-cli --session=edge eval 'navigator.webdriver'  →  false
+# rebrowser-patches Phase 2 を将来採用したときに即効くよう env だけ forward-compatible に export。
+export REBROWSER_PATCHES_RUNTIME_FIX_MODE="${REBROWSER_PATCHES_RUNTIME_FIX_MODE:-addBinding}"
+
 # pwsession <name> — セッション名を PLAYWRIGHT_CLI_SESSION に export。
 # 以降の playwright-cli / wrapper 呼び出しが同じプロファイルを再利用する。
 pwsession() {

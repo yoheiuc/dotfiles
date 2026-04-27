@@ -28,6 +28,20 @@ trap 'rm -rf "${tmpdir}"' EXIT
 # Sandbox the playwright-cli wrapper's log directory so tests don't write to
 # the user's real ~/.cache/playwright-cli/actions.log.
 export XDG_CACHE_HOME="${tmpdir}/cache"
+
+# Hermetic base env for `env -i … zsh -c …` callsites below: discards
+# parent env so PLAYWRIGHT_CLI_SESSION / REBROWSER_PATCHES_RUNTIME_FIX_MODE
+# exported by an interactive shell cannot leak into negative assertions
+# (tests 7 / 11) or mask the module's own export (test 16). LANG/LC_ALL are
+# required for guard A's multibyte regex (削除 / 公開) under env -i's C locale.
+HERMETIC_BASE_ENV=(
+  HOME="${HOME}"
+  PATH="${tmpdir}:${PATH}"
+  XDG_CACHE_HOME="${XDG_CACHE_HOME}"
+  TERM="${TERM:-xterm-256color}"
+  LANG="${LANG:-en_US.UTF-8}"
+  LC_ALL="${LC_ALL:-en_US.UTF-8}"
+)
 run_capture zsh -c "PATH='${tmpdir}' source '${MODULE}'; typeset -f pwsession >/dev/null && echo defined || echo absent"
 assert_eq "0" "${RUN_STATUS}" "sourcing module with no playwright-cli should not error"
 assert_contains "${RUN_OUTPUT}" "absent" "module should not define pwsession when playwright-cli is missing"
@@ -70,7 +84,7 @@ assert_contains "${RUN_OUTPUT}" "usage: pwsession" "pwsession should print usage
 # 6. pwlogin must invoke playwright-cli with canonical argv and only export
 #    PLAYWRIGHT_CLI_SESSION on success.
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; pwlogin demo https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-}\""
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" zsh -c "source '${MODULE}'; pwlogin demo https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-}\""
 assert_contains "${RUN_OUTPUT}" "rc=0" "pwlogin should propagate stub exit 0"
 assert_contains "${RUN_OUTPUT}" "session=demo" "pwlogin should export PLAYWRIGHT_CLI_SESSION on success"
 stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
@@ -82,13 +96,13 @@ assert_contains "${stub_invocation}" "https://example.com" "pwlogin should pass 
 
 # 7. pwlogin must NOT export PLAYWRIGHT_CLI_SESSION if playwright-cli fails.
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PW_STUB_EXIT=2 zsh -c "source '${MODULE}'; pwlogin bad https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" PW_STUB_EXIT=2 zsh -c "source '${MODULE}'; pwlogin bad https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
 assert_contains "${RUN_OUTPUT}" "rc=2" "pwlogin should propagate stub exit 2"
 assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwlogin should NOT export PLAYWRIGHT_CLI_SESSION on failure"
 
 # 8. pwkill <name> must invoke playwright-cli delete-data --session <name>.
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; pwkill demo >/dev/null 2>&1"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" zsh -c "source '${MODULE}'; pwkill demo >/dev/null 2>&1"
 stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
 assert_contains "${stub_invocation}" "delete-data" "pwkill should call delete-data"
 assert_contains "${stub_invocation}" "--session" "pwkill should pass --session"
@@ -96,7 +110,7 @@ assert_contains "${stub_invocation}" "demo" "pwkill should pass the session name
 
 # 9. pwlist / pwshow / pwkillall must invoke the expected subcommands.
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; pwlist >/dev/null 2>&1; pwshow >/dev/null 2>&1; pwkillall >/dev/null 2>&1"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" zsh -c "source '${MODULE}'; pwlist >/dev/null 2>&1; pwshow >/dev/null 2>&1; pwkillall >/dev/null 2>&1"
 stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
 assert_contains "${stub_invocation}" "list" "pwlist should call list"
 assert_contains "${stub_invocation}" "show" "pwshow should call show"
@@ -108,7 +122,7 @@ assert_contains "${stub_invocation}" "kill-all" "pwkillall should call kill-all"
 #     overrides the default profile path.
 : > "${stub_log}"
 edge_profile="${tmpdir}/edge-profile"
-run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_AI_EDGE_PROFILE="${edge_profile}" zsh -c "source '${MODULE}'; pwedge https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_AI_EDGE_PROFILE="${edge_profile}" zsh -c "source '${MODULE}'; pwedge https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
 assert_contains "${RUN_OUTPUT}" "rc=0" "pwedge should propagate stub exit 0"
 assert_contains "${RUN_OUTPUT}" "session=edge" "pwedge should export PLAYWRIGHT_CLI_SESSION=edge on success"
 stub_invocation="$(tr '\0' ' ' < "${stub_log}")"
@@ -123,7 +137,7 @@ assert_contains "${stub_invocation}" "https://example.com" "pwedge should pass t
 
 # 11. pwedge must NOT export PLAYWRIGHT_CLI_SESSION if playwright-cli fails.
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_AI_EDGE_PROFILE="${edge_profile}" PW_STUB_EXIT=4 zsh -c "source '${MODULE}'; pwedge https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_AI_EDGE_PROFILE="${edge_profile}" PW_STUB_EXIT=4 zsh -c "source '${MODULE}'; pwedge https://example.com >/dev/null 2>&1; echo \"rc=\$?\"; echo \"session=\${PLAYWRIGHT_CLI_SESSION:-<unset>}\""
 assert_contains "${RUN_OUTPUT}" "rc=4" "pwedge should propagate stub exit 4"
 assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwedge should NOT export PLAYWRIGHT_CLI_SESSION on failure"
 
@@ -132,7 +146,7 @@ assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwedge should NOT export PLAY
 log_file="${XDG_CACHE_HOME}/playwright-cli/actions.log"
 rm -f "${log_file}"
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click foo >/dev/null 2>&1; playwright-cli snapshot >/dev/null 2>&1; command playwright-cli click bar >/dev/null 2>&1"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click foo >/dev/null 2>&1; playwright-cli snapshot >/dev/null 2>&1; command playwright-cli click bar >/dev/null 2>&1"
 [[ -f "${log_file}" ]] || fail_test "wrapper should create actions.log when state-changing command runs"
 log_contents="$(cat "${log_file}")"
 assert_contains "${log_contents}" "click foo" "wrapper should log click invocations"
@@ -146,20 +160,20 @@ assert_eq "3" "${stub_lines}" "wrapper should still call the underlying playwrig
 #     and never reach the stub. Explicit --session in args bypasses the guard.
 rm -f "${log_file}"
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; playwright-cli click foo; echo \"rc=\$?\""
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" zsh -c "source '${MODULE}'; playwright-cli click foo; echo \"rc=\$?\""
 assert_contains "${RUN_OUTPUT}" "rc=1" "wrapper should exit 1 when state-changing without session"
 assert_contains "${RUN_OUTPUT}" "no active session" "wrapper should explain why it blocked"
 stub_lines="$(grep -c . "${stub_log}" 2>/dev/null || true)"
 assert_eq "0" "${stub_lines}" "wrapper should not reach stub when blocked by session guard"
 
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; playwright-cli --session=demo click foo >/dev/null 2>&1; echo \"rc=\$?\""
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" zsh -c "source '${MODULE}'; playwright-cli --session=demo click foo >/dev/null 2>&1; echo \"rc=\$?\""
 assert_contains "${RUN_OUTPUT}" "rc=0" "explicit --session in args should bypass session guard"
 
 # 14. Guard A — forbidden destructive click pattern must exit 1.
 rm -f "${log_file}"
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click 'text=削除'; echo \"rc=\$?\""
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click 'text=削除'; echo \"rc=\$?\""
 assert_contains "${RUN_OUTPUT}" "rc=1" "forbidden click pattern should exit 1"
 assert_contains "${RUN_OUTPUT}" "forbidden destructive pattern" "guard A should print explanation"
 stub_lines="$(grep -c . "${stub_log}" 2>/dev/null || true)"
@@ -168,37 +182,46 @@ assert_eq "0" "${stub_lines}" "guard A should not reach stub"
 # Various L1 forbidden words should all trigger.
 for label in "Submit" "logout" "Cancel" "公開" "Unsubscribe"; do
   : > "${stub_log}"
-  run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click 'text=${label}' 2>/dev/null; echo rc=\$?"
+  run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click 'text=${label}' 2>/dev/null; echo rc=\$?"
   assert_contains "${RUN_OUTPUT}" "rc=1" "guard A should fire on label '${label}'"
 done
 
 # Benign click should still pass (no false-positive on neutral selectors).
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click '#main-nav' >/dev/null 2>&1; echo \"rc=\$?\""
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click '#main-nav' >/dev/null 2>&1; echo \"rc=\$?\""
 assert_contains "${RUN_OUTPUT}" "rc=0" "benign click should pass guard A"
 
 # `command playwright-cli` must bypass guard A entirely.
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; command playwright-cli click 'text=削除' >/dev/null 2>&1; echo \"rc=\$?\""
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; command playwright-cli click 'text=削除' >/dev/null 2>&1; echo \"rc=\$?\""
 assert_contains "${RUN_OUTPUT}" "rc=0" "command bypass should skip guard A"
 
 # 15. Guard B — forbidden eval/run-code write patterns must exit 1.
 for expr in "document.cookie = 'x=y'" "el.innerHTML = ''" "fetch('/x', {method: 'POST'})" "el.submit()" "el.click()" "localStorage.setItem('a','b')" "document.execCommand('copy')"; do
   : > "${stub_log}"
-  run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli eval \"${expr}\" 2>/dev/null; echo rc=\$?"
+  run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli eval \"${expr}\" 2>/dev/null; echo rc=\$?"
   assert_contains "${RUN_OUTPUT}" "rc=1" "guard B should fire on write expr: ${expr}"
 done
 
 # Read-only eval expressions should pass.
 for expr in "document.title" "el.textContent" "el.getAttribute('href')" "el.getBoundingClientRect()" "document.querySelectorAll('.btn').length"; do
   : > "${stub_log}"
-  run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli eval \"${expr}\" >/dev/null 2>&1; echo rc=\$?"
+  run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli eval \"${expr}\" >/dev/null 2>&1; echo rc=\$?"
   assert_contains "${RUN_OUTPUT}" "rc=0" "guard B should not fire on read-only expr: ${expr}"
 done
 
 # `command playwright-cli` must bypass guard B too.
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; command playwright-cli eval \"document.cookie = 'x=y'\" >/dev/null 2>&1; echo rc=\$?"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; command playwright-cli eval \"document.cookie = 'x=y'\" >/dev/null 2>&1; echo rc=\$?"
 assert_contains "${RUN_OUTPUT}" "rc=0" "command bypass should skip guard B"
+
+# 16. rebrowser-patches runtime fix — module must export
+#     REBROWSER_PATCHES_RUNTIME_FIX_MODE=addBinding by default and respect
+#     user-set values (so callers can override to "alwaysIsolated" etc.).
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" zsh -c "source '${MODULE}'; echo \"mode=\${REBROWSER_PATCHES_RUNTIME_FIX_MODE}\""
+assert_contains "${RUN_OUTPUT}" "mode=addBinding" "module should default REBROWSER_PATCHES_RUNTIME_FIX_MODE to addBinding"
+
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" REBROWSER_PATCHES_RUNTIME_FIX_MODE=alwaysIsolated zsh -c "source '${MODULE}'; echo \"mode=\${REBROWSER_PATCHES_RUNTIME_FIX_MODE}\""
+assert_contains "${RUN_OUTPUT}" "mode=alwaysIsolated" "module should not clobber user-set REBROWSER_PATCHES_RUNTIME_FIX_MODE"
 
 pass_test "tests/playwright-zsh.sh"

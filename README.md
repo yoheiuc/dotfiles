@@ -67,6 +67,8 @@ make preview         # 以降の変更は apply 前に必ず diff 確認
 
 `@playwright/cli` を `pwedge` zsh helper でラップ済み。**main Chrome は AI に渡さない**運用に統一していて、AI 用 Edge プロファイル (`~/.ai-edge`) を別 binary で立てる。bundled Chromium が Cloudflare に弾かれる / Chrome 136+ 系が `--remote-debugging-port` を拒否する制約も Edge 側で回避される。
 
+bot 判定回避は `~/.playwright/cli.config.json` (chezmoi 管理、`home/dot_playwright/cli.config.json` source) が `launchOptions.args=["--disable-blink-features=AutomationControlled"]` と `ignoreDefaultArgs=["--enable-automation"]` を global config として注入する。playwright-cli が起動毎に auto load → `chromium.launchPersistentContext` に spread される。`navigator.webdriver === false` を `bot.sannysoft.com` で確認済み。Runtime.Enable leak まで塞ぐ rebrowser-patches Phase 1 は Anthropic bundle 構造と非互換で見送り（詳細は [`docs/notes/decisions-archive.md`](docs/notes/decisions-archive.md) 2026-04-28）。
+
 脅威モデルと禁止操作の詳細は `~/.claude/CLAUDE.md` の「ブラウザ自動化のセキュリティ規則」「ブラウザ自動化の運用デフォルト」節（毎ターン Claude が読む context）。
 
 zsh helper（`home/dot_config/zsh/playwright.zsh`）:
@@ -170,6 +172,10 @@ exec zsh
 ### `pwedge` で Edge が立ち上がらない
 
 `brew bundle check --file=~/.Brewfile` で `microsoft-edge` cask が install 済みか確認。未 install なら `make install` で再実行。プロファイル位置を変えたい場合は `~/.zshenv` に `export PLAYWRIGHT_AI_EDGE_PROFILE=...` を追加。
+
+### bot 判定 (Cloudflare / Akamai) で `pwedge` が弾かれる
+
+`make doctor` で `playwright stealth: ~/.playwright/cli.config.json applies launchOptions.args / ignoreDefaultArgs` が出ているか確認。出ていなければ `chezmoi apply` で config 配置を再実行。`pwedge https://bot.sannysoft.com/` で `WebDriver(New)` 行が `missing (passed)` か目視確認できる。それでも詰む場合は Runtime.Enable leak まで塞ぐ patchright drop-in (Phase 2、archive 2026-04-28) を検討。
 
 ### `gcloud` が `CERTIFICATE_VERIFY_FAILED` で動かない
 
