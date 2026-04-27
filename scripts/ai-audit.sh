@@ -135,10 +135,10 @@ if [[ -f "${HOME}/.claude/settings.json" ]]; then
     attention "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5 — run make ai-repair"
   fi
 
-  if claude_effort_is_xhigh; then
-    ok "Claude Code: effortLevel is xhigh"
+  if claude_effort_is_high; then
+    ok "Claude Code: effortLevel is high"
   else
-    attention "Claude Code: effortLevel should be xhigh (Opus 4.7 default) — run make ai-repair"
+    attention "Claude Code: effortLevel should be high (dotfiles baseline) — run make ai-repair"
   fi
 
   # Hooks are baseline-managed by dotfiles. Verify each expected command is

@@ -16,9 +16,9 @@ claude_enable_tool_search_is_set() {
   [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('env',{}).get('ENABLE_TOOL_SEARCH','')" 2>/dev/null || true)" == "auto:5" ]]
 }
 
-# effortLevel == "xhigh" (Opus 4.7 official recommended default)
-claude_effort_is_xhigh() {
-  [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('effortLevel','')" 2>/dev/null || true)" == "xhigh" ]]
+# effortLevel == "high" (dotfiles baseline, 降格 2026-04-27 from xhigh)
+claude_effort_is_high() {
+  [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('effortLevel','')" 2>/dev/null || true)" == "high" ]]
 }
 
 # True if a hook block contains the given command string anywhere.

@@ -90,7 +90,7 @@ write_installed_plugins_stub
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "latest",
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
   "env": {"ENABLE_TOOL_SEARCH": "auto:5"},
   "hooks": {
     "PreToolUse": [
@@ -140,7 +140,7 @@ assert_eq "0" "${RUN_STATUS}" "ai-audit should succeed in the clean case"
 assert_contains "${RUN_OUTPUT}" "Claude settings: present" "ai-audit should report local claude settings"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai-audit should validate Claude channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env is set" "ai-audit should validate ENABLE_TOOL_SEARCH env"
-assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel is xhigh" "ai-audit should validate effortLevel xhigh baseline"
+assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel is high" "ai-audit should validate effortLevel high baseline"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/lsp-hint.sh)" "ai-audit should validate lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/auto-save.sh)" "ai-audit should validate auto-save hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/chezmoi-auto-apply.sh)" "ai-audit should validate chezmoi-auto-apply hook"
@@ -187,7 +187,7 @@ assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational with warnings"
 assert_contains "${RUN_OUTPUT}" "Claude settings: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy claude settings"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be latest" "ai-audit should detect Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5" "ai-audit should detect missing ENABLE_TOOL_SEARCH env"
-assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel should be xhigh" "ai-audit should detect missing effortLevel xhigh"
+assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel should be high" "ai-audit should detect missing effortLevel high"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/lsp-hint.sh)" "ai-audit should detect missing lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/auto-save.sh)" "ai-audit should detect missing auto-save hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/chezmoi-auto-apply.sh)" "ai-audit should detect missing chezmoi-auto-apply hook"
@@ -243,7 +243,7 @@ rm -f "${HOME}/.claude/settings.json.pre-unmanage-test"
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "latest",
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
   "env": {"ENABLE_TOOL_SEARCH": "auto:5"},
   "hooks": {
     "PreToolUse": [

@@ -78,26 +78,26 @@ run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on first run"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel set to latest" "ai-repair should normalize Claude Code channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env set" "ai-repair should set ENABLE_TOOL_SEARCH env"
-assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to xhigh" "ai-repair should set effortLevel to xhigh (Opus 4.7 default)"
+assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to high" "ai-repair should set effortLevel to high (dotfiles baseline)"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hooks reset to baseline" "ai-repair should install baseline hooks"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"autoUpdatesChannel": "latest"' "ai-repair should write Claude auto-update channel"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"ENABLE_TOOL_SEARCH": "auto:5"' "ai-repair should write ENABLE_TOOL_SEARCH env toggle"
-assert_contains "$(cat "${HOME}/.claude/settings.json")" '"effortLevel": "xhigh"' "ai-repair should write effortLevel xhigh"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"effortLevel": "high"' "ai-repair should write effortLevel high"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/lsp-hint.sh"' "ai-repair should wire lsp-hint PreToolUse hook"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/auto-save.sh"' "ai-repair should wire auto-save Stop hook"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/chezmoi-auto-apply.sh"' "ai-repair should wire chezmoi-auto-apply Stop hook"
 
 # Local-managed keys (permissions / model / statusLine) must be preserved:
 # Claude Code writes them itself, dotfiles must not clobber them.
-# effortLevel is now baseline-managed (snap-back to xhigh), so a local
-# `/effort high` is overwritten on the next ai-repair — verified separately.
+# effortLevel is now baseline-managed (snap-back to high), so a local
+# `/effort medium` is overwritten on the next ai-repair — verified separately.
 python3 -c "
 import json
 p = '${HOME}/.claude/settings.json'
 with open(p) as f: d = json.load(f)
 d['permissions'] = {'allow': ['Read(*)'], 'deny': ['Bash(rm*)']}
 d['model'] = 'opus[1m]'
-d['effortLevel'] = 'high'
+d['effortLevel'] = 'medium'
 d['statusLine'] = {'type': 'command', 'command': 'my-statusline'}
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
@@ -106,8 +106,8 @@ assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on re-run after user-loc
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"Read(*)"' "ai-repair must preserve user-managed permissions.allow"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"Bash(rm*)"' "ai-repair must preserve user-managed permissions.deny"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"model": "opus[1m]"' "ai-repair must preserve user-managed model"
-assert_contains "$(cat "${HOME}/.claude/settings.json")" '"effortLevel": "xhigh"' "ai-repair must snap effortLevel back to xhigh baseline"
-assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to xhigh" "ai-repair should re-set effortLevel after user override"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"effortLevel": "high"' "ai-repair must snap effortLevel back to high baseline"
+assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to high" "ai-repair should re-set effortLevel after user override"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "my-statusline"' "ai-repair must preserve user-managed statusLine"
 
 # Verify Claude Code JSON registration
