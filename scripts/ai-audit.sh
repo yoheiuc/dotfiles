@@ -225,6 +225,11 @@ section "Retired Serena state"
 if [[ -e "${HOME}/.serena" ]]; then
   attention "Retired Serena state still on disk: ${HOME}/.serena (safe to rm -rf if no longer needed)"
 fi
+_audit_repo_root="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [[ -e "${_audit_repo_root}/.serena" ]]; then
+  attention "Retired Serena state still in repo: ${_audit_repo_root}/.serena (safe to rm -rf, ai-repair will scrub)"
+fi
+unset _audit_repo_root
 if [[ -e "${HOME}/.local/bin/serena-mcp" ]]; then
   attention "Retired Serena wrapper still present: ${HOME}/.local/bin/serena-mcp (should be removed by chezmoi apply)"
 fi

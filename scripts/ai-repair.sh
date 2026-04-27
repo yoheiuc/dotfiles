@@ -171,6 +171,13 @@ if [[ -e "${HOME}/.serena" ]]; then
   rm -rf "${HOME}/.serena"
   ok "Serena: removed retired ~/.serena"
 fi
+# dotfiles repo 内に Serena が遺した cache + memories の残骸も能動的に除去。
+# `.gitignore` 済みなので `git status` には出ないが、ai-audit / 手動 ls の判断
+# ノイズになるので home dir 側 (~/.serena) と同じ扱いにする。
+if [[ -e "${REPO_ROOT}/.serena" ]]; then
+  rm -rf "${REPO_ROOT}/.serena"
+  ok "Serena: removed retired ${REPO_ROOT/#${HOME}/\~}/.serena"
+fi
 # ~/.claude/.mcp.json was never loaded by Claude Code — none of the 3 valid MCP
 # scopes (local / project / user) read that path. The chezmoi source
 # `home/dot_claude/dot_mcp.json` was removed; drop the orphan target on existing

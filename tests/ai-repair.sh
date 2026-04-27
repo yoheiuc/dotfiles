@@ -6,7 +6,11 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_ROOT}/tests/lib/testlib.sh"
 
 tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-ai-repair-test.XXXXXX")"
-trap 'rm -rf "${tmpdir}"' EXIT
+# `${REPO_ROOT}/.serena` is also scrubbed by ai-repair, so the fixture we plant
+# below should always be removed by it. Add it to the trap defensively in case
+# the test errors out before ai-repair runs; .serena/ is gitignored Serena-MCP
+# residue and per L2 policy is meant to be removed.
+trap 'rm -rf "${tmpdir}" "${REPO_ROOT}/.serena"' EXIT
 
 mkdir -p "${tmpdir}/home/.local/bin"
 export HOME="${tmpdir}/home"
@@ -74,8 +78,19 @@ EOF
 chmod +x "${tmpdir}/security"
 export SECURITY_BIN="${tmpdir}/security"
 
+# Fixtures: Serena residue in both home dir and repo root must be scrubbed by
+# ai-repair. ~/.serena is the runtime cache + memories Serena MCP wrote;
+# ${REPO_ROOT}/.serena/ is project-local residue (gitignored). Both directories
+# are not cleared by `chezmoi apply` alone.
+mkdir -p "${HOME}/.serena/cache"
+mkdir -p "${REPO_ROOT}/.serena/cache"
+
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on first run"
+assert_contains "${RUN_OUTPUT}" "Serena: removed retired ~/.serena" "ai-repair should remove ~/.serena residue"
+assert_contains "${RUN_OUTPUT}" "Serena: removed retired" "ai-repair should announce repo-local .serena removal"
+[[ ! -e "${HOME}/.serena" ]] || fail_test "ai-repair should physically remove ~/.serena directory"
+[[ ! -e "${REPO_ROOT}/.serena" ]] || fail_test "ai-repair should physically remove ${REPO_ROOT}/.serena directory"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel set to latest" "ai-repair should normalize Claude Code channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env set" "ai-repair should set ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to high" "ai-repair should set effortLevel to high (dotfiles baseline)"

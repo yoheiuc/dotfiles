@@ -152,6 +152,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code jamf-docs MCP: registered" "ai-audi
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: registered" "ai-audit should validate Claude Slack MCP"
 assert_not_contains "${RUN_OUTPUT}" "Claude Code serena MCP: legacy entry present" "ai-audit should not flag serena when absent"
 assert_not_contains "${RUN_OUTPUT}" "Retired Serena state still on disk" "ai-audit should not flag Serena state when absent"
+assert_not_contains "${RUN_OUTPUT}" "Retired Serena state still in repo" "ai-audit should not flag repo-local Serena state when absent"
 assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.codex" "ai-audit should report absence of retired Codex state"
 assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.gemini" "ai-audit should report absence of retired Gemini state"
 assert_contains "${RUN_OUTPUT}" "LSP plugins: all ${#CLAUDE_LSP_PLUGINS[@]} installed" "ai-audit should validate LSP plugins are installed"
@@ -239,6 +240,9 @@ mkdir -p "${HOME}/.local/bin" "${HOME}/.serena"
 : > "${HOME}/.local/bin/serena-mcp"
 chmod +x "${HOME}/.local/bin/serena-mcp"
 : > "${HOME}/.serena/serena_config.yml"
+# repo-local .serena residue (project context directory Serena writes alongside).
+# tmpdir is the test's stand-in REPO_ROOT (ai-audit derives it via SCRIPT_DIR/..).
+mkdir -p "${tmpdir}/.serena/cache"
 rm -f "${HOME}/.claude/settings.json.pre-unmanage-test"
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
@@ -270,6 +274,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: legacy entry p
 assert_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: legacy entry present" "ai-audit should flag legacy Claude Code brave-search MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code serena MCP: legacy entry present" "ai-audit should flag legacy Claude Code serena MCP"
 assert_contains "${RUN_OUTPUT}" "Retired Serena state still on disk" "ai-audit should flag leftover Serena state"
+assert_contains "${RUN_OUTPUT}" "Retired Serena state still in repo" "ai-audit should flag leftover repo-local Serena state"
 assert_contains "${RUN_OUTPUT}" "Retired Serena wrapper still present" "ai-audit should flag leftover Serena wrapper"
 
 pass_test "tests/ai-audit.sh"
