@@ -10,7 +10,7 @@ tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-ai-repair-test.XXXXXX")"
 # below should always be removed by it. Add it to the trap defensively in case
 # the test errors out before ai-repair runs; .serena/ is gitignored Serena-MCP
 # residue and per L2 policy is meant to be removed.
-trap 'rm -rf "${tmpdir}" "${REPO_ROOT}/.serena"' EXIT
+trap 'rm -rf "${tmpdir}" "${REPO_ROOT}/.serena"; rm -f "${REPO_ROOT}/.claude"/hookify.*.local.md 2>/dev/null || true' EXIT
 
 mkdir -p "${tmpdir}/home/.local/bin"
 export HOME="${tmpdir}/home"
@@ -94,6 +94,13 @@ for _legacy_doc in doc pdf presentation spreadsheet; do
 done
 unset _legacy_doc
 
+# Fixtures: hookify trial residue (retired 2026-04-27). ai-repair should rm
+# repo-local rule files so audit goes green. Plant directly in ${REPO_ROOT}
+# because hookify's cwd-relative loader pattern doesn't apply to ${HOME}.
+mkdir -p "${REPO_ROOT}/.claude"
+printf -- '---\nname: trial\nenabled: true\nevent: bash\n---\n' \
+  > "${REPO_ROOT}/.claude/hookify.trial.local.md"
+
 run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on first run"
 assert_contains "${RUN_OUTPUT}" "Serena: removed retired ~/.serena" "ai-repair should remove ~/.serena residue"
@@ -105,6 +112,8 @@ for _legacy_doc in doc pdf presentation spreadsheet; do
   [[ ! -e "${HOME}/.claude/skills/${_legacy_doc}" ]] || fail_test "ai-repair should physically remove vendored ${_legacy_doc} skill"
 done
 unset _legacy_doc
+assert_contains "${RUN_OUTPUT}" "Hookify: removed retired rule files" "ai-repair should announce hookify rule cleanup"
+[[ ! -e "${REPO_ROOT}/.claude/hookify.trial.local.md" ]] || fail_test "ai-repair should physically remove hookify trial rule"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel set to latest" "ai-repair should normalize Claude Code channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env set" "ai-repair should set ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to high" "ai-repair should set effortLevel to high (dotfiles baseline)"

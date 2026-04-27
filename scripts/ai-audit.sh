@@ -239,6 +239,23 @@ if [[ -e "${HOME}/.local/bin/serena-mcp" ]]; then
   attention "Retired Serena wrapper still present: ${HOME}/.local/bin/serena-mcp (should be removed by chezmoi apply)"
 fi
 
+section "Retired Hookify state"
+# Hookify trial was retired 2026-04-27 (see decisions-archive.md). Flag any
+# leftover so the user can scrub it. ai-repair handles the repo-local rule
+# files automatically; the plugin uninstall is left manual since it requires
+# the `claude` CLI on PATH.
+_audit_repo_root="$(cd "${SCRIPT_DIR}/.." && pwd)"
+shopt -s nullglob
+_hookify_rules=("${_audit_repo_root}/.claude"/hookify.*.local.md)
+shopt -u nullglob
+if (( ${#_hookify_rules[@]} > 0 )); then
+  attention "Retired Hookify rule files still in repo: ${_audit_repo_root}/.claude/hookify.*.local.md — run make ai-repair to scrub"
+fi
+unset _hookify_rules _audit_repo_root
+if claude_plugin_is_installed "hookify" "${CLAUDE_PLUGIN_MARKETPLACE_NAME}"; then
+  attention "Retired Hookify plugin still installed — run: claude plugin uninstall hookify@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
+fi
+
 section "Backup Files"
 report_optional_backups "Claude settings backups" "${HOME}/.claude/settings.json.pre-unmanage-*"
 

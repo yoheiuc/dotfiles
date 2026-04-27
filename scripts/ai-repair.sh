@@ -165,6 +165,20 @@ if [[ -e "${REPO_ROOT}/.serena" ]]; then
   rm -rf "${REPO_ROOT}/.serena"
   ok "Serena: removed retired ${REPO_ROOT/#${HOME}/\~}/.serena"
 fi
+# Hookify trial residue (retired 2026-04-27, see decisions-archive.md). Rule
+# files at ${REPO_ROOT}/.claude/hookify.*.local.md were placed during the
+# 2026-04-25 trial; gitignored and cwd-relative, so chezmoi does not touch
+# them. Scrub here so ai-audit / 手動 ls の判断ノイズが消える。~/.claude/
+# 側の rule files は touch しない（hookify は cwd 相対設計で他 project の
+# user 領域、勝手に消すと意図せぬ削除になる）。
+shopt -s nullglob
+_hookify_rules=("${REPO_ROOT}/.claude"/hookify.*.local.md)
+shopt -u nullglob
+if (( ${#_hookify_rules[@]} > 0 )); then
+  rm -f "${_hookify_rules[@]}"
+  ok "Hookify: removed retired rule files from ${REPO_ROOT/#${HOME}/\~}/.claude"
+fi
+unset _hookify_rules
 # ~/.claude/.mcp.json was never loaded by Claude Code — none of the 3 valid MCP
 # scopes (local / project / user) read that path. The chezmoi source
 # `home/dot_claude/dot_mcp.json` was removed; drop the orphan target on existing
