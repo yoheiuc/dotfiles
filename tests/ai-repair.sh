@@ -216,6 +216,11 @@ printf '{"mcpServers":{}}\n' > "${HOME}/.claude/.mcp.json"
 mkdir -p "${HOME}/.local/bin"
 touch "${HOME}/.local/bin/serena-mcp"
 chmod +x "${HOME}/.local/bin/serena-mcp"
+# Leftover Serena state dir (cache + memories) — chezmoi never managed it,
+# so ai-repair should rm it actively. Mirrors the Codex retire pattern.
+mkdir -p "${HOME}/.serena/cache"
+mkdir -p "${HOME}/.serena/memories"
+: > "${HOME}/.serena/cache/dummy"
 # Leftover vendored frontend-design skill should also be cleaned.
 mkdir -p "${HOME}/.claude/skills/frontend-design"
 : > "${HOME}/.claude/skills/frontend-design/SKILL.md"
@@ -247,6 +252,8 @@ assert_not_contains "$(cat "${HOME}/.claude/settings.json")" 'UserPromptSubmit' 
 [[ ! -e "${HOME}/.claude/.mcp.json" ]] || fail_test "dead ~/.claude/.mcp.json should be removed"
 assert_contains "${RUN_OUTPUT}" "removed dead ~/.claude/.mcp.json" "ai-repair should announce dead .mcp.json removal"
 [[ ! -e "${HOME}/.local/bin/serena-mcp" ]] || fail_test "retired serena-mcp wrapper should be removed"
+[[ ! -e "${HOME}/.serena" ]] || fail_test "retired ~/.serena state dir should be removed"
+assert_contains "${RUN_OUTPUT}" "Serena: removed retired ~/.serena" "ai-repair should announce ~/.serena cleanup"
 [[ ! -d "${HOME}/.claude/skills/frontend-design" ]] || fail_test "retired vendored frontend-design skill should be removed"
 assert_contains "${RUN_OUTPUT}" "removed retired vendored skill" "ai-repair should announce frontend-design cleanup"
 

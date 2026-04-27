@@ -161,6 +161,16 @@ if [[ -d "${HOME}/.codex" ]]; then
   rm -rf "${HOME}/.codex"
   ok "Codex: removed retired ~/.codex"
 fi
+# Serena MCP was retired in favor of native LSP + per-language plugins. The
+# MCP registration is removed by the legacy-MCP scan below and the
+# ~/.local/bin/serena-mcp wrapper is covered by the _orphan_scripts loop
+# above, but ~/.serena/ (cache + memories) is not cleared by chezmoi alone.
+# Drop it here so `make ai-repair` fully converges and ai-audit's
+# "Retired Serena state" section goes green.
+if [[ -e "${HOME}/.serena" ]]; then
+  rm -rf "${HOME}/.serena"
+  ok "Serena: removed retired ~/.serena"
+fi
 # ~/.claude/.mcp.json was never loaded by Claude Code — none of the 3 valid MCP
 # scopes (local / project / user) read that path. The chezmoi source
 # `home/dot_claude/dot_mcp.json` was removed; drop the orphan target on existing
