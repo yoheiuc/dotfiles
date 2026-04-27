@@ -132,7 +132,7 @@ assert_contains "${RUN_OUTPUT}" "session=<unset>" "pwedge should NOT export PLAY
 log_file="${XDG_CACHE_HOME}/playwright-cli/actions.log"
 rm -f "${log_file}"
 : > "${stub_log}"
-run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; playwright-cli click foo >/dev/null 2>&1; playwright-cli snapshot >/dev/null 2>&1; command playwright-cli click bar >/dev/null 2>&1"
+run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click foo >/dev/null 2>&1; playwright-cli snapshot >/dev/null 2>&1; command playwright-cli click bar >/dev/null 2>&1"
 [[ -f "${log_file}" ]] || fail_test "wrapper should create actions.log when state-changing command runs"
 log_contents="$(cat "${log_file}")"
 assert_contains "${log_contents}" "click foo" "wrapper should log click invocations"
@@ -141,5 +141,64 @@ assert_eq "1" "${log_lines}" "wrapper should log state-changing commands only (n
 # All three invocations must still reach the stub binary (function-only logging).
 stub_lines="$(grep -c . "${stub_log}" || true)"
 assert_eq "3" "${stub_lines}" "wrapper should still call the underlying playwright-cli stub"
+
+# 13. Guard D — state-changing command without active session must exit 1
+#     and never reach the stub. Explicit --session in args bypasses the guard.
+rm -f "${log_file}"
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; playwright-cli click foo; echo \"rc=\$?\""
+assert_contains "${RUN_OUTPUT}" "rc=1" "wrapper should exit 1 when state-changing without session"
+assert_contains "${RUN_OUTPUT}" "no active session" "wrapper should explain why it blocked"
+stub_lines="$(grep -c . "${stub_log}" 2>/dev/null || true)"
+assert_eq "0" "${stub_lines}" "wrapper should not reach stub when blocked by session guard"
+
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" zsh -c "source '${MODULE}'; playwright-cli --session=demo click foo >/dev/null 2>&1; echo \"rc=\$?\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "explicit --session in args should bypass session guard"
+
+# 14. Guard A — forbidden destructive click pattern must exit 1.
+rm -f "${log_file}"
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click 'text=削除'; echo \"rc=\$?\""
+assert_contains "${RUN_OUTPUT}" "rc=1" "forbidden click pattern should exit 1"
+assert_contains "${RUN_OUTPUT}" "forbidden destructive pattern" "guard A should print explanation"
+stub_lines="$(grep -c . "${stub_log}" 2>/dev/null || true)"
+assert_eq "0" "${stub_lines}" "guard A should not reach stub"
+
+# Various L1 forbidden words should all trigger.
+for label in "Submit" "logout" "Cancel" "公開" "Unsubscribe"; do
+  : > "${stub_log}"
+  run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click 'text=${label}' 2>/dev/null; echo rc=\$?"
+  assert_contains "${RUN_OUTPUT}" "rc=1" "guard A should fire on label '${label}'"
+done
+
+# Benign click should still pass (no false-positive on neutral selectors).
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli click '#main-nav' >/dev/null 2>&1; echo \"rc=\$?\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "benign click should pass guard A"
+
+# `command playwright-cli` must bypass guard A entirely.
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; command playwright-cli click 'text=削除' >/dev/null 2>&1; echo \"rc=\$?\""
+assert_contains "${RUN_OUTPUT}" "rc=0" "command bypass should skip guard A"
+
+# 15. Guard B — forbidden eval/run-code write patterns must exit 1.
+for expr in "document.cookie = 'x=y'" "el.innerHTML = ''" "fetch('/x', {method: 'POST'})" "el.submit()" "el.click()" "localStorage.setItem('a','b')" "document.execCommand('copy')"; do
+  : > "${stub_log}"
+  run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli eval \"${expr}\" 2>/dev/null; echo rc=\$?"
+  assert_contains "${RUN_OUTPUT}" "rc=1" "guard B should fire on write expr: ${expr}"
+done
+
+# Read-only eval expressions should pass.
+for expr in "document.title" "el.textContent" "el.getAttribute('href')" "el.getBoundingClientRect()" "document.querySelectorAll('.btn').length"; do
+  : > "${stub_log}"
+  run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; playwright-cli eval \"${expr}\" >/dev/null 2>&1; echo rc=\$?"
+  assert_contains "${RUN_OUTPUT}" "rc=0" "guard B should not fire on read-only expr: ${expr}"
+done
+
+# `command playwright-cli` must bypass guard B too.
+: > "${stub_log}"
+run_capture env PATH="${tmpdir}:${PATH}" PLAYWRIGHT_CLI_SESSION=test zsh -c "source '${MODULE}'; command playwright-cli eval \"document.cookie = 'x=y'\" >/dev/null 2>&1; echo rc=\$?"
+assert_contains "${RUN_OUTPUT}" "rc=0" "command bypass should skip guard B"
 
 pass_test "tests/playwright-zsh.sh"
