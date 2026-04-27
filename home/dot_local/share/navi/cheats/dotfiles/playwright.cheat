@@ -1,14 +1,10 @@
 % playwright, browser
 
+# AI 用 Microsoft Edge を headed / persistent で起動（session 名は edge 固定、profile=~/.ai-edge）
+pwedge <url>
+
 # セッション名を現在の shell に export
 pwsession <name>
-
-# 起動中の AI 専用 Chrome プロファイルに CDP attach（初回セットアップ済み前提）
-# 事前に ~/.zshenv で `export PLAYWRIGHT_AI_CHROME_READY=1` が必要
-pwattach
-
-# 実 Chrome との attach を切る（Chrome 本体は殺さない、toggle も OFF にしない）
-pwdetach
 
 # 可視ブラウザで手動ログイン（2FA 含む）→ 閉じると以降は headless 再利用
 pwlogin <name> <url>

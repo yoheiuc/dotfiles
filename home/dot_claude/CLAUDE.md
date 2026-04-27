@@ -73,6 +73,15 @@ setup・採用基準・依存マップは `~/dotfiles/CLAUDE.md` (L2) と `READM
 - 状態変更系（`click` / `fill` / `cookie-set` / `localstorage-set` 等）は **chat に事前 1 行ナレーションしてから実行**。読み取り系（`goto` / `eval` 取得 / `snapshot` / `tab-list`）は narration 省略可
 - 状態変更系コマンドは shell wrapper が `~/.cache/playwright-cli/actions.log` に TSV で自動記録（`command playwright-cli` で bypass 可）
 
+### user が起動 / Claude が attach する二段運用
+
+`pwedge` は user が手元 terminal で叩くキックスタートも兼ねる。Claude が後から操作する場合:
+
+- **Claude 側で再起動しない**。`pwedge` 起動済みなら playwright-cli の session 名 `edge` が常駐しているので、すべての subcommand に `--session=edge` を付けて attach する（例: `playwright-cli --session=edge snapshot`）
+- Bash tool は毎呼び出しで新 shell が立ち上がり `PLAYWRIGHT_CLI_SESSION` env を引き継がない。env 経由の sticky 運用に頼らず、**`--session=edge` を毎回明示**する
+- 既存セッションの有無は `playwright-cli list` で確認できる（attach 候補が "edge" として表示される）
+- user が `pwedge` していない状態で操作要求が来た場合は、Claude 側で `pwedge <url>` 相当を起動する代わりに **user に「pwedge を起動してください」と促す**。Claude が自走起動すると user の画面前面化や AI 専用プロファイル使用前提が破れやすい
+
 **禁止 click**（textContent が以下に match したら止めて user 確認）:
 
 `/削除|delete|remove|cancel|解約|キャンセル|unsubscribe|logout|sign\s*out|プラン変更|change\s*plan|update.*payment|支払.*変更|save\s*changes|apply|変更を保存|更新|送信|submit|購入|subscribe|招待|invite|共有|share|publish|公開/i`
