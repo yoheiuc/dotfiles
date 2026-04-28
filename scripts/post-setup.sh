@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
 # post-setup.sh — additional setup that runs after dotfiles are applied
 #
-# Responsibility:
+# Responsibility (imperative install layer; declarative file sync is chezmoi's job):
 #   - Install/update Claude Code CLI via native installer and keep it on latest
+#   - Register Claude Code marketplaces and install plugins listed in claude-plugins.sh
+#     (LSP + general from claude-plugins-official, document skills from anthropic-agent-skills)
 #   - Install clasp (via npm install -g @google/clasp)
-#   - Register Sequential Thinking MCP into Claude Code (idempotent)
-#   - Install Google Workspace CLI (gws) skills under ~/.claude/skills (idempotent)
-#   - Install find-skills (vercel-labs/skills) so Claude can discover skills from natural-language queries (idempotent)
+#   - Install playwright-cli + Chromium + skill files under ~/.claude/skills
+#   - Install Google Workspace CLI (gws) / notion-cli / find-skills / security-best-practices /
+#     ui-ux-pro-max skills under ~/.claude/skills via `npx skills add ...`
 #   - Keep brew-autoupdate disabled (manual brew update/upgrade policy)
+#
+# Out of scope (handled elsewhere; do not duplicate here):
+#   - MCP server registration in ~/.claude.json   → scripts/ai-repair.sh
+#   - settings.json baseline keys (hooks/effort)   → scripts/ai-repair.sh
+#   - Drift detection / diff reporting             → scripts/ai-audit.sh
 #
 # Safe to re-run: already-configured items are skipped.
 # Called automatically by: make install / make sync

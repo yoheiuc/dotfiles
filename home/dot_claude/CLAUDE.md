@@ -22,7 +22,7 @@
 
 | やりたいこと | 使うツール |
 |---|---|
-| Web 検索 / 最新情報調査 | `mcp__exa__web_search_exa` / `mcp__exa__web_fetch_exa` |
+| Web 検索 / 最新情報調査 | `mcp__exa__web_search_exa` / `mcp__exa__web_fetch_exa` / `mcp__exa__web_search_advanced_exa`（domain / date / category filter） |
 | Notion 操作 | `ntn` CLI（`~/.claude/skills/notion-cli/`） |
 | Slack 操作 | `mcp__slack__*` |
 | 図 | Mermaid（`.md` 直埋め）。PNG/SVG は `mmdc` |

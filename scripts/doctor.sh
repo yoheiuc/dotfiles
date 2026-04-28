@@ -64,6 +64,10 @@ if chezmoi --version &>/dev/null; then
   printf '  chezmoi doctor:\n'
   chezmoi_doctor_out="$(chezmoi doctor 2>&1 || true)"
   printf '%s\n' "$chezmoi_doctor_out" | sed 's/^/    /'
+  # Two-stage filter: chezmoi reports `failed latest-version ...` whenever the
+  # GitHub release fetch is rate-limited or offline, which is noise — drop those
+  # lines first, then flag any remaining `failed ...` rows. Anything else is a
+  # real check failure (gpg / age / diff tool / etc.) worth surfacing.
   if printf '%s\n' "$chezmoi_doctor_out" | grep -Ev '^[[:space:]]*failed[[:space:]]+latest-version[[:space:]]' | grep -Eq '^[[:space:]]*failed[[:space:]]'; then
     warn "chezmoi doctor: reported failed checks above"
   fi

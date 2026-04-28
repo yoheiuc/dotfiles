@@ -136,7 +136,7 @@ dotfiles/
 │   ├── dot_claude/
 │   │   ├── CLAUDE.md               # → ~/.claude/CLAUDE.md (毎ターン読まれる L1)
 │   │   ├── executable_*.sh         # statusline / auto-save / lsp-hint / chezmoi-auto-apply
-│   │   └── skills/                 # 同梱 skill (screenshot / doc / pdf / spreadsheet / presentation / jupyter-notebook)
+│   │   └── skills/                 # 同梱 skill (screenshot / jupyter-notebook) ※ doc / pdf / pptx / xlsx は anthropic-agent-skills marketplace plugin に移行
 │   ├── dot_local/
 │   │   ├── lib/python-ssl-compat/  # Python 3.13 VERIFY_X509_STRICT 無効化
 │   │   └── share/navi/cheats/dotfiles/
