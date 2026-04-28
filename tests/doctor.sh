@@ -236,7 +236,20 @@ run_doctor() {
   cp "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh" "${home_dir}/dotfiles/scripts/lib/brew-autoupdate.sh"
 
   local runtime_path="${DOCTOR_TEST_PATH_OVERRIDE:-${STUB_BIN}:${ORIGINAL_PATH}}"
-  env HOME="${home_dir}" PATH="${runtime_path}" "$@" DOTFILES_REPO_ROOT="${home_dir}/dotfiles" \
+
+  # Hermetic env for the `env -i … bash doctor.sh` invocation below. Base
+  # values live in tests/lib/testlib.sh#hermetic_base_env_init — see that
+  # function for the rationale (parent-shell leak prevention).
+  # `local HOME=…` so the helper captures the per-scenario test home
+  # (home_ok / home_drift) without leaking into the parent shell;
+  # DOTFILES_REPO_ROOT pins doctor's repo-root checks at the tmpdir copy.
+  # `"$@"` carries scenario-specific KEY=VAL extras (LAUNCHCTL_…,
+  # BREW_FORMULAE, …) inline to env after the base array.
+  local HOME="${home_dir}"
+  hermetic_base_env_init "${runtime_path}"
+  HERMETIC_BASE_ENV+=(DOTFILES_REPO_ROOT="${home_dir}/dotfiles")
+
+  env -i "${HERMETIC_BASE_ENV[@]}" "$@" \
     bash "${REPO_ROOT}/scripts/doctor.sh"
 }
 

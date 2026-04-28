@@ -59,9 +59,14 @@ esac'
 # `chezmoi apply` is a no-op.
 make_stub chezmoi 'exit 0'
 
-export PATH="${stub_bin}:/usr/bin:/bin:/usr/sbin:/sbin"
+# Hermetic env for the `env -i … bash bootstrap.sh` callsites below.
+# Base values (HOME / PATH / TMPDIR / TERM / locale) live in
+# tests/lib/testlib.sh#hermetic_base_env_init — see that function for the
+# rationale (parent-shell leak prevention). Stubs go first in PATH so
+# bootstrap finds them before any system binary.
+hermetic_base_env_init "${stub_bin}:/usr/bin:/bin:/usr/sbin:/sbin"
 
-run_capture env HOME="${HOME}" PATH="${PATH}" \
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" \
   bash "${REPO_ROOT}/scripts/bootstrap.sh"
 
 assert_eq "0" "${RUN_STATUS}" "bootstrap should exit 0 in stubbed environment"
@@ -96,7 +101,7 @@ rm -f "${chezmoi_link}"
 mkdir -p "$(dirname "${chezmoi_link}")"
 ln -s "${tmpdir}/wrong-target" "${chezmoi_link}"
 
-run_capture env HOME="${HOME}" PATH="${PATH}" \
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" \
   bash "${REPO_ROOT}/scripts/bootstrap.sh"
 assert_eq "0" "${RUN_STATUS}" "bootstrap should re-point a stale symlink without error"
 assert_eq "${REPO_ROOT}" "$(readlink "${chezmoi_link}")" \

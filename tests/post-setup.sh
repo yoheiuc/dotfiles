@@ -136,8 +136,15 @@ rm -f "${stub_bin}/uvx"  # remove uvx so `command -v uvx` fails
 export HOMEBREW_PREFIX="${tmpdir}/brew"
 mkdir -p "${HOMEBREW_PREFIX}/share"
 
-# Redirect PATH to our stubs ONLY (plus minimal system dirs for cat / printf / stat etc.)
-export PATH="${stub_bin}:/usr/bin:/bin:/usr/sbin:/sbin"
+# Hermetic env for the `env -i … bash post-setup.sh` callsites below.
+# Base values (HOME / PATH / TMPDIR / TERM / locale) live in
+# tests/lib/testlib.sh#hermetic_base_env_init — see that function for the
+# rationale (parent-shell leak prevention). PATH points at our stubs (plus
+# minimal system dirs for cat / printf / stat etc.) so post-setup takes the
+# "already installed" no-op path; HOMEBREW_PREFIX is extended in so the
+# script's compinit perms block doesn't error.
+hermetic_base_env_init "${stub_bin}:/usr/bin:/bin:/usr/sbin:/sbin"
+HERMETIC_BASE_ENV+=(HOMEBREW_PREFIX="${HOMEBREW_PREFIX}")
 
 hash_file() {
   if [[ -f "$1" ]]; then
@@ -148,7 +155,7 @@ hash_file() {
 }
 
 # ---- Run 1 -----------------------------------------------------------------
-run_capture env HOME="${HOME}" PATH="${PATH}" HOMEBREW_PREFIX="${HOMEBREW_PREFIX}" \
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" \
   bash "${REPO_ROOT}/scripts/post-setup.sh"
 assert_eq "0" "${RUN_STATUS}" "post-setup first run should succeed"
 assert_contains "${RUN_OUTPUT}" "Claude Code auto-update channel: latest" "post-setup should normalize Claude channel"
@@ -166,7 +173,7 @@ hash_settings_1="$(hash_file "${HOME}/.claude/settings.json")"
 hash_claudejson_1="$(hash_file "${HOME}/.claude.json")"
 
 # ---- Run 2 -----------------------------------------------------------------
-run_capture env HOME="${HOME}" PATH="${PATH}" HOMEBREW_PREFIX="${HOMEBREW_PREFIX}" \
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" \
   bash "${REPO_ROOT}/scripts/post-setup.sh"
 assert_eq "0" "${RUN_STATUS}" "post-setup second run (idempotent) should succeed"
 assert_contains "${RUN_OUTPUT}" "sequential-thinking MCP already registered" "second run should skip re-registering sequential-thinking"

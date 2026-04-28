@@ -52,6 +52,45 @@ run_capture() {
   set -e
 }
 
+# Initializes HERMETIC_BASE_ENV with the standard hermetic base used by
+# `env -i "${HERMETIC_BASE_ENV[@]}" bash <script>` subprocess invocations
+# across the test suite. Drops the parent shell's exports so developer-local
+# state (PLAYWRIGHT_CLI_SESSION, REBROWSER_PATCHES_RUNTIME_FIX_MODE,
+# PYTHONPATH, Homebrew-shadowed PATH, locale overrides, etc.) cannot leak
+# into the subprocess and skew assertions or hide drift. Pattern was first
+# introduced in tests/playwright-zsh.sh (archive 2026-04-27) and applied
+# across ai-repair / ai-audit afterward; this helper unifies it.
+#
+# HOME is captured from the current shell at call time, so callers must
+# set HOME (typically pointing at a per-test tmpdir) before invoking this.
+# Use `local HOME=…` inside a function to avoid mutating the parent shell.
+#
+# Callers may extend the array further with HERMETIC_BASE_ENV+=(KEY="value")
+# after this function returns; extras are not reset by re-calling (re-call
+# to reset to defaults).
+#
+# Usage:
+#   hermetic_base_env_init                                       # default PATH
+#   hermetic_base_env_init "${stub_bin}:/usr/bin:/bin:..."       # stub-based
+#   HERMETIC_BASE_ENV+=(DOTFILES_REPO_ROOT="${REPO_ROOT}")       # extend
+hermetic_base_env_init() {
+  local path_override="${1:-/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin}"
+  # shellcheck disable=SC2034
+  HERMETIC_BASE_ENV=(
+    HOME="${HOME}"
+    PATH="${path_override}"
+    TMPDIR="${TMPDIR:-/tmp}"
+    TERM="${TERM:-xterm-256color}"
+    # C locale on purpose: scripts under test print ASCII-only diagnostics,
+    # so we don't need en_US.UTF-8 — and forcing it would leak
+    # `setlocale: cannot change locale` warnings into RUN_OUTPUT on minimal
+    # Linux images that haven't generated en_US.UTF-8, breaking
+    # quiet-output assertions.
+    LANG=C
+    LC_ALL=C
+  )
+}
+
 # Write a fixture ~/.claude/plugins/installed_plugins.json under $target_home
 # (or $HOME if omitted) listing every plugin in CLAUDE_LSP_PLUGINS +
 # CLAUDE_GENERAL_PLUGINS (claude-plugins-official) and CLAUDE_DOCUMENT_PLUGINS

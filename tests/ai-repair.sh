@@ -15,24 +15,15 @@ trap 'rm -rf "${tmpdir}" "${REPO_ROOT}/.serena"; rm -f "${REPO_ROOT}/.claude"/ho
 mkdir -p "${tmpdir}/home/.local/bin"
 HOME="${tmpdir}/home"
 
-# Hermetic env for `env -i … bash ai-repair.sh` callsites below — drops the
-# parent shell's exports so a developer's PLAYWRIGHT_CLI_SESSION /
-# PYTHONPATH / Homebrew-shadowed PATH cannot leak into ai-repair and skew
-# assertions. Pattern lifted from tests/playwright-zsh.sh (archive 2026-04-27).
+# Hermetic env for the `env -i … bash ai-repair.sh` callsites below.
+# Base values (HOME / PATH / TMPDIR / TERM / locale) live in
+# tests/lib/testlib.sh#hermetic_base_env_init — see that function for the
+# rationale (parent-shell leak prevention, archive 2026-04-27).
 # DOTFILES_REPO_ROOT redirects ai-repair's repo-local cleanups (hookify rules,
 # repo .serena residue) at the real repo root so the fixtures planted below
 # are the ones actually scrubbed.
-HERMETIC_BASE_ENV=(
-  HOME="${HOME}"
-  PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin"
-  DOTFILES_REPO_ROOT="${REPO_ROOT}"
-  TMPDIR="${TMPDIR:-/tmp}"
-  TERM="${TERM:-xterm-256color}"
-  # ai-repair output is ASCII; C locale avoids `setlocale: cannot change locale`
-  # warnings on minimal Linux images that lack en_US.UTF-8.
-  LANG=C
-  LC_ALL=C
-)
+hermetic_base_env_init
+HERMETIC_BASE_ENV+=(DOTFILES_REPO_ROOT="${REPO_ROOT}")
 
 # Fixtures: Serena residue in both home dir and repo root must be scrubbed by
 # ai-repair. ~/.serena is the runtime cache + memories Serena MCP wrote;
