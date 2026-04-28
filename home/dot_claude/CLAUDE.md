@@ -23,7 +23,7 @@
 | やりたいこと | 使うツール |
 |---|---|
 | Web 検索 / 最新情報調査 | `mcp__exa__web_search_exa` / `mcp__exa__web_fetch_exa` / `mcp__exa__web_search_advanced_exa`（domain / date / category filter） |
-| Notion 操作 | `ntn` CLI（`~/.claude/skills/notion-cli/`） |
+| Notion 操作 | `mcp__notion__*` |
 | Slack 操作 | `mcp__slack__*` |
 | 図 | Mermaid（`.md` 直埋め）。PNG/SVG は `mmdc` |
 | Markdown スライド | `marp` CLI（`marp deck.md -o deck.pdf` 等） |
@@ -38,7 +38,7 @@
 
 setup・採用基準・依存マップは `~/dotfiles/CLAUDE.md` (L2) と `README.md` に集約（dotfiles 配下作業時に L2 が auto-load）。判断ログは `~/dotfiles/docs/notes/decisions-archive.md`。
 
-## MCP baseline（dotfiles で常時登録される 5 本）
+## MCP baseline（dotfiles で常時登録される 6 本）
 
 `make ai-repair` が `~/.claude.json` に upsert する。これが揃っていれば下表のうち MCP 列の機能は使える前提。
 
@@ -46,11 +46,12 @@ setup・採用基準・依存マップは `~/dotfiles/CLAUDE.md` (L2) と `READM
 |---|---|---|
 | `vision` | stdio (`@tuannvm/vision-mcp-server`) | Apple Vision Framework OCR (`mcp__vision__*`) |
 | `exa` | HTTP | Web 検索 / fetch (`mcp__exa__*`) |
-| `slack` | HTTP (OAuth) | Slack 操作 (`mcp__slack__*`) |
+| `slack` | HTTP (OAuth, `alwaysLoad:true`) | Slack 操作 (`mcp__slack__*`) |
+| `notion` | HTTP (OAuth, `alwaysLoad:true`) | Notion 操作 (`mcp__notion__*`) |
 | `jamf-docs` | HTTP | Jamf Pro API ドキュメント検索 |
 | `sequential-thinking` | stdio | CoT scaffolding (tight integration、CLI 化不可) |
 
-これ以外の `mcp__*__*` ツール（Figma / Notion / Gmail / Google Calendar 等の Anthropic 公式 remote MCP）は user 個別接続 = local override。dotfiles 側では管理しない。drift detect は `make ai-audit`、修復は `make ai-repair`。
+`alwaysLoad:true` の 2 本（`slack` / `notion`）は session 起動時に tool schema を eager load（v2.1.121, 2026-04-28）。それ以外は `ENABLE_TOOL_SEARCH=auto:5` の deferred load。これ以外の `mcp__*__*` ツール（Figma / Gmail / Google Calendar 等の Anthropic 公式 remote MCP）は user 個別接続 = local override で、dotfiles 側では管理しない。drift detect は `make ai-audit`、修復は `make ai-repair`。
 
 ## ブラウザ自動化のセキュリティ規則
 

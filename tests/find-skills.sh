@@ -3,8 +3,8 @@
 #
 # find-skills (vercel-labs/skills) lets Claude Code search available skills
 # from natural-language queries. It follows the same CLI-distributed skill
-# pattern as gws and notion-cli, per the project CLAUDE.md "外部 CLI で配布
-# される skill" rule. Touching any of the following surfaces without updating
+# pattern as gws, per the project CLAUDE.md "外部 CLI で配布される skill" rule.
+# Touching any of the following surfaces without updating
 # the rest leaves new machines out of sync:
 #   - scripts/post-setup.sh   (npx skills add install block)
 #   - scripts/doctor.sh       (Claude Code skill presence check)

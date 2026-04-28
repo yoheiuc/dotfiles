@@ -41,6 +41,11 @@ for _legacy_doc in doc pdf presentation spreadsheet; do
 done
 unset _legacy_doc
 
+# Fixture: legacy notion-cli skill (replaced by Notion remote HTTP MCP on
+# 2026-04-28). ai-repair should rm the directory on existing machines.
+mkdir -p "${HOME}/.claude/skills/notion-cli"
+printf 'stub notion-cli SKILL\n' > "${HOME}/.claude/skills/notion-cli/SKILL.md"
+
 # Fixtures: hookify trial residue (retired 2026-04-27). ai-repair should rm
 # repo-local rule files so audit goes green. Plant directly in ${REPO_ROOT}
 # because hookify's cwd-relative loader pattern doesn't apply to ${HOME}.
@@ -59,30 +64,32 @@ for _legacy_doc in doc pdf presentation spreadsheet; do
   [[ ! -e "${HOME}/.claude/skills/${_legacy_doc}" ]] || fail_test "ai-repair should physically remove vendored ${_legacy_doc} skill"
 done
 unset _legacy_doc
+assert_contains "${RUN_OUTPUT}" "Notion: removed retired ~/.claude/skills/notion-cli" "ai-repair should announce removal of legacy notion-cli skill"
+[[ ! -e "${HOME}/.claude/skills/notion-cli" ]] || fail_test "ai-repair should physically remove legacy notion-cli skill"
 assert_contains "${RUN_OUTPUT}" "Hookify: removed retired rule files" "ai-repair should announce hookify rule cleanup"
 [[ ! -e "${REPO_ROOT}/.claude/hookify.trial.local.md" ]] || fail_test "ai-repair should physically remove hookify trial rule"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel set to latest" "ai-repair should normalize Claude Code channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env set" "ai-repair should set ENABLE_TOOL_SEARCH env"
-assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to high" "ai-repair should set effortLevel to high (dotfiles baseline)"
+assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to medium" "ai-repair should set effortLevel to medium (dotfiles baseline)"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hooks reset to baseline" "ai-repair should install baseline hooks"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"autoUpdatesChannel": "latest"' "ai-repair should write Claude auto-update channel"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"ENABLE_TOOL_SEARCH": "auto:5"' "ai-repair should write ENABLE_TOOL_SEARCH env toggle"
-assert_contains "$(cat "${HOME}/.claude/settings.json")" '"effortLevel": "high"' "ai-repair should write effortLevel high"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"effortLevel": "medium"' "ai-repair should write effortLevel medium"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/lsp-hint.sh"' "ai-repair should wire lsp-hint PreToolUse hook"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/auto-save.sh"' "ai-repair should wire auto-save Stop hook"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "$HOME/.claude/chezmoi-auto-apply.sh"' "ai-repair should wire chezmoi-auto-apply Stop hook"
 
 # Local-managed keys (permissions / model / statusLine) must be preserved:
 # Claude Code writes them itself, dotfiles must not clobber them.
-# effortLevel is now baseline-managed (snap-back to high), so a local
-# `/effort medium` is overwritten on the next ai-repair — verified separately.
+# effortLevel is now baseline-managed (snap-back to medium), so a local
+# `/effort high` is overwritten on the next ai-repair — verified separately.
 python3 -c "
 import json
 p = '${HOME}/.claude/settings.json'
 with open(p) as f: d = json.load(f)
 d['permissions'] = {'allow': ['Read(*)'], 'deny': ['Bash(rm*)']}
 d['model'] = 'opus[1m]'
-d['effortLevel'] = 'medium'
+d['effortLevel'] = 'high'
 d['statusLine'] = {'type': 'command', 'command': 'my-statusline'}
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
@@ -91,8 +98,8 @@ assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on re-run after user-loc
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"Read(*)"' "ai-repair must preserve user-managed permissions.allow"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"Bash(rm*)"' "ai-repair must preserve user-managed permissions.deny"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"model": "opus[1m]"' "ai-repair must preserve user-managed model"
-assert_contains "$(cat "${HOME}/.claude/settings.json")" '"effortLevel": "high"' "ai-repair must snap effortLevel back to high baseline"
-assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to high" "ai-repair should re-set effortLevel after user override"
+assert_contains "$(cat "${HOME}/.claude/settings.json")" '"effortLevel": "medium"' "ai-repair must snap effortLevel back to medium baseline"
+assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to medium" "ai-repair should re-set effortLevel after user override"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"command": "my-statusline"' "ai-repair must preserve user-managed statusLine"
 
 # Verify Claude Code JSON registration
@@ -102,10 +109,19 @@ assert_contains "$(cat "${HOME}/.claude.json")" '"exa"' "ai-repair should regist
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa"' "ai-repair should set Exa MCP URL with all 3 tools enabled"
 assert_contains "$(cat "${HOME}/.claude.json")" '"jamf-docs"' "ai-repair should register Jamf docs MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://developer.jamf.com/mcp"' "ai-repair should set Jamf docs MCP URL for Claude Code"
-assert_not_contains "$(cat "${HOME}/.claude.json")" 'mcp.notion.com' "ai-repair should not register retired Notion MCP for Claude Code"
+assert_contains "$(cat "${HOME}/.claude.json")" '"notion"' "ai-repair should register Notion MCP for Claude Code"
+assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.notion.com/mcp"' "ai-repair should set Notion MCP URL for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"slack"' "ai-repair should register Slack MCP for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"url": "https://mcp.slack.com/mcp"' "ai-repair should set Slack MCP URL for Claude Code"
 assert_contains "$(cat "${HOME}/.claude.json")" '"callbackPort": 3118' "ai-repair should include Slack OAuth callbackPort"
+# alwaysLoad: true on slack + notion (Claude Code v2.1.121, eager-load tool schemas)
+python3 -c "
+import json
+with open('${HOME}/.claude.json') as f: d = json.load(f)
+servers = d.get('mcpServers', {})
+assert servers.get('slack', {}).get('alwaysLoad') is True, 'slack alwaysLoad should be True'
+assert servers.get('notion', {}).get('alwaysLoad') is True, 'notion alwaysLoad should be True'
+" || fail_test "ai-repair should set alwaysLoad:true on slack and notion MCPs"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-filesystem' "ai-repair should not register retired filesystem MCP for Claude Code"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should not register retired drawio MCP for Claude Code"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should not register retired Playwright MCP for Claude Code"
@@ -138,9 +154,6 @@ d['mcpServers']['filesystem'] = {
 d['mcpServers']['drawio'] = {
   'type': 'stdio', 'command': 'npx', 'args': ['-y', '@drawio/mcp@latest']
 }
-d['mcpServers']['notion'] = {
-  'type': 'http', 'url': 'https://mcp.notion.com/mcp'
-}
 d['mcpServers']['github'] = {
   'type': 'stdio', 'command': 'npx',
   'args': ['-y', '@modelcontextprotocol/server-github']
@@ -169,7 +182,6 @@ assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when purging legacy MCPs
 assert_contains "${RUN_OUTPUT}" "legacy playwright MCP removed" "ai-repair should announce legacy playwright removal"
 assert_contains "${RUN_OUTPUT}" "legacy filesystem MCP removed" "ai-repair should announce legacy filesystem removal"
 assert_contains "${RUN_OUTPUT}" "legacy drawio MCP removed" "ai-repair should announce legacy drawio removal"
-assert_contains "${RUN_OUTPUT}" "legacy notion MCP removed" "ai-repair should announce legacy notion removal"
 assert_contains "${RUN_OUTPUT}" "legacy github MCP removed" "ai-repair should announce legacy github removal"
 assert_contains "${RUN_OUTPUT}" "legacy owlocr MCP removed" "ai-repair should announce legacy owlocr removal"
 assert_contains "${RUN_OUTPUT}" "legacy chrome-devtools MCP removed" "ai-repair should announce legacy chrome-devtools removal"
@@ -178,7 +190,6 @@ assert_contains "${RUN_OUTPUT}" "legacy serena MCP removed" "ai-repair should an
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@playwright/mcp@latest' "ai-repair should strip legacy playwright from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-filesystem' "ai-repair should strip legacy filesystem from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@drawio/mcp@latest' "ai-repair should strip legacy drawio from .claude.json"
-assert_not_contains "$(cat "${HOME}/.claude.json")" 'mcp.notion.com' "ai-repair should strip legacy notion from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-github' "ai-repair should strip legacy github from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'jangisaac-dev/owlocr-mcp' "ai-repair should strip legacy owlocr from .claude.json"
 assert_not_contains "$(cat "${HOME}/.claude.json")" 'chrome-devtools-mcp@latest' "ai-repair should strip legacy chrome-devtools from .claude.json"

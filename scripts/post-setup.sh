@@ -7,7 +7,7 @@
 #     (LSP + general from claude-plugins-official, document skills from anthropic-agent-skills)
 #   - Install clasp (via npm install -g @google/clasp)
 #   - Install playwright-cli + Chromium + skill files under ~/.claude/skills
-#   - Install Google Workspace CLI (gws) / notion-cli / find-skills / security-best-practices /
+#   - Install Google Workspace CLI (gws) / find-skills / security-best-practices /
 #     ui-ux-pro-max skills under ~/.claude/skills via `npx skills add ...`
 #   - Keep brew-autoupdate disabled (manual brew update/upgrade policy)
 #
@@ -249,47 +249,10 @@ else
   unset _dir
 fi
 
-# ---- Notion CLI (ntn) ------------------------------------------------------
-log "Notion CLI (ntn)..."
-
-if command -v ntn &>/dev/null; then
-  ok "ntn already installed: $(ntn --version 2>/dev/null | head -1 || true)"
-else
-  log "Installing Notion CLI via official installer..."
-  # Official Notion installer: https://ntn.dev (distributed by Notion Labs, documented install path).
-  # curl | bash is accepted here because the install target is $HOME/.ntn (non-privileged, user-local).
-  if curl -fsSL https://ntn.dev | bash; then
-    hash -r
-    if command -v ntn &>/dev/null; then
-      ok "ntn installed: $(ntn --version 2>/dev/null | head -1 || true)"
-    else
-      warn "ntn still not found after install — open a new terminal and re-run, or add ntn's install dir to PATH"
-    fi
-  else
-    warn "ntn install failed — run manually: curl -fsSL https://ntn.dev | bash"
-  fi
-fi
-
-# ---- Notion CLI skills (makenotion/skills) --------------------------------
-log "Notion CLI skills..."
-
-if ! command -v npx &>/dev/null; then
-  warn "npx not found — notion-cli skills skipped (run \`make install\` first)"
-else
-  _dir="${HOME}/.claude/skills"
-  mkdir -p "${_dir}"
-  if [[ -f "${_dir}/notion-cli/SKILL.md" ]]; then
-    ok "notion-cli skill already present under ${_dir/#${HOME}/\~}"
-  else
-    log "Installing notion-cli skill for claude-code into ${_dir/#${HOME}/\~} ..."
-    if npx -y skills add https://github.com/makenotion/skills -a claude-code -g -y --skill notion-cli; then
-      ok "notion-cli skill installed"
-    else
-      warn "npx skills add failed — re-run or install manually"
-    fi
-  fi
-  unset _dir
-fi
+# Notion: 2026-04-28 に ntn CLI + notion-cli skill から remote HTTP MCP
+# (https://mcp.notion.com/mcp) に移行。CLI / skill 経由では routine の page CRUD
+# 駆動が安定しなかった。MCP 登録は ai-repair.sh が担当、stale な
+# `~/.claude/skills/notion-cli/` の rm も同 script で能動処理。
 
 # ---- ui-ux-pro-max skill (nextlevelbuilder/ui-ux-pro-max-skill) -----------
 # UI/UX design intelligence (50+ styles, 161 color palettes, 57 font pairings,
@@ -384,7 +347,6 @@ rm -f "$(brew_autoupdate_plist_path)" "$(brew_autoupdate_runner_path)"
 ok "brew autoupdate: disabled by dotfiles policy"
 
 printf '\nVerify with: make doctor\n'
-printf '             ntn login      (one-time Notion OAuth)\n'
 
 if command -v playwright-cli >/dev/null 2>&1; then
   printf '\n\033[1mTo let agents drive an AI-dedicated browser (Microsoft Edge):\033[0m\n'

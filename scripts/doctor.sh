@@ -206,13 +206,6 @@ else
   warn "playwright-cli not found — run: ./scripts/post-setup.sh"
 fi
 
-section "ntn (Notion CLI, optional)"
-if command -v ntn &>/dev/null; then
-  ok "ntn $(ntn --version 2>&1 | head -1 || true)"
-else
-  warn "ntn not found — run: ./scripts/post-setup.sh"
-fi
-
 section "mmdc (mermaid-cli, optional)"
 if command -v mmdc &>/dev/null; then
   ok "mmdc $(mmdc --version 2>&1 | head -1 || true)"

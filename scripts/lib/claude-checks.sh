@@ -16,9 +16,10 @@ claude_enable_tool_search_is_set() {
   [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('env',{}).get('ENABLE_TOOL_SEARCH','')" 2>/dev/null || true)" == "auto:5" ]]
 }
 
-# effortLevel == "high" (dotfiles baseline, 降格 2026-04-27 from xhigh)
-claude_effort_is_high() {
-  [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('effortLevel','')" 2>/dev/null || true)" == "high" ]]
+# effortLevel == "medium" (dotfiles baseline, 降格 2026-04-28 from high; Opus 4.7
+# のセッション持続を優先、難タスクは `/effort` で都度上書き)
+claude_effort_is_medium() {
+  [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('effortLevel','')" 2>/dev/null || true)" == "medium" ]]
 }
 
 # True if a hook block contains the given command string anywhere.
@@ -47,12 +48,16 @@ claude_mcp_stdio_matches() {
 }
 
 # HTTP MCP matches expected url and has type=http.
+# Optional 4th arg: expected alwaysLoad value as Python repr — "" for absent
+# (default deferred-load) or "True" for eager-load (Claude Code v2.1.121,
+# 2026-04-28 alwaysLoad:true).
 claude_mcp_http_matches() {
-  local file="$1" name="$2" expected_url="$3"
-  local actual_url actual_type
+  local file="$1" name="$2" expected_url="$3" expected_always_load="${4:-}"
+  local actual_url actual_type actual_always_load
   actual_url="$(ai_config_json_read_mcp_field "${file}" "${name}" url 2>/dev/null || true)"
   actual_type="$(ai_config_json_read_mcp_field "${file}" "${name}" type 2>/dev/null || true)"
-  [[ "${actual_url}" == "${expected_url}" && "${actual_type}" == "http" ]]
+  actual_always_load="$(ai_config_json_read_mcp_field "${file}" "${name}" alwaysLoad 2>/dev/null || true)"
+  [[ "${actual_url}" == "${expected_url}" && "${actual_type}" == "http" && "${actual_always_load}" == "${expected_always_load}" ]]
 }
 
 # Echoes plugin names from CLAUDE_LSP_PLUGINS that are NOT installed,

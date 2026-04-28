@@ -135,10 +135,10 @@ if [[ -f "${HOME}/.claude/settings.json" ]]; then
     attention "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5 — run make ai-repair"
   fi
 
-  if claude_effort_is_high; then
-    ok "Claude Code: effortLevel is high"
+  if claude_effort_is_medium; then
+    ok "Claude Code: effortLevel is medium"
   else
-    attention "Claude Code: effortLevel should be high (dotfiles baseline) — run make ai-repair"
+    attention "Claude Code: effortLevel should be medium (dotfiles baseline) — run make ai-repair"
   fi
 
   # Hooks are baseline-managed by dotfiles. Verify each expected command is
@@ -177,22 +177,28 @@ if [[ -f "${_claude_json}" ]]; then
   else
     attention "Claude Code jamf-docs MCP: missing or drifted — run make ai-repair"
   fi
-  if claude_mcp_http_matches "${_claude_json}" slack "https://mcp.slack.com/mcp"; then
+  if claude_mcp_http_matches "${_claude_json}" slack "https://mcp.slack.com/mcp" "True"; then
     ok "Claude Code slack MCP: registered"
   else
     attention "Claude Code slack MCP: missing or drifted — run make ai-repair"
+  fi
+  if claude_mcp_http_matches "${_claude_json}" notion "https://mcp.notion.com/mcp" "True"; then
+    ok "Claude Code notion MCP: registered"
+  else
+    attention "Claude Code notion MCP: missing or drifted — run make ai-repair"
   fi
 
   # Warn on legacy MCP entries that have been retired.
   #   playwright       → @playwright/cli + skill
   #   filesystem       → native Claude Code Read/Write/Edit/Grep/Glob tools
   #   drawio           → Mermaid (inline in .md) or mermaid-cli (mmdc)
-  #   notion           → ntn CLI + makenotion/skills
   #   github           → gh CLI
   #   owlocr           → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
   #   chrome-devtools  → @playwright/cli (pwedge zsh helper for AI-dedicated Edge)
   #   brave-search     → Exa MCP alone covers web search
-  for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search serena; do
+  # Note: notion is no longer in this list — re-promoted to a baseline HTTP MCP
+  # on 2026-04-28 (see ai-repair.sh).
+  for _legacy in playwright filesystem drawio github owlocr chrome-devtools brave-search serena; do
     if claude_mcp_present "${_claude_json}" "${_legacy}"; then
       attention "Claude Code ${_legacy} MCP: legacy entry present — run make ai-repair"
     fi

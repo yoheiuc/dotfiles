@@ -2,7 +2,7 @@
 # tests/post-setup.sh — verify scripts/post-setup.sh idempotency.
 #
 # Full integration testing of post-setup.sh would require stubbing ~10 external
-# CLIs (claude, clasp, playwright-cli, ntn, gws, npm, npx, curl, brew,
+# CLIs (claude, clasp, playwright-cli, gws, npm, npx, curl, brew,
 # launchctl, uvx, stat). Instead, this test focuses on the property that
 # actually matters — **running post-setup.sh twice produces identical config
 # files** — by stubbing every CLI to the "already installed" path and
@@ -58,7 +58,6 @@ make_stub playwright-cli 'case "${1:-}" in
   *) exit 0 ;;
 esac'
 make_stub aider 'echo "aider 0.50.0"; exit 0'
-make_stub ntn 'echo "ntn 0.10.0"; exit 0'
 make_stub gws 'echo "gws 1.0.0"; exit 0'
 make_stub uvx 'exit 0'
 make_stub npm 'exit 0'
@@ -83,8 +82,6 @@ printf 'stub\n' > "${HOME}/.claude/skills/gws-test/SKILL.md"
 mkdir -p "${HOME}/.claude/skills/find-skills" "${HOME}/.agents/skills/find-skills"
 printf 'stub\n' > "${HOME}/.claude/skills/find-skills/SKILL.md"
 printf 'stub\n' > "${HOME}/.agents/skills/find-skills/SKILL.md"
-mkdir -p "${HOME}/.claude/skills/notion-cli"
-printf 'stub\n' > "${HOME}/.claude/skills/notion-cli/SKILL.md"
 
 # Pre-populate ~/.claude.json so the sequential-thinking upsert has a parseable base.
 cat > "${HOME}/.claude.json" <<'EOF'

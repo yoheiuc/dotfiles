@@ -36,7 +36,7 @@ write_installed_plugins_stub
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "latest",
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "env": {"ENABLE_TOOL_SEARCH": "auto:5"},
   "hooks": {
     "PreToolUse": [
@@ -65,7 +65,13 @@ cat > "${HOME}/.claude.json" <<EOF
     "slack": {
       "type": "http",
       "url": "https://mcp.slack.com/mcp",
-      "oauth": {"clientId": "1601185624273.8899143856786", "callbackPort": 3118}
+      "oauth": {"clientId": "1601185624273.8899143856786", "callbackPort": 3118},
+      "alwaysLoad": true
+    },
+    "notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp",
+      "alwaysLoad": true
     },
     "vision": {
       "type": "stdio",
@@ -86,7 +92,7 @@ assert_eq "0" "${RUN_STATUS}" "ai-audit should succeed in the clean case"
 assert_contains "${RUN_OUTPUT}" "Claude settings: present" "ai-audit should report local claude settings"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai-audit should validate Claude channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env is set" "ai-audit should validate ENABLE_TOOL_SEARCH env"
-assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel is high" "ai-audit should validate effortLevel high baseline"
+assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel is medium" "ai-audit should validate effortLevel medium baseline"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/lsp-hint.sh)" "ai-audit should validate lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/auto-save.sh)" "ai-audit should validate auto-save hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook registered (\$HOME/.claude/chezmoi-auto-apply.sh)" "ai-audit should validate chezmoi-auto-apply hook"
@@ -96,6 +102,7 @@ assert_not_contains "${RUN_OUTPUT}" "Claude Code brave-search MCP: registered" "
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: registered" "ai-audit should validate Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code jamf-docs MCP: registered" "ai-audit should validate Claude Jamf docs MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: registered" "ai-audit should validate Claude Slack MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code notion MCP: registered" "ai-audit should validate Claude Notion MCP"
 assert_not_contains "${RUN_OUTPUT}" "Claude Code serena MCP: legacy entry present" "ai-audit should not flag serena when absent"
 assert_not_contains "${RUN_OUTPUT}" "Retired Serena state still on disk" "ai-audit should not flag Serena state when absent"
 assert_not_contains "${RUN_OUTPUT}" "Retired Serena state still in repo" "ai-audit should not flag repo-local Serena state when absent"
@@ -137,7 +144,7 @@ assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational with warnings"
 assert_contains "${RUN_OUTPUT}" "Claude settings: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy claude settings"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be latest" "ai-audit should detect Claude channel drift"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env should be auto:5" "ai-audit should detect missing ENABLE_TOOL_SEARCH env"
-assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel should be high" "ai-audit should detect missing effortLevel high"
+assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel should be medium" "ai-audit should detect missing effortLevel medium"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/lsp-hint.sh)" "ai-audit should detect missing lsp-hint hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/auto-save.sh)" "ai-audit should detect missing auto-save hook"
 assert_contains "${RUN_OUTPUT}" "Claude Code: hook missing (\$HOME/.claude/chezmoi-auto-apply.sh)" "ai-audit should detect missing chezmoi-auto-apply hook"
@@ -146,6 +153,7 @@ assert_contains "${RUN_OUTPUT}" "Claude Code sequential-thinking MCP: missing or
 assert_contains "${RUN_OUTPUT}" "Claude Code exa MCP: missing or drifted" "ai-audit should detect missing Claude Exa MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code jamf-docs MCP: missing or drifted" "ai-audit should detect missing Claude Jamf docs MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: missing or drifted" "ai-audit should detect missing Claude Slack MCP"
+assert_contains "${RUN_OUTPUT}" "Claude Code notion MCP: missing or drifted" "ai-audit should detect missing Claude Notion MCP"
 assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.codex" "ai-audit should flag retired Codex state"
 assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.gemini" "ai-audit should flag retired Gemini state"
 assert_contains "${RUN_OUTPUT}" "Claude settings backups: found backup files to review or delete" "ai-audit should report backup files"
@@ -177,7 +185,6 @@ cat > "${HOME}/.claude.json" <<EOF
     "playwright": {"type":"stdio","command":"npx","args":["-y","@playwright/mcp@latest"]},
     "filesystem": {"type":"stdio","command":"bash","args":["-lc","npx -y @modelcontextprotocol/server-filesystem \"\$HOME\""]},
     "drawio": {"type":"stdio","command":"npx","args":["-y","@drawio/mcp@latest"]},
-    "notion": {"type":"http","url":"https://mcp.notion.com/mcp"},
     "github": {"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-github"]},
     "owlocr": {"type":"stdio","command":"bash","args":["-lc","uvx --quiet --from git+https://github.com/jangisaac-dev/owlocr-mcp owlocr-mcp"]},
     "serena": {"type":"stdio","command":"${HOME}/.local/bin/serena-mcp","args":["claude-code"],"env":{"UV_NATIVE_TLS":"true"}}
@@ -209,7 +216,7 @@ rm -f "${HOME}/.claude/settings.json.pre-unmanage-test"
 cat > "${HOME}/.claude/settings.json" <<'EOF'
 {
   "autoUpdatesChannel": "latest",
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "env": {"ENABLE_TOOL_SEARCH": "auto:5"},
   "hooks": {
     "PreToolUse": [
@@ -229,7 +236,6 @@ assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational when legacy MC
 assert_contains "${RUN_OUTPUT}" "Claude Code playwright MCP: legacy entry present" "ai-audit should flag legacy Claude Code playwright MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code filesystem MCP: legacy entry present" "ai-audit should flag legacy Claude Code filesystem MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code drawio MCP: legacy entry present" "ai-audit should flag legacy Claude Code drawio MCP"
-assert_contains "${RUN_OUTPUT}" "Claude Code notion MCP: legacy entry present" "ai-audit should flag legacy Claude Code notion MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code github MCP: legacy entry present" "ai-audit should flag legacy Claude Code github MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code owlocr MCP: legacy entry present" "ai-audit should flag legacy Claude Code owlocr MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code chrome-devtools MCP: legacy entry present" "ai-audit should flag legacy Claude Code chrome-devtools MCP"

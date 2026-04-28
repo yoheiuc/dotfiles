@@ -90,16 +90,6 @@ else
   warn "playwright-cli not found — run: ./scripts/post-setup.sh"
 fi
 
-section "Notion CLI"
-if command -v ntn >/dev/null 2>&1; then
-  ok "ntn: $(ntn --version 2>&1 | head -1 || true)"
-  if [[ -n "${NOTION_API_TOKEN:-}" ]]; then
-    info "NOTION_API_TOKEN is set (CI / scripted mode)"
-  fi
-else
-  warn "ntn not found — run: ./scripts/post-setup.sh"
-fi
-
 section "Document toolchain"
 if command -v pandoc >/dev/null 2>&1; then
   ok "pandoc: $(pandoc --version 2>&1 | head -1)"

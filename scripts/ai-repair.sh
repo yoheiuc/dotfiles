@@ -35,11 +35,16 @@ restart_needed=0
 # trigger endless re-upserts. Helpers stay local; lib/ai-config.sh keeps its
 # pure-mutation surface.
 _upsert_http_mcp() {
-  # _upsert_http_mcp <name> <entry_json> <expected_url>
-  local name="$1" entry_json="$2" expected_url="$3"
-  local current
-  current="$(ai_config_json_read_mcp_field "${CLAUDE_JSON}" "${name}" url 2>/dev/null || true)"
-  if [[ "${current}" == "${expected_url}" ]]; then
+  # _upsert_http_mcp <name> <entry_json> <expected_url> [expected_always_load]
+  # expected_always_load: "" = no alwaysLoad key expected, "True" = boolean true
+  # (Python repr from ai_config_json_read_mcp_field). 4th arg lets a baseline
+  # MCP opt into eager tool-schema load (alwaysLoad: true was added in
+  # Claude Code v2.1.121, 2026-04-28; default is false = tool-search deferral).
+  local name="$1" entry_json="$2" expected_url="$3" expected_always_load="${4:-}"
+  local current_url current_always_load
+  current_url="$(ai_config_json_read_mcp_field "${CLAUDE_JSON}" "${name}" url 2>/dev/null || true)"
+  current_always_load="$(ai_config_json_read_mcp_field "${CLAUDE_JSON}" "${name}" alwaysLoad 2>/dev/null || true)"
+  if [[ "${current_url}" == "${expected_url}" && "${current_always_load}" == "${expected_always_load}" ]]; then
     ok "Claude Code: ${name} MCP already registered"
   else
     ai_config_json_upsert_mcp "${CLAUDE_JSON}" "${name}" "${entry_json}"
@@ -76,7 +81,17 @@ JAMF_DOCS_CLAUDE_ENTRY='{"type":"http","url":"https://developer.jamf.com/mcp"}'
 # Slack's clientId / callbackPort below are public values published in Slack's
 # official docs (https://docs.slack.dev/ai/slack-mcp-server/connect-to-claude/),
 # not secrets. OAuth tokens themselves are managed by Claude Code, not dotfiles.
-SLACK_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.slack.com/mcp","oauth":{"clientId":"1601185624273.8899143856786","callbackPort":3118}}'
+# alwaysLoad:true (Claude Code v2.1.121, 2026-04-28) eagerly loads slack tool
+# schemas at session start instead of deferring through tool-search; we want
+# slack tools immediately available because they're high-frequency in routine
+# triage / on-call workflows.
+SLACK_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.slack.com/mcp","oauth":{"clientId":"1601185624273.8899143856786","callbackPort":3118},"alwaysLoad":true}'
+# Notion remote HTTP MCP (https://mcp.notion.com/mcp) — official OAuth-backed
+# remote endpoint. Migrated from `ntn` CLI + `notion-cli` skill on 2026-04-28
+# because the CLI / skill combo wasn't reliably driving the Notion API for
+# routine page CRUD. Same alwaysLoad:true rationale as slack — Notion tools
+# are used often enough that eager schema load beats per-call tool-search.
+NOTION_CLAUDE_ENTRY='{"type":"http","url":"https://mcp.notion.com/mcp","alwaysLoad":true}'
 # vision-mcp-server is an npm-distributed Apple Vision Framework OCR MCP
 # (@tuannvm/vision-mcp-server). Runs via `npx -y` — no wrapper, no Python
 # toolchain. Requires macOS 13+ and Node.js 18+. If MCP connect fails,
@@ -92,7 +107,8 @@ _upsert_stdio_mcp vision "${VISION_CLAUDE_ENTRY}" npx '-y|@tuannvm/vision-mcp-se
 _upsert_stdio_mcp sequential-thinking "${SEQ_THINK_CLAUDE_ENTRY}" npx '-y|@modelcontextprotocol/server-sequential-thinking'
 _upsert_http_mcp exa "${EXA_CLAUDE_ENTRY}" 'https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa'
 _upsert_http_mcp jamf-docs "${JAMF_DOCS_CLAUDE_ENTRY}" 'https://developer.jamf.com/mcp'
-_upsert_http_mcp slack "${SLACK_CLAUDE_ENTRY}" 'https://mcp.slack.com/mcp'
+_upsert_http_mcp slack "${SLACK_CLAUDE_ENTRY}" 'https://mcp.slack.com/mcp' True
+_upsert_http_mcp notion "${NOTION_CLAUDE_ENTRY}" 'https://mcp.notion.com/mcp' True
 
 # Strip retired hook artifacts. The hooks block itself is wholesale-rewritten
 # below (so orphan UserPromptSubmit entries for session-topic disappear from
@@ -221,6 +237,16 @@ for _retired_command in api-design ci debug diagram doc docker notebook pdf perf
 done
 unset _retired_command _retired_path
 
+# notion-cli skill retired 2026-04-28 in favor of the Notion remote HTTP MCP
+# (https://mcp.notion.com/mcp, registered above). The post-setup install of
+# `notion-cli` was removed; on existing machines the `~/.claude/skills/notion-cli/`
+# directory persists because chezmoi doesn't auto-prune `npx skills add` output.
+# Active rm here so old machines converge on `make ai-repair`.
+if [[ -d "${HOME}/.claude/skills/notion-cli" ]]; then
+  rm -rf "${HOME}/.claude/skills/notion-cli"
+  ok "Notion: removed retired ~/.claude/skills/notion-cli (replaced by HTTP MCP)"
+fi
+
 # Document skills migration: vendored ~/.claude/skills/{doc,pdf,presentation,
 # spreadsheet} are replaced by the document-skills plugin in the
 # anthropic-agent-skills marketplace (xlsx/docx/pptx/pdf), installed by
@@ -242,7 +268,6 @@ unset _legacy_doc_skill
 #   playwright       → @playwright/cli + skill (see post-setup.sh)
 #   filesystem       → native Claude Code Read/Write/Edit/Grep/Glob tools
 #   drawio           → Mermaid (inline in .md) or mermaid-cli (mmdc) for PNG/SVG output
-#   notion           → ntn CLI + makenotion/skills (see post-setup.sh)
 #   github           → gh CLI (gh pr, gh issue, gh api …)
 #   owlocr           → vision (@tuannvm/vision-mcp-server; upstream owlocr-mcp repo retired)
 #   chrome-devtools  → @playwright/cli (pwedge zsh helper for AI-dedicated Edge);
@@ -257,7 +282,12 @@ unset _legacy_doc_skill
 #                      jdtls-lsp / kotlin-lsp / lua-lsp / php-lsp / ruby-lsp /
 #                      swift-lsp). Cross-file rename / find-refs / diagnostics are
 #                      covered by native tool; Serena wrapper + uvx dependency removed.
-for _legacy in playwright filesystem drawio notion github owlocr chrome-devtools brave-search serena; do
+# Note: `notion` was previously in this list (CLI-only era 2026-04 → 2026-04-28).
+# Re-promoted to a baseline HTTP MCP on 2026-04-28 because the ntn CLI + skill
+# combo didn't drive routine Notion CRUD reliably. The notion-cli skill cleanup
+# above removes the stale `~/.claude/skills/notion-cli/` directory on existing
+# machines.
+for _legacy in playwright filesystem drawio github owlocr chrome-devtools brave-search serena; do
   if [[ "$(ai_config_json_remove_mcp "${CLAUDE_JSON}" "${_legacy}" 2>/dev/null || true)" == "removed" ]]; then
     ok "Claude Code: legacy ${_legacy} MCP removed"
     restart_needed=1
@@ -314,15 +344,16 @@ else
   ok "Claude Code: ENABLE_TOOL_SEARCH env set"
 fi
 
-# effortLevel: high is the dotfiles baseline (降格 2026-04-27 from xhigh per
-# user preference — xhigh tends to overthink for routine work). Treated as a
-# team-shareable baseline like autoUpdatesChannel — local `/effort` overrides
-# persist until the next `make ai-repair` snaps it back. See L2 judgment log.
-if [[ "$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "d.get('effortLevel','')" 2>/dev/null || true)" == "high" ]]; then
-  ok "Claude Code: effortLevel already high"
+# effortLevel: medium is the dotfiles baseline (降格 2026-04-28 from high — Opus
+# 4.7 のセッションが thinking 嵩で早めに切れる体感、routine 作業で high は overkill
+# と判断)。Treated as a team-shareable baseline like autoUpdatesChannel — local
+# `/effort high` / `/effort xhigh` overrides persist until the next `make ai-repair`
+# snaps it back. 難タスクで一段上げたいときは `/effort` で都度上書き。See L2 / archive.
+if [[ "$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "d.get('effortLevel','')" 2>/dev/null || true)" == "medium" ]]; then
+  ok "Claude Code: effortLevel already medium"
 else
-  ai_config_json_upsert_key "${CLAUDE_SETTINGS_JSON}" effortLevel '"high"'
-  ok "Claude Code: effortLevel set to high"
+  ai_config_json_upsert_key "${CLAUDE_SETTINGS_JSON}" effortLevel '"medium"'
+  ok "Claude Code: effortLevel set to medium"
 fi
 
 # Hooks point at dotfiles-managed scripts (auto-save.sh / lsp-hint.sh), so the
