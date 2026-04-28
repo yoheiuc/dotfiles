@@ -13,70 +13,26 @@ tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-ai-repair-test.XXXXXX")"
 trap 'rm -rf "${tmpdir}" "${REPO_ROOT}/.serena"; rm -f "${REPO_ROOT}/.claude"/hookify.*.local.md 2>/dev/null || true' EXIT
 
 mkdir -p "${tmpdir}/home/.local/bin"
-export HOME="${tmpdir}/home"
-export XDG_CONFIG_HOME="${HOME}/.config"
-export DOTFILES_REPO_ROOT="${REPO_ROOT}"
-export FAKE_SECURITY_DB="${tmpdir}/security-db"
+HOME="${tmpdir}/home"
 
-cat > "${tmpdir}/security" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-db="${FAKE_SECURITY_DB:?}"
-mkdir -p "$(dirname "${db}")"
-touch "${db}"
-cmd="${1:?}"
-shift
-case "${cmd}" in
-  add-generic-password)
-    service=""
-    account=""
-    secret=""
-    while [[ "$#" -gt 0 ]]; do
-      case "$1" in
-        -U) shift ;;
-        -s) service="$2"; shift 2 ;;
-        -a) account="$2"; shift 2 ;;
-        -w) secret="$2"; shift 2 ;;
-        *) shift ;;
-      esac
-    done
-    grep -v "^${service}"$'\t'"${account}"$'\t' "${db}" > "${db}.tmp" || true
-    printf '%s\t%s\t%s\n' "${service}" "${account}" "${secret}" >> "${db}.tmp"
-    mv "${db}.tmp" "${db}"
-    ;;
-  find-generic-password)
-    service=""
-    account=""
-    while [[ "$#" -gt 0 ]]; do
-      case "$1" in
-        -w) shift ;;
-        -s) service="$2"; shift 2 ;;
-        -a) account="$2"; shift 2 ;;
-        *) shift ;;
-      esac
-    done
-    awk -F '\t' -v s="${service}" -v a="${account}" '$1==s && $2==a { print $3; found=1 } END { exit found ? 0 : 1 }' "${db}"
-    ;;
-  delete-generic-password)
-    service=""
-    account=""
-    while [[ "$#" -gt 0 ]]; do
-      case "$1" in
-        -s) service="$2"; shift 2 ;;
-        -a) account="$2"; shift 2 ;;
-        *) shift ;;
-      esac
-    done
-    grep -v "^${service}"$'\t'"${account}"$'\t' "${db}" > "${db}.tmp" || true
-    mv "${db}.tmp" "${db}"
-    ;;
-  *)
-    exit 1
-    ;;
-esac
-EOF
-chmod +x "${tmpdir}/security"
-export SECURITY_BIN="${tmpdir}/security"
+# Hermetic env for `env -i … bash ai-repair.sh` callsites below — drops the
+# parent shell's exports so a developer's PLAYWRIGHT_CLI_SESSION /
+# PYTHONPATH / Homebrew-shadowed PATH cannot leak into ai-repair and skew
+# assertions. Pattern lifted from tests/playwright-zsh.sh (archive 2026-04-27).
+# DOTFILES_REPO_ROOT redirects ai-repair's repo-local cleanups (hookify rules,
+# repo .serena residue) at the real repo root so the fixtures planted below
+# are the ones actually scrubbed.
+HERMETIC_BASE_ENV=(
+  HOME="${HOME}"
+  PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin"
+  DOTFILES_REPO_ROOT="${REPO_ROOT}"
+  TMPDIR="${TMPDIR:-/tmp}"
+  TERM="${TERM:-xterm-256color}"
+  # ai-repair output is ASCII; C locale avoids `setlocale: cannot change locale`
+  # warnings on minimal Linux images that lack en_US.UTF-8.
+  LANG=C
+  LC_ALL=C
+)
 
 # Fixtures: Serena residue in both home dir and repo root must be scrubbed by
 # ai-repair. ~/.serena is the runtime cache + memories Serena MCP wrote;
@@ -101,7 +57,7 @@ mkdir -p "${REPO_ROOT}/.claude"
 printf -- '---\nname: trial\nenabled: true\nevent: bash\n---\n' \
   > "${REPO_ROOT}/.claude/hookify.trial.local.md"
 
-run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on first run"
 assert_contains "${RUN_OUTPUT}" "Serena: removed retired ~/.serena" "ai-repair should remove ~/.serena residue"
 assert_contains "${RUN_OUTPUT}" "Serena: removed retired" "ai-repair should announce repo-local .serena removal"
@@ -139,7 +95,7 @@ d['effortLevel'] = 'medium'
 d['statusLine'] = {'type': 'command', 'command': 'my-statusline'}
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
-run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on re-run after user-local edits"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"Read(*)"' "ai-repair must preserve user-managed permissions.allow"
 assert_contains "$(cat "${HOME}/.claude/settings.json")" '"Bash(rm*)"' "ai-repair must preserve user-managed permissions.deny"
@@ -171,7 +127,7 @@ assert_not_contains "$(cat "${HOME}/.claude.json")" '"brave-search"' "ai-repair 
 assert_not_contains "$(cat "${HOME}/.claude.json")" '@modelcontextprotocol/server-brave-search' "ai-repair should not set retired Claude Brave Search MCP args"
 
 # Re-run should be idempotent
-run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on re-run"
 assert_contains "${RUN_OUTPUT}" "already registered" "ai-repair should detect existing registration"
 assert_contains "${RUN_OUTPUT}" "auto-update channel already set to latest" "ai-repair should detect existing Claude baseline"
@@ -217,7 +173,7 @@ d['mcpServers']['serena'] = {
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
 
-run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when purging legacy MCPs"
 assert_contains "${RUN_OUTPUT}" "legacy playwright MCP removed" "ai-repair should announce legacy playwright removal"
 assert_contains "${RUN_OUTPUT}" "legacy filesystem MCP removed" "ai-repair should announce legacy filesystem removal"
@@ -279,7 +235,7 @@ d.setdefault('hooks', {})['UserPromptSubmit'] = [{
 }]
 with open(p, 'w') as f: json.dump(d, f, indent=2); f.write('\n')
 "
-run_capture bash "${REPO_ROOT}/scripts/ai-repair.sh"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed when cleaning retired session-topic hook"
 assert_contains "${RUN_OUTPUT}" "removed retired helper" "ai-repair should announce session-topic.sh removal"
 assert_contains "${RUN_OUTPUT}" "removed retired session-topics cache" "ai-repair should announce session-topics cache removal"

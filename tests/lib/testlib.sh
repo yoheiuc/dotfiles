@@ -58,6 +58,14 @@ run_capture() {
 # (anthropic-agent-skills) as installed. Sources scripts/lib/claude-plugins.sh
 # so the stub stays accurate as the expected lists evolve.
 #
+# Plugin / marketplace names are passed to Python via env vars (newline-
+# separated for arrays) so quoting / special chars in upstream plugin names
+# can never break the heredoc — pasting the bash arrays straight into a Python
+# string would interpolate at shell level and shred JSON on any name with `"`,
+# `\`, or newline. Doesn't matter for today's plugin list, but the stub feeds
+# every test that touches plugin state, so harden once. Newline separator
+# (not NUL) because bash command substitution strips embedded NULs.
+#
 # Usage:  write_installed_plugins_stub [target_home]
 write_installed_plugins_stub() {
   local target_home="${1:-${HOME}}"
@@ -65,13 +73,31 @@ write_installed_plugins_stub() {
   # shellcheck source=/dev/null
   source "${repo_root}/scripts/lib/claude-plugins.sh"
   mkdir -p "${target_home}/.claude/plugins"
-  python3 - <<PY > "${target_home}/.claude/plugins/installed_plugins.json"
+
+  local primary_names doc_names
+  primary_names="$(printf '%s\n' "${CLAUDE_LSP_PLUGINS[@]}" "${CLAUDE_GENERAL_PLUGINS[@]}")"
+  doc_names="$(printf '%s\n' "${CLAUDE_DOCUMENT_PLUGINS[@]}")"
+
+  STUB_PRIMARY_NAMES="${primary_names}" \
+  STUB_DOC_NAMES="${doc_names}" \
+  STUB_PRIMARY_MARKETPLACE="${CLAUDE_PLUGIN_MARKETPLACE_NAME}" \
+  STUB_DOC_MARKETPLACE="${CLAUDE_DOCUMENT_MARKETPLACE_NAME}" \
+  python3 - > "${target_home}/.claude/plugins/installed_plugins.json" <<'PY'
 import json
-plugins = {}
-for name in "${CLAUDE_LSP_PLUGINS[*]} ${CLAUDE_GENERAL_PLUGINS[*]}".split():
-    plugins[f"{name}@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"] = {}
-for name in "${CLAUDE_DOCUMENT_PLUGINS[*]}".split():
-    plugins[f"{name}@${CLAUDE_DOCUMENT_MARKETPLACE_NAME}"] = {}
+import os
+
+
+def _split(env_name: str) -> list[str]:
+    return [s for s in os.environ.get(env_name, "").splitlines() if s]
+
+
+plugins: dict[str, dict] = {}
+primary_marketplace = os.environ["STUB_PRIMARY_MARKETPLACE"]
+doc_marketplace = os.environ["STUB_DOC_MARKETPLACE"]
+for name in _split("STUB_PRIMARY_NAMES"):
+    plugins[f"{name}@{primary_marketplace}"] = {}
+for name in _split("STUB_DOC_NAMES"):
+    plugins[f"{name}@{doc_marketplace}"] = {}
 print(json.dumps({"plugins": plugins}, indent=2))
 PY
 }

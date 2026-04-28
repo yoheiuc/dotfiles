@@ -10,69 +10,26 @@ trap 'rm -rf "${tmpdir}"' EXIT
 
 mkdir -p "${tmpdir}/home/.claude"
 mkdir -p "${tmpdir}/scripts/lib"
-export HOME="${tmpdir}/home"
-export XDG_CONFIG_HOME="${HOME}/.config"
-export FAKE_SECURITY_DB="${tmpdir}/security-db"
+HOME="${tmpdir}/home"
 
-cat > "${tmpdir}/security" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-db="${FAKE_SECURITY_DB:?}"
-mkdir -p "$(dirname "${db}")"
-touch "${db}"
-cmd="${1:?}"
-shift
-case "${cmd}" in
-  add-generic-password)
-    service=""
-    account=""
-    secret=""
-    while [[ "$#" -gt 0 ]]; do
-      case "$1" in
-        -U) shift ;;
-        -s) service="$2"; shift 2 ;;
-        -a) account="$2"; shift 2 ;;
-        -w) secret="$2"; shift 2 ;;
-        *) shift ;;
-      esac
-    done
-    grep -v "^${service}"$'\t'"${account}"$'\t' "${db}" > "${db}.tmp" || true
-    printf '%s\t%s\t%s\n' "${service}" "${account}" "${secret}" >> "${db}.tmp"
-    mv "${db}.tmp" "${db}"
-    ;;
-  find-generic-password)
-    service=""
-    account=""
-    while [[ "$#" -gt 0 ]]; do
-      case "$1" in
-        -w) shift ;;
-        -s) service="$2"; shift 2 ;;
-        -a) account="$2"; shift 2 ;;
-        *) shift ;;
-      esac
-    done
-    awk -F '\t' -v s="${service}" -v a="${account}" '$1==s && $2==a { print $3; found=1 } END { exit found ? 0 : 1 }' "${db}"
-    ;;
-  delete-generic-password)
-    service=""
-    account=""
-    while [[ "$#" -gt 0 ]]; do
-      case "$1" in
-        -s) service="$2"; shift 2 ;;
-        -a) account="$2"; shift 2 ;;
-        *) shift ;;
-      esac
-    done
-    grep -v "^${service}"$'\t'"${account}"$'\t' "${db}" > "${db}.tmp" || true
-    mv "${db}.tmp" "${db}"
-    ;;
-  *)
-    exit 1
-    ;;
-esac
-EOF
-chmod +x "${tmpdir}/security"
-export SECURITY_BIN="${tmpdir}/security"
+# Hermetic env for the `env -i … bash ai-audit.sh` callsites below — same
+# rationale as tests/ai-repair.sh and tests/playwright-zsh.sh: the parent
+# shell may export PYTHONPATH, PLAYWRIGHT_CLI_SESSION, Homebrew-shadowed PATH,
+# locale overrides etc. that skew assertions or hide drift. ai-audit derives
+# REPO_ROOT from its own location (the tmpdir copy below), so we don't pass
+# DOTFILES_REPO_ROOT.
+HERMETIC_BASE_ENV=(
+  HOME="${HOME}"
+  PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin"
+  TMPDIR="${TMPDIR:-/tmp}"
+  TERM="${TERM:-xterm-256color}"
+  # C locale on purpose: ai-audit prints ASCII-only diagnostics, so we don't
+  # need en_US.UTF-8 — and forcing it leaks `setlocale: cannot change locale`
+  # warnings into RUN_OUTPUT on minimal Linux images that haven't generated
+  # the en_US.UTF-8 locale, breaking --quiet's empty-output assertion.
+  LANG=C
+  LC_ALL=C
+)
 
 cp "${REPO_ROOT}/scripts/ai-audit.sh" "${tmpdir}/scripts/ai-audit.sh"
 cp "${REPO_ROOT}/scripts/lib/ui.sh" "${tmpdir}/scripts/lib/ui.sh"
@@ -135,7 +92,7 @@ cat > "${HOME}/.claude.json" <<EOF
 }
 EOF
 : > "${HOME}/.claude/CLAUDE.md"
-run_capture bash "${tmpdir}/scripts/ai-audit.sh"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should succeed in the clean case"
 assert_contains "${RUN_OUTPUT}" "Claude settings: present" "ai-audit should report local claude settings"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel is latest" "ai-audit should validate Claude channel"
@@ -164,7 +121,7 @@ assert_contains "${RUN_OUTPUT}" "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}" "ai-audit 
 assert_contains "${RUN_OUTPUT}" "AI config audit looks good." "ai-audit should report a clean result"
 
 # ---- Scenario 1b: --quiet on a clean tree ----
-run_capture bash "${tmpdir}/scripts/ai-audit.sh" --quiet
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${tmpdir}/scripts/ai-audit.sh" --quiet
 assert_eq "0" "${RUN_STATUS}" "ai-audit --quiet should exit 0 when clean"
 assert_eq "" "${RUN_OUTPUT}" "ai-audit --quiet should print nothing when clean"
 
@@ -181,13 +138,12 @@ cat > "${HOME}/.claude.json" <<'EOF'
 }
 EOF
 : > "${HOME}/.claude/settings.json.pre-unmanage-test"
-: > "${FAKE_SECURITY_DB}"
 
 # Retired agent state left on disk — audit should flag for removal.
 mkdir -p "${HOME}/.codex"
 mkdir -p "${HOME}/.gemini"
 
-run_capture bash "${tmpdir}/scripts/ai-audit.sh"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational with warnings"
 assert_contains "${RUN_OUTPUT}" "Claude settings: legacy bridge or unsafe approval settings detected" "ai-audit should detect legacy claude settings"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel should be latest" "ai-audit should detect Claude channel drift"
@@ -207,14 +163,14 @@ assert_contains "${RUN_OUTPUT}" "Claude settings backups: found backup files to 
 assert_contains "${RUN_OUTPUT}" "AI config audit needs attention:" "ai-audit should summarize warnings"
 
 # ---- Scenario 2b: --quiet on a dirty tree exits non-zero ----
-run_capture bash "${tmpdir}/scripts/ai-audit.sh" --quiet
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${tmpdir}/scripts/ai-audit.sh" --quiet
 assert_eq "1" "${RUN_STATUS}" "ai-audit --quiet should exit 1 when attention items exist"
 assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk" "ai-audit --quiet should still print attention lines"
 assert_not_contains "${RUN_OUTPUT}" "AI config audit" "ai-audit --quiet should suppress the summary banner"
 
 # ---- Scenario 2c: missing plugins surface as attention ----
 rm -f "${HOME}/.claude/plugins/installed_plugins.json"
-run_capture bash "${tmpdir}/scripts/ai-audit.sh"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${tmpdir}/scripts/ai-audit.sh"
 assert_contains "${RUN_OUTPUT}" "LSP plugins missing" "ai-audit should flag missing LSP plugins"
 assert_contains "${RUN_OUTPUT}" "general plugins missing" "ai-audit should flag missing general plugins"
 write_installed_plugins_stub  # restore for following scenarios
@@ -279,7 +235,7 @@ cat > "${HOME}/.claude/settings.json" <<'EOF'
   }
 }
 EOF
-run_capture bash "${tmpdir}/scripts/ai-audit.sh"
+run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational when legacy MCPs are present"
 assert_contains "${RUN_OUTPUT}" "Claude Code playwright MCP: legacy entry present" "ai-audit should flag legacy Claude Code playwright MCP"
 assert_contains "${RUN_OUTPUT}" "Claude Code filesystem MCP: legacy entry present" "ai-audit should flag legacy Claude Code filesystem MCP"
