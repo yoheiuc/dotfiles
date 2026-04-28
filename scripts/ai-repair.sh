@@ -38,7 +38,7 @@ _upsert_http_mcp() {
   # _upsert_http_mcp <name> <entry_json> <expected_url>
   local name="$1" entry_json="$2" expected_url="$3"
   local current
-  current="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('${name}',{}).get('url','')" 2>/dev/null || true)"
+  current="$(ai_config_json_read_mcp_field "${CLAUDE_JSON}" "${name}" url 2>/dev/null || true)"
   if [[ "${current}" == "${expected_url}" ]]; then
     ok "Claude Code: ${name} MCP already registered"
   else
@@ -52,8 +52,8 @@ _upsert_stdio_mcp() {
   # _upsert_stdio_mcp <name> <entry_json> <expected_command> <expected_args_pipe>
   local name="$1" entry_json="$2" expected_command="$3" expected_args_pipe="$4"
   local current_cmd current_args
-  current_cmd="$(ai_config_json_read "${CLAUDE_JSON}" "d.get('mcpServers',{}).get('${name}',{}).get('command','')" 2>/dev/null || true)"
-  current_args="$(ai_config_json_read "${CLAUDE_JSON}" "'|'.join(d.get('mcpServers',{}).get('${name}',{}).get('args',[]))" 2>/dev/null || true)"
+  current_cmd="$(ai_config_json_read_mcp_field "${CLAUDE_JSON}" "${name}" command 2>/dev/null || true)"
+  current_args="$(ai_config_json_read_mcp_field "${CLAUDE_JSON}" "${name}" args 2>/dev/null || true)"
   if [[ "${current_cmd}" == "${expected_command}" && "${current_args}" == "${expected_args_pipe}" ]]; then
     ok "Claude Code: ${name} MCP already registered"
   else

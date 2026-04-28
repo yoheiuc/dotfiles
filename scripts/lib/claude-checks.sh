@@ -34,15 +34,15 @@ claude_hook_command_present() {
 claude_mcp_present() {
   local file="$1" name="$2"
   [[ -f "${file}" ]] || return 1
-  [[ "$(ai_config_json_read "${file}" "'present' if '${name}' in d.get('mcpServers',{}) else ''" 2>/dev/null || true)" == "present" ]]
+  [[ "$(ai_config_json_read_mcp_exists "${file}" "${name}" 2>/dev/null || true)" == "present" ]]
 }
 
 # stdio MCP matches expected command + pipe-joined args.
 claude_mcp_stdio_matches() {
   local file="$1" name="$2" expected_cmd="$3" expected_args="$4"
   local actual_cmd actual_args
-  actual_cmd="$(ai_config_json_read "${file}" "d.get('mcpServers',{}).get('${name}',{}).get('command','')" 2>/dev/null || true)"
-  actual_args="$(ai_config_json_read "${file}" "'|'.join(d.get('mcpServers',{}).get('${name}',{}).get('args',[]))" 2>/dev/null || true)"
+  actual_cmd="$(ai_config_json_read_mcp_field "${file}" "${name}" command 2>/dev/null || true)"
+  actual_args="$(ai_config_json_read_mcp_field "${file}" "${name}" args 2>/dev/null || true)"
   [[ "${actual_cmd}" == "${expected_cmd}" && "${actual_args}" == "${expected_args}" ]]
 }
 
@@ -50,8 +50,8 @@ claude_mcp_stdio_matches() {
 claude_mcp_http_matches() {
   local file="$1" name="$2" expected_url="$3"
   local actual_url actual_type
-  actual_url="$(ai_config_json_read "${file}" "d.get('mcpServers',{}).get('${name}',{}).get('url','')" 2>/dev/null || true)"
-  actual_type="$(ai_config_json_read "${file}" "d.get('mcpServers',{}).get('${name}',{}).get('type','')" 2>/dev/null || true)"
+  actual_url="$(ai_config_json_read_mcp_field "${file}" "${name}" url 2>/dev/null || true)"
+  actual_type="$(ai_config_json_read_mcp_field "${file}" "${name}" type 2>/dev/null || true)"
   [[ "${actual_url}" == "${expected_url}" && "${actual_type}" == "http" ]]
 }
 

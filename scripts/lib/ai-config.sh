@@ -50,10 +50,26 @@ ai_config_backup_matches() {
   compgen -G "${glob_pattern}" || true
 }
 
-# Read a field from a JSON file.
+# Read a field from a JSON file via Python expression.
 # Usage: ai_config_json_read <file> <python_expr>   (expr receives parsed JSON as `d`)
+# Constant exprs only — never interpolate shell variables into <python_expr>.
+# For variable MCP names, use ai_config_json_read_mcp_{exists,field} below
+# (parameterized, no eval = no injection surface).
 ai_config_json_read() {
   python3 "${_AI_CONFIG_PY}" json-read "$1" "$2"
+}
+
+# Usage: ai_config_json_read_mcp_exists <file> <name>
+# Prints "present" + exit 0 when mcpServers[name] exists, else exit 1.
+ai_config_json_read_mcp_exists() {
+  python3 "${_AI_CONFIG_PY}" json-read-mcp-exists "$1" "$2"
+}
+
+# Usage: ai_config_json_read_mcp_field <file> <name> <field>
+# Prints scalar field as-is, list field pipe-joined ("a|b|c"). Exit 1 when
+# missing/empty so callers can chain `|| true` without false matches on "".
+ai_config_json_read_mcp_field() {
+  python3 "${_AI_CONFIG_PY}" json-read-mcp-field "$1" "$2" "$3"
 }
 
 ai_config_json_upsert_mcp() {

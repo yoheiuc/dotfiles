@@ -7,7 +7,9 @@ and read helpers. All write paths go through atomic_write_* so a crash mid-write
 cannot leave ~/.claude.json corrupted.
 
 Subcommands:
-  json-read <file> <expr>
+  json-read <file> <expr>                       (constant exprs only; eval scope locked down)
+  json-read-mcp-exists <file> <name>            (parameterized; safe with arbitrary names)
+  json-read-mcp-field  <file> <name> <field>    (parameterized; lists pipe-joined)
   json-upsert-mcp <file> <name> <json_value>
   json-remove-mcp <file> <name>
   json-upsert-key <file> <key> <json_value>
@@ -54,19 +56,77 @@ def atomic_write_json(path: str, obj) -> None:
 # JSON
 # ---------------------------------------------------------------------------
 
+_JSON_READ_BUILTINS = {
+    "sorted": sorted,
+    "isinstance": isinstance,
+    "list": list,
+    "dict": dict,
+    "set": set,
+    "tuple": tuple,
+    "len": len,
+    "str": str,
+}
+
+
 def json_read(file: str, expr: str) -> int:
     if not os.path.isfile(file):
         return 1
     try:
         with open(file) as f:
             d = json.load(f)  # noqa: F841 — used by eval(expr)
-        v = eval(expr, {}, {"d": d})  # noqa: S307 — internal callers only
+        # Restricted eval scope: a curated builtin subset (sorted / isinstance /
+        # collection constructors / len / str) plus the json module so callers
+        # can canonicalize via json.dumps. open / __import__ / eval / exec are
+        # not reachable. Only constant exprs go through here — every variable-
+        # name lookup is served by json_read_mcp_* below to remove the shell-
+        # interpolation injection vector entirely.
+        scope_globals = {"__builtins__": _JSON_READ_BUILTINS, "json": json}
+        v = eval(expr, scope_globals, {"d": d})  # noqa: S307 — internal callers only
         if v is None or v == "":
             return 1
         print(v)
         return 0
     except Exception:
         return 1
+
+
+def json_read_mcp_exists(file: str, name: str) -> int:
+    if not os.path.isfile(file):
+        return 1
+    try:
+        with open(file) as f:
+            d = json.load(f)
+    except Exception:
+        return 1
+    servers = d.get("mcpServers", {})
+    if isinstance(servers, dict) and name in servers:
+        print("present")
+        return 0
+    return 1
+
+
+def json_read_mcp_field(file: str, name: str, field: str) -> int:
+    if not os.path.isfile(file):
+        return 1
+    try:
+        with open(file) as f:
+            d = json.load(f)
+    except Exception:
+        return 1
+    servers = d.get("mcpServers", {})
+    if not isinstance(servers, dict):
+        return 1
+    entry = servers.get(name, {})
+    if not isinstance(entry, dict):
+        return 1
+    v = entry.get(field, "")
+    if v is None or v == "":
+        return 1
+    if isinstance(v, list):
+        print("|".join(str(x) for x in v))
+    else:
+        print(v)
+    return 0
 
 
 def json_upsert_mcp(file: str, name: str, value_json: str) -> int:
@@ -128,6 +188,8 @@ def _load_json_or_empty(file: str) -> dict:
 
 COMMANDS = {
     "json-read": (json_read, 2),
+    "json-read-mcp-exists": (json_read_mcp_exists, 2),
+    "json-read-mcp-field": (json_read_mcp_field, 3),
     "json-upsert-mcp": (json_upsert_mcp, 3),
     "json-remove-mcp": (json_remove_mcp, 2),
     "json-upsert-key": (json_upsert_key, 3),
