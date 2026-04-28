@@ -81,6 +81,13 @@ claude_document_plugins_missing() {
   done
 }
 
+# ── Playwright (cross-tool predicate, intentionally lives here) ──
+# Naming exception: this predicate uses the `playwright_*` prefix instead of
+# the file-wide `claude_*` convention because it checks Playwright config, not
+# Claude-specific state. Lives in claude-checks.sh anyway because doctor.sh
+# and ai-audit.sh share predicate loading via this single lib — spinning out a
+# dedicated playwright-checks.sh for one predicate would be over-engineering.
+#
 # True when ~/.playwright/cli.config.json carries the dotfiles stealth keys.
 # `playwright-cli` auto-loads this global config on every invocation and feeds
 # `launchOptions.args` / `launchOptions.ignoreDefaultArgs` straight into

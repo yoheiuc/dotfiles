@@ -41,6 +41,8 @@ doctor: ## セットアップ状態の深い確認
 test: ## 回帰テストを実行
 	bash tests/doctor.sh
 	bash tests/bootstrap.sh
+	bash tests/brew-bundle.sh
+	bash tests/preview.sh
 	bash tests/ai-repair.sh
 	bash tests/dothelp.sh
 	bash tests/status.sh
