@@ -12,24 +12,13 @@ mkdir -p "${tmpdir}/home/.claude"
 mkdir -p "${tmpdir}/scripts/lib"
 HOME="${tmpdir}/home"
 
-# Hermetic env for the `env -i … bash ai-audit.sh` callsites below — same
-# rationale as tests/ai-repair.sh and tests/playwright-zsh.sh: the parent
-# shell may export PYTHONPATH, PLAYWRIGHT_CLI_SESSION, Homebrew-shadowed PATH,
-# locale overrides etc. that skew assertions or hide drift. ai-audit derives
-# REPO_ROOT from its own location (the tmpdir copy below), so we don't pass
+# Hermetic env for the `env -i … bash ai-audit.sh` callsites below.
+# Base values live in tests/lib/testlib.sh#hermetic_base_env_init — see that
+# function for the rationale (parent-shell leak prevention,
+# archive 2026-04-27). ai-audit derives REPO_ROOT from its own location
+# (the tmpdir copy below), so this test does not extend the base with
 # DOTFILES_REPO_ROOT.
-HERMETIC_BASE_ENV=(
-  HOME="${HOME}"
-  PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin"
-  TMPDIR="${TMPDIR:-/tmp}"
-  TERM="${TERM:-xterm-256color}"
-  # C locale on purpose: ai-audit prints ASCII-only diagnostics, so we don't
-  # need en_US.UTF-8 — and forcing it leaks `setlocale: cannot change locale`
-  # warnings into RUN_OUTPUT on minimal Linux images that haven't generated
-  # the en_US.UTF-8 locale, breaking --quiet's empty-output assertion.
-  LANG=C
-  LC_ALL=C
-)
+hermetic_base_env_init
 
 cp "${REPO_ROOT}/scripts/ai-audit.sh" "${tmpdir}/scripts/ai-audit.sh"
 cp "${REPO_ROOT}/scripts/lib/ui.sh" "${tmpdir}/scripts/lib/ui.sh"
