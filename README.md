@@ -85,6 +85,41 @@ zsh helper（`home/dot_config/zsh/playwright.zsh`）:
 
 ---
 
+## Bitwarden CLI（read-only / AI 用）
+
+公式 SaaS (bitwarden.com) の vault を AI から読み取るための運用。Brewfile に `brew "bitwarden-cli"`、zsh wrapper (`home/dot_config/zsh/bitwarden.zsh`) と vendor SKILL (`home/dot_claude/skills/bitwarden-cli/SKILL.md`) で **read-only allowlist を機械 enforce** する。MCP server (`@bitwarden/mcp-server`) は上流が POC 表明のため不採用（[archive 2026-04-29](docs/notes/decisions-archive.md)）。
+
+初回 setup（user が手動）:
+
+```
+$ make sync                            # bitwarden-cli を brew install
+$ bw login                             # email + master password + 2FA（一度だけ）
+```
+
+日常運用:
+
+```
+$ bwunlock                             # master password を user が打つ → BW_SESSION を current shell に export
+$ # この shell で claude を起動すると Bash tool 経由で bw が使える
+$ bw list items --search github
+$ bw get password github.com           # AI から呼ぶときは on-screen exposure に注意
+$ bwlock                               # 終了時。BW_SESSION を unset + bw lock
+```
+
+zsh helper:
+
+| コマンド | 役割 |
+|---|---|
+| `bwunlock` | `bw unlock --raw` を呼んで BW_SESSION を current shell に export（失敗時は env を汚染しない） |
+| `bwlock` | `bw lock` + `unset BW_SESSION` |
+| `bwstatus` | `bw status` の JSON を表示（lock 状態 / serverUrl 確認） |
+
+read-only allowlist: `list` / `get` / `generate` / `status` / `sync` / `unlock` / `lock` / `login` / `logout` / `config` / `completion` / `update` / `help`。これ以外（`create` / `edit` / `delete` / `restore` / `share` / `send` / `import` / `export` / `move` / `confirm` / `encode` / `serve` / `pending`）は wrapper が exit 1 し、deny ログを `~/.cache/bitwarden-cli/actions.log` に TSV 追記する。意図的に bypass したいときは **user が自分で** `command bw <subcommand> …` と打つ（AI からの bypass は SKILL.md で禁止）。BW_SESSION を `~/.zshenv.local` / `.envrc` 等に永続化するのも禁止（短命 shell-scoped 運用が前提）。
+
+セキュリティ規則の正本は [`home/dot_claude/CLAUDE.md`](home/dot_claude/CLAUDE.md) の「Bitwarden CLI 操作のセキュリティ規則」節。L2 / SKILL.md / wrapper / tests の同期義務は L2 の「変更箇所の依存マップ」に明記。
+
+---
+
 ## chezmoi の基本運用
 
 ```bash

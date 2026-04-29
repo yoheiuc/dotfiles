@@ -48,6 +48,7 @@ test: ## 回帰テストを実行
 	bash tests/status.sh
 	bash tests/ai-audit.sh
 	bash tests/playwright-zsh.sh
+	bash tests/bitwarden-zsh.sh
 	bash tests/notion-cli.sh
 	bash tests/ai-config.sh
 	bash tests/lsp-hint.sh

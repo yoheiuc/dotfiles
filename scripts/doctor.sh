@@ -206,6 +206,35 @@ else
   warn "playwright-cli not found — run: ./scripts/post-setup.sh"
 fi
 
+section "bw (Bitwarden CLI, optional)"
+if command -v bw &>/dev/null; then
+  ok "bw $(bw --version 2>&1 | head -1 || true)"
+  if command -v jq &>/dev/null; then
+    bw_status_json="$(bw status 2>/dev/null || true)"
+    if [[ -n "${bw_status_json}" ]]; then
+      bw_server="$(printf '%s' "${bw_status_json}" | jq -r '.serverUrl // "https://vault.bitwarden.com"' 2>/dev/null || true)"
+      case "${bw_server}" in
+        https://vault.bitwarden.com|https://vault.bitwarden.com/|https://bitwarden.com)
+          ok "bw server: ${bw_server} (official SaaS)"
+          ;;
+        "")
+          ok "bw server: official SaaS (default)"
+          ;;
+        *)
+          warn "bw server: ${bw_server} (self-hosted; verify trust before unlocking)"
+          ;;
+      esac
+    fi
+  fi
+  if [[ -d "/Applications/Bitwarden.app" ]]; then
+    ok "Bitwarden.app present (GUI for desktop unlock)"
+  else
+    warn "Bitwarden.app not found — run: brew bundle --file ~/.Brewfile"
+  fi
+else
+  warn "bw not found — run: brew bundle --file ~/.Brewfile (then: bw login → bwunlock)"
+fi
+
 section "ntn (Notion CLI, optional)"
 if command -v ntn &>/dev/null; then
   ok "ntn $(ntn --version 2>&1 | head -1 || true)"
