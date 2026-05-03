@@ -106,7 +106,7 @@ for _orphan in "${_orphan_scripts[@]}"; do
     ok "Claude Code: removed retired helper ${_orphan/#${HOME}/\~}"
   fi
 done
-unset _orphan_scripts
+unset _orphan _orphan_scripts
 if [[ -d "${HOME}/.claude/session-topics" ]]; then
   rm -rf "${HOME}/.claude/session-topics"
   ok "Claude Code: removed retired session-topics cache"
@@ -188,7 +188,6 @@ if [[ -e "${HOME}/.claude/.mcp.json" ]]; then
   rm -f "${HOME}/.claude/.mcp.json"
   ok "Claude Code: removed dead ~/.claude/.mcp.json (Claude never read it)"
 fi
-unset _orphan
 
 # Slash commands fully removed in 2026-04-26 cleanup. The L1 rule "Claude Code
 # 標準機能で代替できないか先に確認" plus user signal "コマンド系使ったことない"

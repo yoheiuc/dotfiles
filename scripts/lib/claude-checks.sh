@@ -125,6 +125,6 @@ playwright_pwopen_is_ephemeral() {
   [[ -f "${module}" ]] || return 1
   grep -q '__pwopen_cleanup()' "${module}" || return 1
   grep -Eq 'trap .*__pwopen_cleanup.*EXIT INT TERM' "${module}" || return 1
-  grep -q 'chmod 700' "${module}" || return 1
+  grep -Eq '^[[:space:]]*chmod 700' "${module}" || return 1
   grep -Eq 'date -u \+%Y%m%dT%H%M%SZ.*\$\$' "${module}" || return 1
 }
