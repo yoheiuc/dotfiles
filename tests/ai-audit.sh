@@ -101,6 +101,7 @@ assert_not_contains "${RUN_OUTPUT}" "Retired Serena state still on disk" "ai-aud
 assert_not_contains "${RUN_OUTPUT}" "Retired Serena state still in repo" "ai-audit should not flag repo-local Serena state when absent"
 assert_not_contains "${RUN_OUTPUT}" "Retired Hookify rule files still in repo" "ai-audit should not flag hookify rule files when absent"
 assert_not_contains "${RUN_OUTPUT}" "Retired Hookify plugin still installed" "ai-audit should not flag hookify plugin when absent"
+assert_not_contains "${RUN_OUTPUT}" "Retired session-topics state still on disk" "ai-audit should not flag session-topics when absent"
 assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.codex" "ai-audit should report absence of retired Codex state"
 assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.gemini" "ai-audit should report absence of retired Gemini state"
 assert_contains "${RUN_OUTPUT}" "LSP plugins: all ${#CLAUDE_LSP_PLUGINS[@]} installed" "ai-audit should validate LSP plugins are installed"
@@ -131,6 +132,8 @@ EOF
 # Retired agent state left on disk — audit should flag for removal.
 mkdir -p "${HOME}/.codex"
 mkdir -p "${HOME}/.gemini"
+mkdir -p "${HOME}/.claude/session-topics"
+: > "${HOME}/.claude/session-topic.sh"
 
 run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${tmpdir}/scripts/ai-audit.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-audit should stay informational with warnings"
@@ -148,6 +151,8 @@ assert_contains "${RUN_OUTPUT}" "Claude Code jamf-docs MCP: missing or drifted" 
 assert_contains "${RUN_OUTPUT}" "Claude Code slack MCP: missing or drifted" "ai-audit should detect missing Claude Slack MCP"
 assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.codex" "ai-audit should flag retired Codex state"
 assert_contains "${RUN_OUTPUT}" "Retired agent state still on disk: ${HOME}/.gemini" "ai-audit should flag retired Gemini state"
+assert_contains "${RUN_OUTPUT}" "Retired session-topics state still on disk: ${HOME}/.claude/session-topic.sh" "ai-audit should flag retired session-topic.sh"
+assert_contains "${RUN_OUTPUT}" "Retired session-topics state still on disk: ${HOME}/.claude/session-topics" "ai-audit should flag retired session-topics dir"
 assert_contains "${RUN_OUTPUT}" "Claude settings backups: found backup files to review or delete" "ai-audit should report backup files"
 assert_contains "${RUN_OUTPUT}" "AI config audit needs attention:" "ai-audit should summarize warnings"
 
@@ -165,7 +170,7 @@ assert_contains "${RUN_OUTPUT}" "general plugins missing" "ai-audit should flag 
 write_installed_plugins_stub  # restore for following scenarios
 
 # Clean up retired-state dirs for next scenario
-rm -rf "${HOME}/.codex" "${HOME}/.gemini"
+rm -rf "${HOME}/.codex" "${HOME}/.gemini" "${HOME}/.claude/session-topics" "${HOME}/.claude/session-topic.sh"
 
 # ---- Scenario 3: legacy MCP entries (playwright, filesystem, drawio) still present ----
 cat > "${HOME}/.claude.json" <<EOF

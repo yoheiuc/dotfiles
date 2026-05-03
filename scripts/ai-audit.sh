@@ -121,6 +121,16 @@ for _retired_path in "${HOME}/.codex" "${HOME}/.gemini"; do
 done
 unset _retired_path
 
+# session-topic の UserPromptSubmit hook 廃止後の残骸を flag。
+# ai-repair.sh が ~/.claude/session-topic.sh と ~/.claude/session-topics/ を能動削除する以上、
+# audit 側でも対応する flag を出して audit-repair invariant を保つ。
+for _retired_session_topic in "${HOME}/.claude/session-topic.sh" "${HOME}/.claude/session-topics"; do
+  if [[ -e "${_retired_session_topic}" ]]; then
+    attention "Retired session-topics state still on disk: ${_retired_session_topic} — run make ai-repair to scrub"
+  fi
+done
+unset _retired_session_topic
+
 section "Claude Code Baseline"
 if [[ -f "${HOME}/.claude/settings.json" ]]; then
   if claude_autoupdate_is_latest; then
