@@ -3,7 +3,7 @@ SHELL := /bin/bash
 .DELETE_ON_ERROR:
 .DEFAULT_GOAL := help
 
-.PHONY: help tips status ai-audit ai-repair install preview sync doctor test uninstall
+.PHONY: help tips status ai-audit ai-repair install preview sync doctor test lint uninstall
 
 PULL ?= 0
 
@@ -57,6 +57,10 @@ test: ## 回帰テストを実行
 	bash tests/skill-verify.sh
 	bash tests/post-setup.sh
 	bash tests/uninstall.sh
+
+lint: ## shellcheck + yamllint をローカル実行 (CI 化していないので任意)
+	@find scripts tests home -type f -name "*.sh" -print0 | xargs -0 shellcheck --severity=warning
+	@yamllint .
 
 uninstall: ## dotfiles をアンインストール
 	bash scripts/uninstall.sh

@@ -181,7 +181,7 @@ assert_contains "${RUN_OUTPUT}" "sequential-thinking MCP already registered" "se
 hash_settings_2="$(hash_file "${HOME}/.claude/settings.json")"
 hash_claudejson_2="$(hash_file "${HOME}/.claude.json")"
 
-assert_eq "${hash_settings_1}" "${hash_settings_2}" "~/.claude/settings.json should be byte-identical across two runs"
-assert_eq "${hash_claudejson_1}" "${hash_claudejson_2}" "~/.claude.json should be byte-identical across two runs"
+assert_eq "${hash_settings_1}" "${hash_settings_2}" "${HOME}/.claude/settings.json should be byte-identical across two runs"
+assert_eq "${hash_claudejson_1}" "${hash_claudejson_2}" "${HOME}/.claude.json should be byte-identical across two runs"
 
 pass_test "tests/post-setup.sh"

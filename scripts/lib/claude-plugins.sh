@@ -1,7 +1,10 @@
+# shellcheck shell=bash disable=SC2034
 # scripts/lib/claude-plugins.sh — shared list of Claude Code plugins owned by dotfiles.
 # Sourced by post-setup.sh and doctor.sh so the install path and the verify path
 # stay in sync. Add a plugin here, run `make install`, and `make doctor` will
 # verify it on the next run.
+# disable=SC2034: all top-level vars are public exports consumed by post-setup.sh /
+# ai-repair.sh / ai-audit.sh / doctor.sh via `source`; shellcheck cannot follow.
 
 # Per-language LSP plugins from anthropics/claude-plugins-official. Used by
 # Claude Code's native LSP tool for symbol resolution, find-references,

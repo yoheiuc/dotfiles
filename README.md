@@ -45,6 +45,7 @@ make preview         # 以降の変更は apply 前に必ず diff 確認
 | `make sync PULL=1` | `git pull` してから sync |
 | `make doctor` | 深い診断（22 セクション、Required + Optional） |
 | `make test` | shell ベース回帰テスト |
+| `make lint` | shellcheck + yamllint をローカル実行（CI 化していないので任意） |
 | `make tips` | コマンドヒント（zsh では `dothelp` でも可） |
 | `make uninstall` | dotfiles を削除 |
 

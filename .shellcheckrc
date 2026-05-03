@@ -1,0 +1,7 @@
+shell=bash
+external-sources=true
+# Skip info-level noise (SC2016 single-quoted literals / SC2086 unquoted vars in tests /
+# SC2012 ls vs find): these are stylistic, not bugs in this codebase.
+severity=warning
+# SC1090/SC1091: source path can't be statically resolved (dynamic source paths intentional).
+disable=SC1090,SC1091
