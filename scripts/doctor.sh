@@ -202,6 +202,11 @@ if command -v playwright-cli &>/dev/null; then
   else
     warn "playwright stealth: ~/.playwright/cli.config.json missing or incomplete — run: chezmoi apply"
   fi
+  if playwright_pwopen_is_ephemeral; then
+    ok "playwright pwopen: ephemeral cleanup wired (close+delete-data+rm on EXIT/INT/TERM, chmod 700, per-invocation profile)"
+  else
+    warn "playwright pwopen: ephemeral cleanup not wired in ~/.config/zsh/playwright.zsh — sessions persist on disk after browser close. Run: chezmoi apply"
+  fi
 else
   warn "playwright-cli not found — run: ./scripts/post-setup.sh"
 fi

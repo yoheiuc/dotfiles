@@ -43,14 +43,44 @@ pwlogin() {
   fi
 }
 
-# pwopen <tag> [url] — AI 用 Microsoft Edge を tag 別の persistent profile / session で起動。
-# L1 (~/.claude/CLAUDE.md) の「ブラウザ自動化の運用デフォルト」節を tooling で再現。
-# プロファイル先は $HOME/.ai-<tag>（env PLAYWRIGHT_AI_<TAG_UPPER>_PROFILE で override 可、
-# tag の `-` は env 名上 `_` に置換される。例: tag=saas-acme → PLAYWRIGHT_AI_SAAS_ACME_PROFILE）。
+# __pwopen_cleanup <tag> <profile>
+# pwopen で起動したセッションを browser close 時に自動破棄するための helper。
+# trap EXIT INT TERM 経由で呼ばれる前提。`command playwright-cli` で wrapper の
+# guard D（state-changing で session 未設定なら exit 1）を bypass する。
+# rm は $HOME/.ai- prefix を持つ profile dir のみに適用（env override で外を
+# 指された場合の事故防止）。close / delete-data は env override path でも常に
+# 発火させる（user の意図通り daemon は止める）。
+__pwopen_cleanup() {
+  local tag="$1" profile="$2"
+  local logdir="${XDG_CACHE_HOME:-$HOME/.cache}/playwright-cli"
+  command playwright-cli --session="${tag}" close >/dev/null 2>&1 || true
+  command playwright-cli --session="${tag}" delete-data >/dev/null 2>&1 || true
+  if [[ -n "${profile}" && "${profile}" == "${HOME}/.ai-"* && -d "${profile}" ]]; then
+    rm -rf -- "${profile}"
+  fi
+  mkdir -p "${logdir}"
+  printf '%s\tsession=%s\tcwd=%s\tcleanup tag=%s profile=%s\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${tag}" "${PWD}" "${tag}" "${profile}" \
+    >> "${logdir}/actions.log"
+}
+
+# pwopen <tag> [url] — AI 用 Microsoft Edge を tag 別の per-invocation unique
+# profile / session で起動。L1 (~/.claude/CLAUDE.md) の「ブラウザ自動化の運用
+# デフォルト」節を tooling で再現。
+# プロファイル先は default が $HOME/.ai-<tag>-<UTC>-<pid> で毎回 unique なので
+# AI セッション間で profile state（cookie / cache / 認証 token）を共有しない。
+# env PLAYWRIGHT_AI_<TAG_UPPER>_PROFILE を export している場合だけ固定 path で
+# 動作（明示的 persistence opt-in）。tag の `-` は env 名上 `_` に置換される
+# （例: tag=saas-acme → PLAYWRIGHT_AI_SAAS_ACME_PROFILE）。
 # 失敗時は PLAYWRIGHT_CLI_SESSION を汚染しない（成功後にだけ export する）。
-# 起動成功後の tab-list 汚染 guard は tag=edge のときだけ発火する（テナント profile では
-# Stripe / Salesforce 等が正常状態なので false-positive 回避）。
+# trap EXIT INT TERM で __pwopen_cleanup を呼び、ブラウザを閉じた / Ctrl+C /
+# kill された時点で session daemon 停止 + delete-data + profile dir 削除。
+# pwopen 開始時に $HOME/.ai-<tag>-* glob にマッチする orphan dir を best-effort
+# で sweep（kill -9 等で trap が発火しなかった残骸を回収）。
+# 起動成功後の tab-list 汚染 guard は tag=edge のときだけ発火する（テナント
+# profile では Stripe / Salesforce 等が正常状態なので false-positive 回避）。
 pwopen() {
+  emulate -L zsh
   if (( $# < 1 )); then
     echo "usage: pwopen <tag> [url]" >&2
     return 1
@@ -58,12 +88,22 @@ pwopen() {
   local tag="$1"; shift
   local tag_upper="${(U)tag//-/_}"
   local env_name="PLAYWRIGHT_AI_${tag_upper}_PROFILE"
-  local profile="${(P)env_name:-$HOME/.ai-${tag}}"
+
+  local orphan
+  for orphan in "${HOME}"/.ai-"${tag}"-*(N/); do
+    rm -rf -- "${orphan}"
+  done
+
+  local default_profile="${HOME}/.ai-${tag}-$(date -u +%Y%m%dT%H%M%SZ)-$$"
+  local profile="${(P)env_name:-${default_profile}}"
   mkdir -p "${profile}"
+  chmod 700 "${profile}" 2>/dev/null || true
+  trap "__pwopen_cleanup ${(q)tag} ${(q)profile}" EXIT INT TERM
+
   if playwright-cli --session="${tag}" open --browser=msedge --headed --persistent --profile="${profile}" "$@"; then
     export PLAYWRIGHT_CLI_SESSION="${tag}"
     osascript -e 'tell application "Microsoft Edge" to activate' >/dev/null 2>&1 || true
-    echo "PLAYWRIGHT_CLI_SESSION=${tag} (Microsoft Edge, headed, profile=${profile})"
+    echo "PLAYWRIGHT_CLI_SESSION=${tag} (Microsoft Edge, headed, profile=${profile}, ephemeral)"
     if [[ "${tag}" == "edge" ]]; then
       local tabs
       if tabs="$(command playwright-cli --session="${tag}" tab-list 2>/dev/null)"; then

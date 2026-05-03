@@ -110,3 +110,21 @@ playwright_is_stealth_patched() {
     | length' "${cfg}" 2>/dev/null || echo 0)"
   [[ "${has_disable_blink}" -ge 1 && "${has_ignore_automation}" -ge 1 ]]
 }
+
+# True when ~/.config/zsh/playwright.zsh wires up the pwopen ephemeral cleanup
+# contract: (1) __pwopen_cleanup helper exists, (2) pwopen installs an EXIT/INT/TERM
+# trap that calls it, (3) profile dir is chmod 700'd at creation, (4) the default
+# profile path embeds a per-invocation unique suffix (UTC timestamp + PID) so AI
+# sessions never share profile state. All four sentinels are checked via plain
+# grep so the predicate runs in any host shell (zsh availability not required).
+# Source-level grep is intentional: the wrapper is read at zsh source-time, and
+# we want to detect drift from source-of-truth dotfiles edits, not runtime
+# behavior (which the test suite covers).
+playwright_pwopen_is_ephemeral() {
+  local module="${HOME}/.config/zsh/playwright.zsh"
+  [[ -f "${module}" ]] || return 1
+  grep -q '__pwopen_cleanup()' "${module}" || return 1
+  grep -Eq 'trap .*__pwopen_cleanup.*EXIT INT TERM' "${module}" || return 1
+  grep -q 'chmod 700' "${module}" || return 1
+  grep -Eq 'date -u \+%Y%m%dT%H%M%SZ.*\$\$' "${module}" || return 1
+}

@@ -256,6 +256,21 @@ if claude_plugin_is_installed "hookify" "${CLAUDE_PLUGIN_MARKETPLACE_NAME}"; the
   attention "Retired Hookify plugin still installed — run: claude plugin uninstall hookify@${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
 fi
 
+section "Playwright Wrapper"
+# Ephemeral pwopen contract: profile is wiped on browser close so AI session
+# state (cookie / token / cache) doesn't linger on disk, and per-invocation
+# unique profile path prevents cross-session sharing. L1 / L2 mandate this; if
+# the wrapper drifts, surface it here so `make ai-audit -q` catches it in CI.
+if [[ -f "${HOME}/.config/zsh/playwright.zsh" ]]; then
+  if playwright_pwopen_is_ephemeral; then
+    ok "playwright pwopen: ephemeral cleanup wired (close+delete-data+rm on EXIT/INT/TERM, chmod 700, per-invocation profile)"
+  else
+    attention "playwright pwopen: ephemeral cleanup not wired — sessions persist on disk after browser close. Run: chezmoi apply"
+  fi
+else
+  ok "playwright pwopen: zsh wrapper not installed (skipped)"
+fi
+
 section "Backup Files"
 report_optional_backups "Claude settings backups" "${HOME}/.claude/settings.json.pre-unmanage-*"
 

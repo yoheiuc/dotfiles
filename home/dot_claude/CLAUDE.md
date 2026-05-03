@@ -67,10 +67,11 @@ setup・採用基準・依存マップは `~/dotfiles/CLAUDE.md` (L2) と `READM
 
 `playwright-cli` 起動時は原則:
 
-- **AI 用ブラウザは Microsoft Edge**（main Chrome と分離するため別 binary）。`--browser=msedge --headed --persistent --profile=$HOME/.ai-<tag>` をセット（`<tag>` は `edge` がデフォルト、SaaS マルチテナント等で並走させたいときは `acme` / `tenant-foo` 等を user が任意に選ぶ）
+- **AI 用ブラウザは Microsoft Edge**（main Chrome と分離するため別 binary）。`--browser=msedge --headed --persistent --profile=$HOME/.ai-<tag>-<UTC>-<pid>` をセット（`<tag>` は `edge` がデフォルト、SaaS マルチテナント等で並走させたいときは `acme` / `tenant-foo` 等を user が任意に選ぶ）
   - 同 binary（Chrome）だと macOS が同一アプリ扱いで Dock / Cmd+Tab が混乱する
   - bundled Chromium は Cloudflare 弾き、Chrome 136+ 系はデフォルト user-data-dir で `--remote-debugging-port` 拒否（CSRF 対策）→ 専用 user-data-dir 必須
-  - tag 別 profile は `~/.ai-edge` の sibling として並ぶ（`~/.ai-acme` / `~/.ai-tenant-foo` ...）。tooling 側は `pwopen <tag> [url]` が tag 駆動の launcher で、`pwedge` は `pwopen edge` の back-compat shim
+  - tag 別 profile は `~/.ai-<tag>-<UTC>-<pid>` で **per-invocation unique**（同じ `pwopen acme` を別 AI セッションで叩いても profile state を共有しない）。`~/.ai-edge-*` / `~/.ai-acme-*` のような sibling として並ぶ。tooling 側は `pwopen <tag> [url]` が tag 駆動の launcher で、`pwedge` は `pwopen edge` の back-compat shim
+- **`pwopen <tag>` は ephemeral**: ブラウザを閉じた時点で `playwright-cli close` + `delete-data` + `rm -rf $HOME/.ai-<tag>-*` が trap で自動発火し、cookie / 認証 token / localStorage が disk に残らない（Ctrl+C / SIGTERM でも同じ cleanup）。profile dir 作成時に `chmod 700` で user-only。次回 `pwopen <tag>` 開始時に `~/.ai-<tag>-*` orphan を best-effort sweep（kill -9 残骸の回収）。`PLAYWRIGHT_AI_<TAG>_PROFILE` env override は固定 path での明示的 persistence opt-in（escape hatch、override path は cleanup の `rm` 対象外）。**pwlogin は別系統**（手動 login → 以降 headless で reuse する明示的 persistence path で、ephemeral 化スコープ外）
 - **stealth**: `~/.playwright/cli.config.json` (chezmoi 管理) が `launchOptions.args=["--disable-blink-features=AutomationControlled"]` と `ignoreDefaultArgs=["--enable-automation"]` を毎起動で注入し、`navigator.webdriver` を `false` に固定（bot.sannysoft.com の `WebDriver(New)` 行が `missing (passed)` になる）。検証: `command playwright-cli --session=<tag> eval 'navigator.webdriver'`（tag は対象 session の名前。default なら `edge`）。Runtime.Enable leak まで塞ぐ patchright drop-in は Phase 2（archive 2026-04-28、bot 判定が業務影響レベルに来てから着手）
 - navigation 直後に `osascript -e 'tell application "Microsoft Edge" to activate'` で前面化（user が画面で追えるように）
 - 状態変更系（`click` / `fill` / `cookie-set` / `localstorage-set` 等）は **chat に事前 1 行ナレーションしてから実行**。読み取り系（`goto` / `eval` 取得 / `snapshot` / `tab-list`）は narration 省略可
