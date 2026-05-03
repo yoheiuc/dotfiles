@@ -6,7 +6,7 @@
 - ツール呼び出し結果を全文引用しない。必要な部分だけ抜粋
 - まずローカルの実態を見て、可能ならその場で修正まで進める
 - 破壊的な操作は確認なしで進めない
-- **初回プロンプトで Goal / Constraints / Acceptance criteria の 3 点を組み立てて計画を立てる**。曖昧な点は最初に 1 度だけ確認、それ以降は途中介入を待たず一括処理（Opus 4.7 系は初回投入の精度が高い前提）
+- **初回プロンプトで Goal / Constraints / Acceptance criteria の 3 点を組み立てて計画を立てる**。曖昧な点は最初に 1 度だけ確認、それ以降は途中介入を待たず一括処理
 - 長時間自律タスクは `/focus` で途中ログを隠している前提で、最終結果だけで判断できる粒度の出力に
 - 設定キーやオプション名に自信がないときは、user に確認せず公式ドキュメント / ソースを fetch して裏取り
 - **編集後は実体で動作検証**。typecheck / test / 実コマンド実行で「動いた」まで確認してから完了宣言
@@ -29,7 +29,7 @@
 | Markdown スライド | `marp` CLI（`marp deck.md -o deck.pdf` 等） |
 | Markdown ⇔ docx / PDF / HTML 変換 | `pandoc`（PDF は `basictex` 経由） |
 | JSON / YAML / TOML 整形・抽出 | `jq` / `yq`（`gh api ... \| jq` の pipe 連鎖を優先） |
-| ブラウザ操作 | `playwright-cli` + **Microsoft Edge**（AI 専用 binary、`pwedge` で headed 起動） |
+| ブラウザ操作 | `playwright-cli` + **Microsoft Edge**（AI 専用 binary、`pwopen <tag>` で headed 起動。default tag は `edge`、`pwedge` は `pwopen edge` の alias） |
 | GitHub | `gh` CLI |
 | Bitwarden vault 参照 | `bw` CLI（read-only。`bwunlock` 後に `bw list / get / generate`。zsh wrapper が write 系を block） |
 | 動画 / 音声変換・メディア処理 | `ffmpeg` |
@@ -71,11 +71,16 @@ setup・採用基準・依存マップは `~/dotfiles/CLAUDE.md` (L2) と `READM
   - 同 binary（Chrome）だと macOS が同一アプリ扱いで Dock / Cmd+Tab が混乱する
   - bundled Chromium は Cloudflare 弾き、Chrome 136+ 系はデフォルト user-data-dir で `--remote-debugging-port` 拒否（CSRF 対策）→ 専用 user-data-dir 必須
   - tag 別 profile は `~/.ai-<tag>-<UTC>-<pid>` で **per-invocation unique**（同じ `pwopen acme` を別 AI セッションで叩いても profile state を共有しない）。`~/.ai-edge-*` / `~/.ai-acme-*` のような sibling として並ぶ。tooling 側は `pwopen <tag> [url]` が tag 駆動の launcher で、`pwedge` は `pwopen edge` の back-compat shim
-- **`pwopen <tag>` は ephemeral**: ブラウザを閉じた時点で `playwright-cli close` + `delete-data` + `rm -rf $HOME/.ai-<tag>-*` が trap で自動発火し、cookie / 認証 token / localStorage が disk に残らない（Ctrl+C / SIGTERM でも同じ cleanup）。profile dir 作成時に `chmod 700` で user-only。次回 `pwopen <tag>` 開始時に `~/.ai-<tag>-*` orphan を best-effort sweep（kill -9 残骸の回収）。`PLAYWRIGHT_AI_<TAG>_PROFILE` env override は固定 path での明示的 persistence opt-in（escape hatch、override path は cleanup の `rm` 対象外）。**pwlogin は別系統**（手動 login → 以降 headless で reuse する明示的 persistence path で、ephemeral 化スコープ外）
+- **`pwopen <tag>` は ephemeral**:
+  - ブラウザを閉じた時点で `playwright-cli close` + `delete-data` + `rm -rf $HOME/.ai-<tag>-*` が trap で自動発火し、cookie / 認証 token / localStorage が disk に残らない（Ctrl+C / SIGTERM でも同じ cleanup）
+  - profile dir 作成時に `chmod 700` で user-only
+  - 次回 `pwopen <tag>` 開始時に `~/.ai-<tag>-*` orphan を best-effort sweep（kill -9 残骸の回収）
+  - `PLAYWRIGHT_AI_<TAG>_PROFILE` env override は固定 path での明示的 persistence opt-in（escape hatch、override path は cleanup の `rm` 対象外）
+  - **pwlogin は別系統**（手動 login → 以降 headless で reuse する明示的 persistence path で、ephemeral 化スコープ外）
 - **stealth**: `~/.playwright/cli.config.json` (chezmoi 管理) が `launchOptions.args=["--disable-blink-features=AutomationControlled"]` と `ignoreDefaultArgs=["--enable-automation"]` を毎起動で注入し、`navigator.webdriver` を `false` に固定（bot.sannysoft.com の `WebDriver(New)` 行が `missing (passed)` になる）。検証: `command playwright-cli --session=<tag> eval 'navigator.webdriver'`（tag は対象 session の名前。default なら `edge`）。Runtime.Enable leak まで塞ぐ patchright drop-in は Phase 2（archive 2026-04-28、bot 判定が業務影響レベルに来てから着手）
 - navigation 直後に `osascript -e 'tell application "Microsoft Edge" to activate'` で前面化（user が画面で追えるように）
 - 状態変更系（`click` / `fill` / `cookie-set` / `localstorage-set` 等）は **chat に事前 1 行ナレーションしてから実行**。読み取り系（`goto` / `eval` 取得 / `snapshot` / `tab-list`）は narration 省略可
-- 状態変更系コマンドは shell wrapper が `~/.cache/playwright-cli/actions.log` に TSV で自動記録（`command playwright-cli` で bypass 可）
+- 状態変更系コマンドは shell wrapper が `~/.cache/playwright-cli/actions.log` に TSV で自動追記（`command playwright-cli` で bypass 可）
 - **Claude in Chrome 拡張は採用しない**（遅さ + main Chrome profile 同居前提が L1 の AI 専用 profile 隔離と衝突。archive 2026-04-28 参照）
 
 ### user が起動 / Claude が attach する二段運用
@@ -129,19 +134,17 @@ setup・採用基準・依存マップは `~/dotfiles/CLAUDE.md` (L2) と `READM
 
 Escalation rule：haiku で投げて品質不足（根拠が薄い / 事実誤認）だった場合は、同じプロンプトを `sonnet` で再試行する。最初から opus を投げるのはコスト効率が悪い。
 
-コスト目安：haiku は sonnet の 1/5〜1/10、opus の 1/20。探索系で haiku が使えるなら全体コストが 40-50% 下がる報告あり。
+コスト目安：haiku は sonnet / opus より 1〜2 桁安い（最新は [Anthropic pricing](https://www.anthropic.com/pricing) を参照）。探索系で haiku を使うと全体コストが大きく下がる。
 
 ## Claude Code native LSP plugin
 
-以下は Grep より native LSP tool を優先する場面:
-- シンボルの定義箇所を探す（go-to-definition）
-- 呼び出し元・参照箇所を網羅的に探す（find references）
-- シンボルの型・docstring（hover）
-- ファイル内シンボル一覧（document symbols）
-- クロスファイル rename
+ツール選択ルール表の「コード構造の理解・リファクタ」行で言及している native LSP tool を優先する具体的な場面:
+
+- シンボルの定義箇所（go-to-definition）/ 参照箇所（find references）/ 型・docstring（hover）
+- ファイル内シンボル一覧（document symbols）/ クロスファイル rename
 - edit 前後の LSP diagnostics
 
-旧 `mcp__serena__*` tool は廃止されたので呼ばない（alias が残っているだけ）。
+これらは Grep / regex より構文情報を持つ LSP のほうが安定して網羅できる。
 
 ## コミット規約（全リポ共通）
 

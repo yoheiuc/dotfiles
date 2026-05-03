@@ -4,7 +4,7 @@ macOS 開発マシンを chezmoi で再現可能に管理する個人 opinionate
 
 採用基準・整合性ルール・依存マップ・判断ログは [`CLAUDE.md`](./CLAUDE.md) に集約してある。新ツール追加・既存置換・廃止のいずれも先にそちらを通す。運用中の状態は [docs/notes/current-state.md](docs/notes/current-state.md)。ライセンスは [MIT](LICENSE)。
 
-> ⚠️ 個人マシン用。`chezmoi apply` は `~/` を上書きする。他人が使うなら fork して [fork して使うとき](#fork-して使うとき) を潰してから apply。
+> ⚠️ 個人マシン用。`chezmoi apply` は `~/` を上書きする。他人が使うなら fork して [fork して使うとき](#fork-して使うとき) のチェックリストを自分の値に書き換えてから apply。
 
 ---
 
@@ -59,29 +59,29 @@ make preview         # 以降の変更は apply 前に必ず diff 確認
 - **single source of truth は `home/`**（`~/` だけ変えても次の `chezmoi apply` で巻き戻る）
 - **drift は `make ai-repair` で baseline に snap back**（Claude `~/.claude.json` / hooks / channel / legacy MCP 削除）
 - **AI に見せるアカウントは最小権限**（AI 用 Edge プロファイル (`~/.ai-<tag>-<UTC>-<pid>`、default tag = `edge`、SaaS マルチテナントは `pwopen acme` 等で並走、ブラウザ閉じたら自動破棄) を main Chrome から完全分離、Slack/Notion/Workspace の admin アカウントは持ち込まない）
-- **迷ったら削除**（dotfiles 肥大化と drift 源を避ける、標準機能で代替できるなら custom 実装しない）
+- **迷ったら削除**（dotfiles 肥大化と drift の元を避ける、標準機能で代替できるなら custom 実装しない）
 
 ---
 
 ## ブラウザ自動化（Edge 専用 binary）
 
-`@playwright/cli` を `pwopen <tag>` / `pwedge` zsh helper でラップ済み。**main Chrome は AI に渡さない**運用に統一していて、AI 用 Edge プロファイル (`~/.ai-<tag>-<UTC>-<pid>`、default tag = `edge`) を別 binary で立てる。`pwopen <tag>` は tag 駆動 launcher で、SaaS マルチテナント等で `pwopen acme` / `pwopen tenant-foo` 並走可（profile / session ともに tag 別に隔離）。**profile path は per-invocation unique**（毎回 timestamp + pid の suffix 付き）で AI セッション間で cookie / cache / 認証 token を共有しない。**ブラウザを閉じた時点で session が ephemeral cleanup される**（`playwright-cli close` + `delete-data` + `rm -rf` を trap で自動発火、Ctrl+C / SIGTERM でも同じ、`chmod 700` で profile dir は user-only）。bundled Chromium が Cloudflare に弾かれる / Chrome 136+ 系が `--remote-debugging-port` を拒否する制約も Edge 側で回避される。
+`@playwright/cli` を `pwopen <tag>` zsh helper でラップ済み。**main Chrome は AI に渡さない**運用に統一していて、AI 用 Edge プロファイル (`~/.ai-<tag>-<UTC>-<pid>`、default tag = `edge`) を別 binary で立てる。profile は **per-invocation unique** + ブラウザ終了時に **ephemeral cleanup**（cookie / 認証 token を disk に残さない）。bundled Chromium が Cloudflare に弾かれる / Chrome 136+ 系が `--remote-debugging-port` を拒否する制約も Edge 側で回避される。stealth (`navigator.webdriver` 抑止) は `~/.playwright/cli.config.json` (chezmoi 管理) が global config として注入。
 
-bot 判定回避は `~/.playwright/cli.config.json` (chezmoi 管理、`home/dot_playwright/cli.config.json` source) が `launchOptions.args=["--disable-blink-features=AutomationControlled"]` と `ignoreDefaultArgs=["--enable-automation"]` を global config として注入する。playwright-cli が起動毎に auto load → `chromium.launchPersistentContext` に spread される。`navigator.webdriver === false` を `bot.sannysoft.com` で確認済み。Runtime.Enable leak まで塞ぐ rebrowser-patches Phase 1 は Anthropic bundle 構造と非互換で見送り（詳細は [`docs/notes/decisions-archive.md`](docs/notes/decisions-archive.md) 2026-04-28）。
+> 脅威モデル・禁止 click / 禁止 eval パターン・session attach 運用の正本は [`home/dot_claude/CLAUDE.md`](home/dot_claude/CLAUDE.md) の「ブラウザ自動化のセキュリティ規則」「ブラウザ自動化の運用デフォルト」節（毎ターン Claude が読む context）。本 README は概要のみ。
 
-脅威モデルと禁止操作の詳細は `~/.claude/CLAUDE.md` の「ブラウザ自動化のセキュリティ規則」「ブラウザ自動化の運用デフォルト」節（毎ターン Claude が読む context）。
-
-zsh helper（`home/dot_config/zsh/playwright.zsh`）:
+zsh helper（`home/dot_config/zsh/playwright.zsh`）の主要コマンド:
 
 | コマンド | 用途 |
 |---|---|
-| `pwopen <tag> [url]` | tag 駆動 launcher。Edge を `--browser=msedge --headed --persistent --profile=$HOME/.ai-<tag>-<UTC>-<pid> --session=<tag>` で開く（profile は per-invocation unique）。ブラウザ閉じた時点で `close` + `delete-data` + `rm -rf` を trap で自動発火（Ctrl+C / SIGTERM でも同じ、profile dir は `chmod 700`）。起動時に `~/.ai-<tag>-*` orphan を best-effort sweep。SaaS マルチテナント等で `pwopen acme` / `pwopen tenant-foo` 並走可（env override は `PLAYWRIGHT_AI_<TAG_UPPER>_PROFILE` で固定 path に opt-in、override path は cleanup の `rm` 対象外、hyphen は underscore に変換） |
-| `pwedge [url]` | `pwopen edge` の back-compat shim（default tag = `edge`、profile=`$HOME/.ai-edge-<UTC>-<pid>`、`PLAYWRIGHT_AI_EDGE_PROFILE` で固定 path に override 可） |
-| `pwlogin <name> <url>` | 任意 session 名で `--headed --persistent` 起動（手動ログイン用） |
+| `pwopen <tag> [url]` | tag 駆動 launcher。Edge を `--browser=msedge --headed --persistent --session=<tag>` で開く。SaaS マルチテナント等で `pwopen acme` / `pwopen tenant-foo` 並走可 |
+| `pwedge [url]` | `pwopen edge` の back-compat shim |
+| `pwlogin <name> <url>` | 明示的 persistence path（手動 login 後に headless で reuse、ephemeral 化スコープ外） |
 | `pwsession <name>` | `PLAYWRIGHT_CLI_SESSION` を切替 |
 | `pwlist` / `pwshow` / `pwkill <name>` / `pwkillall` | 永続セッション管理 |
 
-`playwright-cli` 自体も shell wrapper でラップしていて、状態変更系コマンド（`click` / `fill` / `goto` / `cookie-set` 等）は `~/.cache/playwright-cli/actions.log` に TSV で自動追記される。bypass したいときは `command playwright-cli ...`。
+env override `PLAYWRIGHT_AI_<TAG_UPPER>_PROFILE` で profile を固定 path に opt-in（hyphen は underscore 変換、override path は ephemeral cleanup の `rm` 対象外）。`playwright-cli` 自体も shell wrapper でラップしていて、状態変更系コマンド（`click` / `fill` / `goto` / `cookie-set` 等）は `~/.cache/playwright-cli/actions.log` に TSV で自動追記される。bypass したいときは `command playwright-cli ...`。
+
+bot 判定回避の rebrowser-patches Phase 1 / Phase 2 の判断経緯は [`docs/notes/decisions-archive.md`](docs/notes/decisions-archive.md) 2026-04-28。
 
 ---
 
@@ -89,20 +89,20 @@ zsh helper（`home/dot_config/zsh/playwright.zsh`）:
 
 公式 SaaS (bitwarden.com) の vault を AI から読み取るための運用。Brewfile に `brew "bitwarden-cli"`、zsh wrapper (`home/dot_config/zsh/bitwarden.zsh`) と vendor SKILL (`home/dot_claude/skills/bitwarden-cli/SKILL.md`) で **read-only allowlist を機械 enforce** する。MCP server (`@bitwarden/mcp-server`) は上流が POC 表明のため不採用（[archive 2026-04-29](docs/notes/decisions-archive.md)）。
 
-初回 setup（user が手動）:
+> allowlist / 禁止行為 / BW_SESSION 永続化禁止などのセキュリティ規則の正本は [`home/dot_claude/CLAUDE.md`](home/dot_claude/CLAUDE.md) の「Bitwarden CLI 操作のセキュリティ規則」節。同期点は L2 (`CLAUDE.md`) の「変更箇所の依存マップ」を参照。本 README は概要のみ。
+
+初回 setup（user が手動、一度だけ）:
 
 ```
 $ make sync                            # bitwarden-cli を brew install
-$ bw login                             # email + master password + 2FA（一度だけ）
+$ bw login                             # email + master password + 2FA
 ```
 
 日常運用:
 
 ```
 $ bwunlock                             # master password を user が打つ → BW_SESSION を current shell に export
-$ # この shell で claude を起動すると Bash tool 経由で bw が使える
-$ bw list items --search github
-$ bw get password github.com           # AI から呼ぶときは on-screen exposure に注意
+$ bw list items --search github        # この shell で claude を起動すると Bash tool 経由で bw が使える
 $ bwlock                               # 終了時。BW_SESSION を unset + bw lock
 ```
 
@@ -114,9 +114,7 @@ zsh helper:
 | `bwlock` | `bw lock` + `unset BW_SESSION` |
 | `bwstatus` | `bw status` の JSON を表示（lock 状態 / serverUrl 確認） |
 
-read-only allowlist: `list` / `get` / `generate` / `status` / `sync` / `unlock` / `lock` / `login` / `logout` / `config` / `completion` / `update` / `help`。これ以外（`create` / `edit` / `delete` / `restore` / `share` / `send` / `import` / `export` / `move` / `confirm` / `encode` / `serve` / `pending`）は wrapper が exit 1 し、deny ログを `~/.cache/bitwarden-cli/actions.log` に TSV 追記する。意図的に bypass したいときは **user が自分で** `command bw <subcommand> …` と打つ（AI からの bypass は SKILL.md で禁止）。BW_SESSION を `~/.zshenv.local` / `.envrc` 等に永続化するのも禁止（短命 shell-scoped 運用が前提）。
-
-セキュリティ規則の正本は [`home/dot_claude/CLAUDE.md`](home/dot_claude/CLAUDE.md) の「Bitwarden CLI 操作のセキュリティ規則」節。L2 / SKILL.md / wrapper / tests の同期義務は L2 の「変更箇所の依存マップ」に明記。
+wrapper は read-only subcommand のみ通す（書き込み系は exit 1 + `~/.cache/bitwarden-cli/actions.log` に TSV 追記）。bypass は user が自分で `command bw <subcommand> …`。
 
 ---
 
@@ -171,7 +169,7 @@ dotfiles/
 │   ├── dot_claude/
 │   │   ├── CLAUDE.md               # → ~/.claude/CLAUDE.md (毎ターン読まれる L1)
 │   │   ├── executable_*.sh         # statusline / auto-save / lsp-hint / chezmoi-auto-apply
-│   │   └── skills/                 # 同梱 skill (screenshot / jupyter-notebook) ※ doc / pdf / pptx / xlsx は anthropic-agent-skills marketplace plugin に移行
+│   │   └── skills/                 # 同梱 skill (screenshot / jupyter-notebook / bitwarden-cli)
 │   ├── dot_local/
 │   │   ├── lib/python-ssl-compat/  # Python 3.13 VERIFY_X509_STRICT 無効化
 │   │   └── share/navi/cheats/dotfiles/
@@ -207,7 +205,9 @@ exec zsh
 
 ### `pwedge` で Edge が立ち上がらない
 
-`brew bundle check --file=~/.Brewfile` で `microsoft-edge` cask が install 済みか確認。未 install なら `make install` で再実行。プロファイル位置を固定したい場合（default は per-invocation unique で毎回 `~/.ai-<tag>-<UTC>-<pid>`）は `~/.zshenv` に `export PLAYWRIGHT_AI_EDGE_PROFILE=...` を追加 — env override path は ephemeral cleanup の `rm` 対象外で、persistence opt-in として機能する（close / delete-data は常に発火）。
+- `brew bundle check --file=~/.Brewfile` で `microsoft-edge` cask が install 済みか確認。未 install なら `make install` で再実行
+- profile 位置を固定したい場合（default は per-invocation unique で毎回 `~/.ai-<tag>-<UTC>-<pid>`）は `~/.zshenv` に `export PLAYWRIGHT_AI_EDGE_PROFILE=...` を追加
+- env override path は ephemeral cleanup の `rm` 対象外で、persistence opt-in として機能する（close / delete-data は常に発火）
 
 ### bot 判定 (Cloudflare / Akamai) で `pwedge` が弾かれる
 
@@ -259,7 +259,7 @@ chezmoi apply -n -v
 
 ## 貢献 / フィードバック
 
-個人 opinionated なので feature request には応えない。歓迎するもの:
+個人 opinionated なので feature request には応えない。歓迎するもの：
 
 - **typo / 事実誤認 / 壊れたリンク**: PR
 - **セキュリティ問題**（credential 漏洩、過剰 permission、MITM 等）: Issue（repro 手順つき）
