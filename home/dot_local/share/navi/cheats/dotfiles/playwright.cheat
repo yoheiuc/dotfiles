@@ -1,6 +1,6 @@
 % playwright, browser
 
-# AI 用 Microsoft Edge を tag 別 profile / session で起動（session=<tag>, profile=~/.ai-<tag>）
+# AI 用 Microsoft Edge を tag 別 profile / session で起動（session=<tag>, profile=~/.ai-<tag>-<UTC>-<pid> — per-invocation unique、ブラウザ閉じたら自動破棄）
 pwopen <tag> <url>
 
 # AI 用 Edge を default tag (edge) で起動 — pwopen edge と等価、後方互換シム
