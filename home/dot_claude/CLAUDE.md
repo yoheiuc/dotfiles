@@ -78,6 +78,7 @@ setup・採用基準・依存マップは `~/dotfiles/CLAUDE.md` (L2) と `READM
   - `PLAYWRIGHT_AI_<TAG>_PROFILE` env override は固定 path での明示的 persistence opt-in（escape hatch、override path は cleanup の `rm` 対象外）
   - **pwlogin は別系統**（手動 login → 以降 headless で reuse する明示的 persistence path で、ephemeral 化スコープ外）
 - **stealth**: `~/.playwright/cli.config.json` (chezmoi 管理) が `launchOptions.args=["--disable-blink-features=AutomationControlled"]` と `ignoreDefaultArgs=["--enable-automation"]` を毎起動で注入し、`navigator.webdriver` を `false` に固定（bot.sannysoft.com の `WebDriver(New)` 行が `missing (passed)` になる）。検証: `command playwright-cli --session=<tag> eval 'navigator.webdriver'`（tag は対象 session の名前。default なら `edge`）。Runtime.Enable leak まで塞ぐ patchright drop-in は Phase 2（archive 2026-04-28、bot 判定が業務影響レベルに来てから着手）
+- **tab-list guard はベストエフォート**: `pwopen` 直後の tab-list 取得が失敗した場合（browser がまだ settle していない / CLI returnsエラー）silently skip するため、複数 tag 並走中はどの session を触っているか chat に 1 行ナレーションする運用で補完
 - navigation 直後に `osascript -e 'tell application "Microsoft Edge" to activate'` で前面化（user が画面で追えるように）
 - 状態変更系（`click` / `fill` / `cookie-set` / `localstorage-set` 等）は **chat に事前 1 行ナレーションしてから実行**。読み取り系（`goto` / `eval` 取得 / `snapshot` / `tab-list`）は narration 省略可
 - 状態変更系コマンドは shell wrapper が `~/.cache/playwright-cli/actions.log` に TSV で自動追記（`command playwright-cli` で bypass 可）
