@@ -53,8 +53,8 @@ brew "node"               # npm runtime for npm-distributed MCP servers (vision,
 brew "uv"                 # fast Python package manager
 
 # ---------- Misc CLI ----------
-brew "shellcheck"         # shell script linter (used in CI)
-brew "yamllint"          # YAML linter (used in CI)
+brew "shellcheck"         # shell script linter (used by `make lint`)
+brew "yamllint"          # YAML linter (used by `make lint`)
 brew "direnv"             # per-directory env vars (auto .envrc)
 brew "just"               # modern task runner (Justfile)
 brew "btop"               # TUI system monitor (CPU/RAM/disk/net)
@@ -72,14 +72,16 @@ cask "aws-vault-binary", args: { appdir: "/Applications" }
 # ---------- Casks: browser / accounts ----------
 cask "google-chrome"
 cask "microsoft-edge"            # AI 専用ブラウザ binary（playwright-cli --browser=msedge 用、main Chrome と分離）
+
+# ---------- Casks: credentials / 2FA ----------
 cask "bitwarden", args: { appdir: "/Applications" }  # password manager
 brew "bitwarden-cli"             # AI/script 用 read-only vault access (zsh wrapper enforced; bw)
+cask "ente-auth"                 # 2FA
 
 # ---------- Casks: productivity / system ----------
 cask "raycast"                   # launcher
 cask "alt-tab"                   # Windows-like Alt-Tab window switcher
 cask "libreoffice"               # office suite
-cask "ente-auth"                 # 2FA
 cask "stats"                     # menu bar system monitor (CPU/RAM/disk/network)
 cask "cleanshot"                 # screenshot tool
 cask "maccy"                     # clipboard manager (configure ignore list for password managers)
