@@ -119,7 +119,7 @@ if command -v clasp &>/dev/null; then
   ok "clasp already installed: $(clasp --version 2>/dev/null | head -1 || true)"
 else
   if ! command -v npm &>/dev/null; then
-    warn "npm not found — run `make install` first."
+    warn "npm not found — run \`make install\` first."
     exit 1
   fi
 
@@ -140,7 +140,7 @@ if command -v playwright-cli &>/dev/null; then
   ok "playwright-cli already installed: $(playwright-cli --version 2>/dev/null | head -1 || true)"
 else
   if ! command -v npm &>/dev/null; then
-    warn "npm not found — run `make install` first."
+    warn "npm not found — run \`make install\` first."
     exit 1
   fi
 
