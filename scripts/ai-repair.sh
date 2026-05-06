@@ -8,6 +8,8 @@ set -euo pipefail
 REPO_ROOT="${DOTFILES_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "${REPO_ROOT}/scripts/lib/ui.sh"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
+source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
+source "${REPO_ROOT}/scripts/lib/claude-checks.sh"
 
 log() { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
 
@@ -355,14 +357,14 @@ CLAUDE_HOOKS_BLOCK='{
 
 log "Claude Code local settings..."
 mkdir -p "$(dirname "${CLAUDE_SETTINGS_JSON}")"
-if [[ "$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "d.get('autoUpdatesChannel','')" 2>/dev/null || true)" == "latest" ]]; then
+if claude_autoupdate_is_latest; then
   ok "Claude Code: auto-update channel already set to latest"
 else
   ai_config_json_upsert_key "${CLAUDE_SETTINGS_JSON}" autoUpdatesChannel '"latest"'
   ok "Claude Code: auto-update channel set to latest"
 fi
 
-if [[ "$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "d.get('env',{}).get('ENABLE_TOOL_SEARCH','')" 2>/dev/null || true)" == "auto:5" ]]; then
+if claude_enable_tool_search_is_set; then
   ok "Claude Code: ENABLE_TOOL_SEARCH env already set"
 else
   ai_config_json_upsert_nested_key "${CLAUDE_SETTINGS_JSON}" env.ENABLE_TOOL_SEARCH '"auto:5"'
@@ -373,7 +375,7 @@ fi
 # user preference — xhigh tends to overthink for routine work). Treated as a
 # team-shareable baseline like autoUpdatesChannel — local `/effort` overrides
 # persist until the next `make ai-repair` snaps it back. See L2 judgment log.
-if [[ "$(ai_config_json_read "${CLAUDE_SETTINGS_JSON}" "d.get('effortLevel','')" 2>/dev/null || true)" == "high" ]]; then
+if claude_effort_is_high; then
   ok "Claude Code: effortLevel already high"
 else
   ai_config_json_upsert_key "${CLAUDE_SETTINGS_JSON}" effortLevel '"high"'

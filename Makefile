@@ -51,6 +51,7 @@ test: ## 回帰テストを実行
 	bash tests/bitwarden-zsh.sh
 	bash tests/notion-cli.sh
 	bash tests/ai-config.sh
+	bash tests/claude-checks.sh
 	bash tests/lsp-hint.sh
 	bash tests/chezmoi-auto-apply.sh
 	bash tests/find-skills.sh

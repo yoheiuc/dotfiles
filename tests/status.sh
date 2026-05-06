@@ -29,6 +29,8 @@ cp "${REPO_ROOT}/scripts/status.sh" "${fake_repo}/scripts/status.sh"
 cp "${REPO_ROOT}/scripts/lib/ui.sh" "${fake_repo}/scripts/lib/ui.sh"
 cp "${REPO_ROOT}/scripts/lib/ai-config.sh" "${fake_repo}/scripts/lib/ai-config.sh"
 cp "${REPO_ROOT}/scripts/lib/ai_config.py" "${fake_repo}/scripts/lib/ai_config.py"
+cp "${REPO_ROOT}/scripts/lib/claude-plugins.sh" "${fake_repo}/scripts/lib/claude-plugins.sh"
+cp "${REPO_ROOT}/scripts/lib/claude-checks.sh" "${fake_repo}/scripts/lib/claude-checks.sh"
 cp "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh" "${fake_repo}/scripts/lib/brew-autoupdate.sh"
 
 cat > "${fake_repo}/scripts/brew-bundle.sh" <<'EOF'

@@ -8,6 +8,8 @@ set -euo pipefail
 REPO_ROOT="${DOTFILES_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "${REPO_ROOT}/scripts/lib/ui.sh"
 source "${REPO_ROOT}/scripts/lib/ai-config.sh"
+source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
+source "${REPO_ROOT}/scripts/lib/claude-checks.sh"
 source "${REPO_ROOT}/scripts/lib/brew-autoupdate.sh"
 
 ATTENTION_COUNT=0
@@ -133,7 +135,7 @@ audit_local_file "Claude settings" "${HOME}/.claude/settings.json"
 audit_local_file "Shared Claude guidance" "${HOME}/.claude/CLAUDE.md"
 
 if [[ -f "${HOME}/.claude/settings.json" ]]; then
-  if [[ "$(ai_config_json_read "${HOME}/.claude/settings.json" "d.get('autoUpdatesChannel','')" 2>/dev/null || true)" == "latest" ]]; then
+  if claude_autoupdate_is_latest; then
     ok "Claude settings: auto-update channel is latest"
   else
     attention "Claude settings: auto-update channel should be latest"
