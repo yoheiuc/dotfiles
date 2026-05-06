@@ -62,6 +62,7 @@ brew "awscli"
 brew "azure-cli"
 cask "gcloud-cli"         # gcloud (required by `gws auth setup`)
 brew "tfenv"              # Terraform version manager
+brew "xcodegen"           # Generate Xcode project from spec (iOS/macOS dev)
 
 # ---------- Casks: terminal / AI ----------
 cask "ghostty"            # GPU-accelerated terminal
