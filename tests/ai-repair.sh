@@ -48,6 +48,86 @@ mkdir -p "${REPO_ROOT}/.claude"
 printf -- '---\nname: trial\nenabled: true\nevent: bash\n---\n' \
   > "${REPO_ROOT}/.claude/hookify.trial.local.md"
 
+# Fixtures: bulk-installed gws / recipe / persona skills (retired 2026-05-06).
+# ai-repair should rm them by glob so context cost from per-skill descriptions
+# is removed.
+for _bulk in gws-gmail recipe-create-meet-space persona-event-coordinator; do
+  mkdir -p "${HOME}/.claude/skills/${_bulk}"
+  printf 'stub bulk SKILL\n' > "${HOME}/.claude/skills/${_bulk}/SKILL.md"
+done
+unset _bulk
+
+# Fixture: retired document-skills plugin + anthropic-agent-skills marketplace.
+# ai-repair should uninstall the plugin and remove the marketplace registration.
+# We stub `claude` to a Python rewriter so the test stays hermetic — the real
+# claude binary may attempt network access on `plugin uninstall`.
+mkdir -p "${HOME}/.claude/plugins"
+cat > "${HOME}/.claude/plugins/installed_plugins.json" <<'EOF'
+{
+  "plugins": {
+    "document-skills@anthropic-agent-skills": {}
+  }
+}
+EOF
+cat > "${HOME}/.claude/plugins/known_marketplaces.json" <<'EOF'
+{
+  "anthropic-agent-skills": {
+    "source": {"source": "github", "repo": "anthropics/skills"}
+  }
+}
+EOF
+# Disk caches that linger after `claude plugin uninstall` / `marketplace remove`.
+mkdir -p "${HOME}/.claude/plugins/cache/anthropic-agent-skills/document-skills/_stub"
+mkdir -p "${HOME}/.claude/plugins/marketplaces/anthropic-agent-skills"
+printf '{}\n' > "${HOME}/.claude/plugins/marketplaces/anthropic-agent-skills/marketplace.json"
+_ai_repair_stub_bin="${tmpdir}/stub-bin"
+mkdir -p "${_ai_repair_stub_bin}"
+cat > "${_ai_repair_stub_bin}/claude" <<'STUB'
+#!/usr/bin/env bash
+# Hermetic stub for ai-repair tests — handles `plugin uninstall <p@m>` and
+# `plugin marketplace remove <name>` by rewriting the local JSON state files.
+set -euo pipefail
+case "${1:-}" in
+  plugin|plugins)
+    case "${2:-}" in
+      uninstall|remove)
+        spec="${3:-}"
+        f="${HOME}/.claude/plugins/installed_plugins.json"
+        if [[ -f "${f}" ]]; then
+          python3 -c "
+import json,sys
+with open('${f}') as h: d = json.load(h)
+d.setdefault('plugins',{}).pop('${spec}', None)
+with open('${f}','w') as h: json.dump(d,h,indent=2); h.write('\n')
+"
+        fi
+        exit 0
+        ;;
+      marketplace)
+        case "${3:-}" in
+          remove|rm)
+            name="${4:-}"
+            f="${HOME}/.claude/plugins/known_marketplaces.json"
+            if [[ -f "${f}" ]]; then
+              python3 -c "
+import json,sys
+with open('${f}') as h: d = json.load(h)
+d.pop('${name}', None)
+with open('${f}','w') as h: json.dump(d,h,indent=2); h.write('\n')
+"
+            fi
+            exit 0
+            ;;
+        esac
+        ;;
+    esac
+    ;;
+esac
+exit 0
+STUB
+chmod +x "${_ai_repair_stub_bin}/claude"
+HERMETIC_BASE_ENV=("${HERMETIC_BASE_ENV[@]/PATH=*/PATH=${_ai_repair_stub_bin}:/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin}")
+
 run_capture env -i "${HERMETIC_BASE_ENV[@]}" bash "${REPO_ROOT}/scripts/ai-repair.sh"
 assert_eq "0" "${RUN_STATUS}" "ai-repair should succeed on first run"
 assert_contains "${RUN_OUTPUT}" "Serena: removed retired ~/.serena" "ai-repair should remove ~/.serena residue"
@@ -61,6 +141,24 @@ done
 unset _legacy_doc
 assert_contains "${RUN_OUTPUT}" "Hookify: removed retired rule files" "ai-repair should announce hookify rule cleanup"
 [[ ! -e "${REPO_ROOT}/.claude/hookify.trial.local.md" ]] || fail_test "ai-repair should physically remove hookify trial rule"
+
+# Bulk-installed gws / recipe / persona skills must be physically removed and
+# the count announced.
+assert_contains "${RUN_OUTPUT}" "removed 3 retired bulk-installed skills" "ai-repair should announce bulk skill cleanup"
+for _bulk in gws-gmail recipe-create-meet-space persona-event-coordinator; do
+  [[ ! -e "${HOME}/.claude/skills/${_bulk}" ]] || fail_test "ai-repair should physically remove bulk skill ${_bulk}"
+done
+unset _bulk
+
+# document-skills plugin and anthropic-agent-skills marketplace must be
+# uninstalled by routing through the stubbed claude CLI.
+assert_contains "${RUN_OUTPUT}" "uninstalled retired plugin document-skills@anthropic-agent-skills" "ai-repair should uninstall retired document-skills plugin"
+assert_contains "${RUN_OUTPUT}" "removed retired marketplace anthropic-agent-skills" "ai-repair should remove retired marketplace"
+assert_not_contains "$(cat "${HOME}/.claude/plugins/installed_plugins.json")" "document-skills@anthropic-agent-skills" "ai-repair should drop document-skills from installed_plugins.json"
+assert_not_contains "$(cat "${HOME}/.claude/plugins/known_marketplaces.json")" "anthropic-agent-skills" "ai-repair should drop anthropic-agent-skills from known_marketplaces.json"
+assert_contains "${RUN_OUTPUT}" 'removed retired plugin cache \~/.claude/plugins/cache/anthropic-agent-skills' "ai-repair should announce cache cleanup"
+[[ ! -e "${HOME}/.claude/plugins/cache/anthropic-agent-skills" ]] || fail_test "ai-repair should physically remove ~/.claude/plugins/cache/anthropic-agent-skills"
+[[ ! -e "${HOME}/.claude/plugins/marketplaces/anthropic-agent-skills" ]] || fail_test "ai-repair should physically remove ~/.claude/plugins/marketplaces/anthropic-agent-skills"
 assert_contains "${RUN_OUTPUT}" "Claude Code: auto-update channel set to latest" "ai-repair should normalize Claude Code channel"
 assert_contains "${RUN_OUTPUT}" "Claude Code: ENABLE_TOOL_SEARCH env set" "ai-repair should set ENABLE_TOOL_SEARCH env"
 assert_contains "${RUN_OUTPUT}" "Claude Code: effortLevel set to high" "ai-repair should set effortLevel to high (dotfiles baseline)"

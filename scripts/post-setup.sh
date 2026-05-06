@@ -3,12 +3,22 @@
 #
 # Responsibility (imperative install layer; declarative file sync is chezmoi's job):
 #   - Install/update Claude Code CLI via native installer and keep it on latest
-#   - Register Claude Code marketplaces and install plugins listed in claude-plugins.sh
-#     (LSP + general from claude-plugins-official, document skills from anthropic-agent-skills)
+#   - Register Claude Code marketplace and install plugins listed in claude-plugins.sh
+#     (LSP + general from claude-plugins-official)
 #   - Install clasp (via npm install -g @google/clasp)
 #   - Install playwright-cli + Chromium + skill files under ~/.claude/skills
-#   - Install Google Workspace CLI (gws) / notion-cli / find-skills / security-best-practices /
-#     ui-ux-pro-max skills under ~/.claude/skills via `npx skills add ...`
+#   - Install notion-cli / find-skills / security-best-practices / ui-ux-pro-max
+#     skills under ~/.claude/skills via `npx skills add ...`
+#
+# Intentionally NOT installed globally (context cost > benefit):
+#   - googleworkspace/cli の gws-* / recipe-* / persona-* skills（45+37+10）
+#   - document-skills@anthropic-agent-skills bundle (16 skills)
+#   どちらも全 Claude Code セッションに description が常駐し ~10k token/turn を食う。
+#   必要なプロジェクトでは下記を project-scoped に install して使う:
+#     gws:            cd <project> && npx skills add https://github.com/googleworkspace/cli \
+#                       -a claude-code -y --skill <gws-gmail|gws-calendar|...>
+#     document-skills: cd <project> && claude plugin marketplace add anthropics/skills \
+#                       && claude plugin install document-skills@anthropic-agent-skills
 #   - Keep brew-autoupdate disabled (manual brew update/upgrade policy)
 #
 # Out of scope (handled elsewhere; do not duplicate here):
@@ -57,11 +67,9 @@ ok "Claude Code auto-update channel: latest"
 unset CLAUDE_SETTINGS_JSON claude_path
 
 # ---- Claude Code marketplace + plugins -------------------------------------
-# Plugins live in two marketplaces:
-#   * claude-plugins-official (LSP + general):  anthropics/claude-plugins-official
-#   * anthropic-agent-skills  (document skills): anthropics/skills
-# Both register-once + install-many; consolidated into one helper so adding a
-# third marketplace later doesn't grow the duplication tax.
+# Plugins live in claude-plugins-official (anthropics/claude-plugins-official):
+# LSP + general plugins. Helper accepts marketplace name/source so callers can
+# register additional marketplaces (e.g. project-scoped) without duplication.
 _install_claude_marketplace_plugins() {
   local marketplace_name="$1" marketplace_source="$2"
   shift 2
@@ -102,12 +110,6 @@ if command -v claude &>/dev/null; then
     "${CLAUDE_PLUGIN_MARKETPLACE_SOURCE}" \
     "${CLAUDE_LSP_PLUGINS[@]}" \
     "${CLAUDE_GENERAL_PLUGINS[@]}"
-
-  log "Claude Code plugins (anthropic-agent-skills)..."
-  _install_claude_marketplace_plugins \
-    "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}" \
-    "${CLAUDE_DOCUMENT_MARKETPLACE_SOURCE}" \
-    "${CLAUDE_DOCUMENT_PLUGINS[@]}"
 else
   warn "claude not found — skipping plugin install"
 fi
@@ -200,28 +202,12 @@ fi
 # post-setup の一環として必ず走らせる（冪等）。
 bash "${REPO_ROOT}/scripts/ai-repair.sh"
 
-# ---- Google Workspace CLI skills (Claude Code) ----------------------------
-log "Google Workspace CLI skills..."
-
-if ! command -v gws &>/dev/null; then
-  warn "gws not found — run \`make install\` first (googleworkspace-cli)"
-elif ! command -v npx &>/dev/null; then
-  warn "npx not found — gws skills skipped (run \`make install\` first)"
-else
-  _dir="${HOME}/.claude/skills"
-  mkdir -p "${_dir}"
-  if compgen -G "${_dir}/gws-*/SKILL.md" >/dev/null; then
-    ok "gws skills already present under ${_dir/#${HOME}/\~}"
-  else
-    log "Installing gws skills for claude-code into ${_dir/#${HOME}/\~} ..."
-    if npx -y skills add https://github.com/googleworkspace/cli -a claude-code -g -y; then
-      ok "gws skills installed"
-    else
-      warn "npx skills add failed — re-run or install manually"
-    fi
-  fi
-  unset _dir
-fi
+# NOTE: Google Workspace CLI (gws) skills の global bulk install は廃止しました。
+# 全 Claude Code セッションに 90+ skill description が常駐するため context コストが
+# 利益を上回る判断（2026-05-06）。必要なプロジェクトで都度 project-scoped install:
+#   cd <project> && npx skills add https://github.com/googleworkspace/cli \
+#     -a claude-code -y --skill <gws-gmail|gws-calendar|...>
+# 既存環境の `~/.claude/skills/{gws,recipe,persona}-*` は ai-repair が能動削除します。
 
 # ---- find-skills (vercel-labs/skills) -------------------------------------
 # find-skills lets Claude Code search and install further skills from

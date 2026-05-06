@@ -41,18 +41,16 @@ CLAUDE_GENERAL_PLUGINS=(
 CLAUDE_PLUGIN_MARKETPLACE_NAME="claude-plugins-official"
 CLAUDE_PLUGIN_MARKETPLACE_SOURCE="anthropics/claude-plugins-official"
 
-# Document skills (xlsx/docx/pptx/pdf) bundled by the document-skills plugin in
-# Anthropic's anthropic-agent-skills marketplace (anthropics/skills). Replaced
-# the legacy vendored ~/.claude/skills/{doc,pdf,presentation,spreadsheet}
-# copies. Lives under a separate marketplace from claude-plugins-official, so
-# all consumers (post-setup install, doctor / ai-audit verify) thread the
-# marketplace name explicitly.
-CLAUDE_DOCUMENT_PLUGINS=(
-  document-skills
-)
+# Legacy: anthropic-agent-skills marketplace (anthropics/skills) で document-skills
+# plugin（pdf/docx/pptx/xlsx 等 16 skill bundle）を一括 install していたが、全
+# Claude Code セッションに description が常駐し context コストが利益を上回るため
+# 2026-05-06 に廃止。必要なプロジェクトでは project-scoped に install する
+# （README.md / docs/notes/decisions-archive.md 参照）。ai-repair が global
+# install を能動 uninstall する。
 
-CLAUDE_DOCUMENT_MARKETPLACE_NAME="anthropic-agent-skills"
-CLAUDE_DOCUMENT_MARKETPLACE_SOURCE="anthropics/skills"
+# Marketplace name 廃止後も legacy 検出に使うため defs を残す (ai-repair が参照)。
+CLAUDE_LEGACY_DOCUMENT_MARKETPLACE_NAME="anthropic-agent-skills"
+CLAUDE_LEGACY_DOCUMENT_PLUGIN_NAME="document-skills"
 
 # Returns 0 if `<name>@<marketplace>` is recorded as installed in
 # ~/.claude/plugins/installed_plugins.json. The file is missing entirely until
@@ -67,7 +65,7 @@ claude_plugin_is_installed() {
     '.plugins | has($key)' "${file}" >/dev/null 2>&1
 }
 
-# Render the install summary for one plugin group (LSP / general / document) on
+# Render the install summary for one plugin group (LSP / general) on
 # stdout, and return 0 if the group is fully installed, 1 if any plugin is
 # missing. Caller picks the UI wrapper (ok / warn / attention) per its tone.
 #
@@ -79,7 +77,7 @@ claude_plugin_is_installed() {
 #   fi
 #
 # `marketplace` defaults to CLAUDE_PLUGIN_MARKETPLACE_NAME for backward compat.
-# Pass CLAUDE_DOCUMENT_MARKETPLACE_NAME (etc.) for groups distributed elsewhere.
+# Pass an alternate marketplace name when adding a future plugin group.
 #
 # Living in this lib so doctor.sh and ai-audit.sh can never drift in
 # message shape (which they did before this helper existed).

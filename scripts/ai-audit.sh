@@ -225,12 +225,39 @@ if _msg="$(claude_plugins_check_summary general claude_general_plugins_missing "
 else
   attention "${_msg}"
 fi
-if _msg="$(claude_plugins_check_summary document claude_document_plugins_missing "${#CLAUDE_DOCUMENT_PLUGINS[@]}" "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}")"; then
-  ok "${_msg}"
-else
-  attention "${_msg}"
-fi
 unset _msg
+
+# Retired bulk-installed skills (gws-* / recipe-* / persona-*) and
+# document-skills plugin / anthropic-agent-skills marketplace. ai-repair scrubs
+# them; flag here so drift detection catches stragglers from machines that
+# haven't run ai-repair yet.
+if [[ -d "${HOME}/.claude/skills" ]]; then
+  shopt -s nullglob
+  _legacy_bulk=("${HOME}/.claude/skills"/gws-* "${HOME}/.claude/skills"/recipe-* "${HOME}/.claude/skills"/persona-*)
+  shopt -u nullglob
+  if (( ${#_legacy_bulk[@]} > 0 )); then
+    attention "Retired bulk skills (${#_legacy_bulk[@]}) under ~/.claude/skills/{gws,recipe,persona}-* — run make ai-repair"
+  fi
+  unset _legacy_bulk
+fi
+if [[ -f "${HOME}/.claude/plugins/installed_plugins.json" ]] && \
+   jq -e '.plugins | has("'"${CLAUDE_LEGACY_DOCUMENT_PLUGIN_NAME}"'@'"${CLAUDE_LEGACY_DOCUMENT_MARKETPLACE_NAME}"'")' \
+     "${HOME}/.claude/plugins/installed_plugins.json" >/dev/null 2>&1; then
+  attention "Retired plugin ${CLAUDE_LEGACY_DOCUMENT_PLUGIN_NAME}@${CLAUDE_LEGACY_DOCUMENT_MARKETPLACE_NAME} still installed — run make ai-repair"
+fi
+if [[ -f "${HOME}/.claude/plugins/known_marketplaces.json" ]] && \
+   jq -e 'has("'"${CLAUDE_LEGACY_DOCUMENT_MARKETPLACE_NAME}"'")' \
+     "${HOME}/.claude/plugins/known_marketplaces.json" >/dev/null 2>&1; then
+  attention "Retired marketplace ${CLAUDE_LEGACY_DOCUMENT_MARKETPLACE_NAME} still registered — run make ai-repair"
+fi
+for _legacy_cache in \
+  "${HOME}/.claude/plugins/cache/${CLAUDE_LEGACY_DOCUMENT_MARKETPLACE_NAME}" \
+  "${HOME}/.claude/plugins/marketplaces/${CLAUDE_LEGACY_DOCUMENT_MARKETPLACE_NAME}"; do
+  if [[ -e "${_legacy_cache}" ]]; then
+    attention "Retired plugin cache still on disk: ${_legacy_cache} — run make ai-repair"
+  fi
+done
+unset _legacy_cache
 
 section "Retired Serena state"
 # Serena MCP was retired in favor of Claude Code's native LSP tool plus the

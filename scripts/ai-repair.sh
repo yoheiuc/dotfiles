@@ -221,14 +221,11 @@ done
 unset _retired_command _retired_path
 
 # Document skills migration: vendored ~/.claude/skills/{doc,pdf,presentation,
-# spreadsheet} are replaced by the document-skills plugin in the
-# anthropic-agent-skills marketplace (xlsx/docx/pptx/pdf), installed by
-# post-setup.sh. The plugin lives under
-# ~/.claude/plugins/marketplaces/anthropic-agent-skills/skills/ — different
-# parent dir from the vendored copies, so removing the legacy paths cannot
-# clobber the plugin install. Mirrors the security-best-practices /
-# ui-ux-pro-max migration, but routed through `claude plugin` (tier-1
-# marketplace) rather than `npx skills add` (tier-2).
+# spreadsheet} were superseded by the document-skills plugin in the
+# anthropic-agent-skills marketplace, then the plugin itself was retired on
+# 2026-05-06 — the all-or-nothing 16-skill bundle costs ~2-3k token/turn for
+# capabilities (algorithmic-art, slack-gif-creator etc.) used near-zero.
+# Project-scoped install remains available; see post-setup.sh header.
 for _legacy_doc_skill in doc pdf presentation spreadsheet; do
   if [[ -d "${HOME}/.claude/skills/${_legacy_doc_skill}" ]]; then
     rm -rf "${HOME}/.claude/skills/${_legacy_doc_skill}"
@@ -236,6 +233,65 @@ for _legacy_doc_skill in doc pdf presentation spreadsheet; do
   fi
 done
 unset _legacy_doc_skill
+
+# Retire the document-skills plugin and its anthropic-agent-skills marketplace.
+# Idempotent: silently skips when nothing is installed. `claude plugin
+# uninstall` rewrites installed_plugins.json; `marketplace remove` drops the
+# registration so post-setup doesn't re-pin it.
+if command -v claude &>/dev/null; then
+  if [[ -f "${HOME}/.claude/plugins/installed_plugins.json" ]] && \
+     jq -e '.plugins | has("document-skills@anthropic-agent-skills")' \
+       "${HOME}/.claude/plugins/installed_plugins.json" >/dev/null 2>&1; then
+    if claude plugin uninstall document-skills@anthropic-agent-skills >/dev/null 2>&1; then
+      ok "Claude Code: uninstalled retired plugin document-skills@anthropic-agent-skills"
+    else
+      warn "Claude Code: uninstall document-skills@anthropic-agent-skills failed — run manually"
+    fi
+  fi
+  if [[ -f "${HOME}/.claude/plugins/known_marketplaces.json" ]] && \
+     jq -e 'has("anthropic-agent-skills")' \
+       "${HOME}/.claude/plugins/known_marketplaces.json" >/dev/null 2>&1; then
+    if claude plugin marketplace remove anthropic-agent-skills >/dev/null 2>&1; then
+      ok "Claude Code: removed retired marketplace anthropic-agent-skills"
+    else
+      warn "Claude Code: marketplace remove anthropic-agent-skills failed — run manually"
+    fi
+  fi
+fi
+# Belt-and-braces: claude plugin uninstall + marketplace remove only rewrite the
+# JSON state files; the on-disk caches under ~/.claude/plugins/{cache,marketplaces}/
+# can linger and Claude Code may still scan SKILL.md files there. Drop the dirs
+# explicitly. ${marketplace_name}/ subtrees are large (skill bundles), so this
+# is the bulk of the actual disk reclamation too.
+for _legacy_cache in \
+  "${HOME}/.claude/plugins/cache/anthropic-agent-skills" \
+  "${HOME}/.claude/plugins/marketplaces/anthropic-agent-skills"; do
+  if [[ -e "${_legacy_cache}" ]]; then
+    rm -rf "${_legacy_cache}"
+    ok "Claude Code: removed retired plugin cache ${_legacy_cache/#${HOME}/\~}"
+  fi
+done
+unset _legacy_cache
+
+# Retire the bulk googleworkspace/cli skill install (gws-* + recipe-* + persona-*).
+# All ~92 skills came from a single `npx skills add ... -g`; project-scoped
+# install remains available for projects that actually use them. We rm by glob
+# rather than enumerating skill names so the cleanup stays correct even when
+# upstream renames or adds skills.
+shopt -s nullglob
+_legacy_skill_dirs=(
+  "${HOME}/.claude/skills"/gws-*
+  "${HOME}/.claude/skills"/recipe-*
+  "${HOME}/.claude/skills"/persona-*
+)
+shopt -u nullglob
+if (( ${#_legacy_skill_dirs[@]} > 0 )); then
+  for _legacy_skill_dir in "${_legacy_skill_dirs[@]}"; do
+    rm -rf "${_legacy_skill_dir}"
+  done
+  ok "Claude Code: removed ${#_legacy_skill_dirs[@]} retired bulk-installed skills (gws-/recipe-/persona-)"
+fi
+unset _legacy_skill_dirs _legacy_skill_dir
 
 # Strip legacy MCP registrations that have been retired.
 #   playwright       → @playwright/cli + skill (see post-setup.sh)

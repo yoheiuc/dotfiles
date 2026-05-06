@@ -2,7 +2,7 @@
 # tests/post-setup.sh — verify scripts/post-setup.sh idempotency.
 #
 # Full integration testing of post-setup.sh would require stubbing ~10 external
-# CLIs (claude, clasp, playwright-cli, ntn, gws, npm, npx, curl, brew,
+# CLIs (claude, clasp, playwright-cli, ntn, npm, npx, curl, brew,
 # launchctl, uvx, stat). Instead, this test focuses on the property that
 # actually matters — **running post-setup.sh twice produces identical config
 # files** — by stubbing every CLI to the "already installed" path and
@@ -59,7 +59,6 @@ make_stub playwright-cli 'case "${1:-}" in
 esac'
 make_stub aider 'echo "aider 0.50.0"; exit 0'
 make_stub ntn 'echo "ntn 0.10.0"; exit 0'
-make_stub gws 'echo "gws 1.0.0"; exit 0'
 make_stub uvx 'exit 0'
 make_stub npm 'exit 0'
 make_stub npx 'case "${1:-}" in
@@ -78,8 +77,6 @@ esac'
 
 # Pre-populate skill SKILL.md files so post-setup takes the "already present" path
 # and does not attempt network install via npx.
-mkdir -p "${HOME}/.claude/skills/gws-test"
-printf 'stub\n' > "${HOME}/.claude/skills/gws-test/SKILL.md"
 mkdir -p "${HOME}/.claude/skills/find-skills" "${HOME}/.agents/skills/find-skills"
 printf 'stub\n' > "${HOME}/.claude/skills/find-skills/SKILL.md"
 printf 'stub\n' > "${HOME}/.agents/skills/find-skills/SKILL.md"
@@ -100,9 +97,6 @@ cat > "${HOME}/.claude/plugins/known_marketplaces.json" <<'EOF'
 {
   "claude-plugins-official": {
     "source": {"source": "github", "repo": "anthropics/claude-plugins-official"}
-  },
-  "anthropic-agent-skills": {
-    "source": {"source": "github", "repo": "anthropics/skills"}
   }
 }
 EOF
@@ -113,10 +107,6 @@ source "${REPO_ROOT}/scripts/lib/claude-plugins.sh"
   _sep=""
   for _p in "${CLAUDE_LSP_PLUGINS[@]}" "${CLAUDE_GENERAL_PLUGINS[@]}"; do
     printf '%s    "%s@%s": {}' "${_sep}" "${_p}" "${CLAUDE_PLUGIN_MARKETPLACE_NAME}"
-    _sep=$',\n'
-  done
-  for _p in "${CLAUDE_DOCUMENT_PLUGINS[@]}"; do
-    printf '%s    "%s@%s": {}' "${_sep}" "${_p}" "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}"
     _sep=$',\n'
   done
   printf '\n  }\n}\n'
@@ -164,10 +154,12 @@ assert_contains "${RUN_OUTPUT}" "Claude Code auto-update channel: latest" "post-
 assert_contains "${RUN_OUTPUT}" "sequential-thinking MCP" "post-setup should register sequential-thinking via ai-repair"
 assert_contains "${RUN_OUTPUT}" "brew autoupdate: disabled by dotfiles policy" "post-setup should disable brew autoupdate"
 assert_contains "${RUN_OUTPUT}" "marketplace claude-plugins-official: already registered" "post-setup should skip marketplace add when present"
-assert_contains "${RUN_OUTPUT}" "marketplace anthropic-agent-skills: already registered" "post-setup should skip anthropic-agent-skills marketplace add when present"
 assert_contains "${RUN_OUTPUT}" "plugin pyright-lsp@claude-plugins-official: already installed" "post-setup should skip already-installed LSP plugin"
 assert_contains "${RUN_OUTPUT}" "plugin claude-md-management@claude-plugins-official: already installed" "post-setup should skip already-installed general plugin"
-assert_contains "${RUN_OUTPUT}" "plugin document-skills@anthropic-agent-skills: already installed" "post-setup should skip already-installed document plugin"
+# Sanity check: no traces of the retired bulk-installed skill groups should
+# leak back into post-setup (gws / recipe / persona / document-skills).
+assert_not_contains "${RUN_OUTPUT}" "gws skills" "post-setup should not install gws bulk skills any more"
+assert_not_contains "${RUN_OUTPUT}" "anthropic-agent-skills" "post-setup should not touch the retired anthropic-agent-skills marketplace"
 
 hash_settings_1="$(hash_file "${HOME}/.claude/settings.json")"
 hash_claudejson_1="$(hash_file "${HOME}/.claude.json")"

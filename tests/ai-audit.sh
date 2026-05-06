@@ -106,8 +106,6 @@ assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.codex" "ai-a
 assert_contains "${RUN_OUTPUT}" "No retired agent state at ${HOME}/.gemini" "ai-audit should report absence of retired Gemini state"
 assert_contains "${RUN_OUTPUT}" "LSP plugins: all ${#CLAUDE_LSP_PLUGINS[@]} installed" "ai-audit should validate LSP plugins are installed"
 assert_contains "${RUN_OUTPUT}" "general plugins: all ${#CLAUDE_GENERAL_PLUGINS[@]} installed" "ai-audit should validate general plugins are installed"
-assert_contains "${RUN_OUTPUT}" "document plugins: all ${#CLAUDE_DOCUMENT_PLUGINS[@]} installed" "ai-audit should validate document plugins are installed"
-assert_contains "${RUN_OUTPUT}" "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}" "ai-audit should mention anthropic-agent-skills marketplace"
 assert_contains "${RUN_OUTPUT}" "AI config audit looks good." "ai-audit should report a clean result"
 
 # ---- Scenario 1b: --quiet on a clean tree ----

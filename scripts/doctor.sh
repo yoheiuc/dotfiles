@@ -397,11 +397,6 @@ if command -v claude &>/dev/null; then
   else
     warn "${_msg}"
   fi
-  if _msg="$(claude_plugins_check_summary document claude_document_plugins_missing "${#CLAUDE_DOCUMENT_PLUGINS[@]}" "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}")"; then
-    ok "${_msg}"
-  else
-    warn "${_msg}"
-  fi
   unset _msg
 
   if [[ -f "${HOME}/.claude/skills/find-skills/SKILL.md" ]]; then

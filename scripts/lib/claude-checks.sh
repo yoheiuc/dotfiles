@@ -72,15 +72,6 @@ claude_general_plugins_missing() {
   done
 }
 
-# Same for CLAUDE_DOCUMENT_PLUGINS, but checked against the
-# anthropic-agent-skills marketplace (different from the other two groups).
-claude_document_plugins_missing() {
-  local p
-  for p in "${CLAUDE_DOCUMENT_PLUGINS[@]}"; do
-    claude_plugin_is_installed "${p}" "${CLAUDE_DOCUMENT_MARKETPLACE_NAME}" || echo "${p}"
-  done
-}
-
 # ── Playwright (cross-tool predicate, intentionally lives here) ──
 # Naming exception: this predicate uses the `playwright_*` prefix instead of
 # the file-wide `claude_*` convention because it checks Playwright config, not

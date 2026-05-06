@@ -113,14 +113,11 @@ write_installed_plugins_stub() {
   source "${repo_root}/scripts/lib/claude-plugins.sh"
   mkdir -p "${target_home}/.claude/plugins"
 
-  local primary_names doc_names
+  local primary_names
   primary_names="$(printf '%s\n' "${CLAUDE_LSP_PLUGINS[@]}" "${CLAUDE_GENERAL_PLUGINS[@]}")"
-  doc_names="$(printf '%s\n' "${CLAUDE_DOCUMENT_PLUGINS[@]}")"
 
   STUB_PRIMARY_NAMES="${primary_names}" \
-  STUB_DOC_NAMES="${doc_names}" \
   STUB_PRIMARY_MARKETPLACE="${CLAUDE_PLUGIN_MARKETPLACE_NAME}" \
-  STUB_DOC_MARKETPLACE="${CLAUDE_DOCUMENT_MARKETPLACE_NAME}" \
   python3 - > "${target_home}/.claude/plugins/installed_plugins.json" <<'PY'
 import json
 import os
@@ -132,11 +129,8 @@ def _split(env_name: str) -> list[str]:
 
 plugins: dict[str, dict] = {}
 primary_marketplace = os.environ["STUB_PRIMARY_MARKETPLACE"]
-doc_marketplace = os.environ["STUB_DOC_MARKETPLACE"]
 for name in _split("STUB_PRIMARY_NAMES"):
     plugins[f"{name}@{primary_marketplace}"] = {}
-for name in _split("STUB_DOC_NAMES"):
-    plugins[f"{name}@{doc_marketplace}"] = {}
 print(json.dumps({"plugins": plugins}, indent=2))
 PY
 }
