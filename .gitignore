@@ -5,6 +5,9 @@
 # when invoked outside $HOME). Dotfiles doesn't track project-local skills.
 .claude/skills/
 
+# Claude Code scheduled tasks runtime lock (machine-local; created by /schedule).
+.claude/scheduled_tasks.lock
+
 # Leftover state from the retired Serena MCP (see issue #60 / 2026-04-24).
 # Ignored so old project-local .serena/ directories don't surface in `git status`.
 # Safe to delete manually; nothing in the repo depends on it any more.
