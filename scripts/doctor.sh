@@ -140,7 +140,7 @@ fi
 #   3. AI / Claude Code — Claude CLI, plugins, AI-adjacent skills
 # ===========================================================================
 
-# --- Shell / system ---------------------------------------------------------
+subgroup "Shell / system"
 
 section "zsh compinit security (optional)"
 if command -v zsh &>/dev/null; then
@@ -180,7 +180,7 @@ else
 fi
 unset _ssl_compat_file
 
-# --- Dev tools --------------------------------------------------------------
+subgroup "Runtimes"
 
 section "node (optional)"
 if node --version &>/dev/null; then
@@ -210,6 +210,8 @@ if command -v playwright-cli &>/dev/null; then
 else
   warn "playwright-cli not found — run: ./scripts/post-setup.sh"
 fi
+
+subgroup "CLI utilities"
 
 section "bw (Bitwarden CLI, optional)"
 if command -v bw &>/dev/null; then
@@ -275,6 +277,8 @@ else
   warn "uv not found — optional Python toolchain; no longer required after Serena retirement"
 fi
 
+subgroup "Cloud"
+
 section "gcloud (optional)"
 if command -v gcloud &>/dev/null; then
   gcloud_version_line="$(gcloud version 2>&1 | head -1 || true)"
@@ -293,6 +297,8 @@ if command -v clasp &>/dev/null; then
 else
   warn "clasp not found — run: ./scripts/post-setup.sh"
 fi
+
+subgroup "Terminal & UX"
 
 section "Ghostty (optional)"
 # Ghostty CLI may not be in PATH when installed as a .app bundle.
@@ -356,7 +362,7 @@ else
   warn "navi not found — install via Brewfile (brew \"navi\")"
 fi
 
-# --- AI / Claude Code -------------------------------------------------------
+subgroup "AI / Claude Code"
 
 section "Claude Code (optional)"
 if command -v claude &>/dev/null; then
